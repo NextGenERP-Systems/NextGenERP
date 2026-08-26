@@ -479,7 +479,10 @@ export async function loginUser(credentials: { usernameOrEmail: string; password
 
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData.message || "Invalid username or password");
+    if (res.status === 401 || res.status === 403) {
+      throw new Error(errorData.message || "Invalid username or password");
+    }
+    throw new Error(errorData.message || `Server communication error (${res.status}). Please check backend status.`);
   }
 
   return await res.json();
