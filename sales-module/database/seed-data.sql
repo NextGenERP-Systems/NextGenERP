@@ -112,3 +112,54 @@ INSERT INTO sales_taxes_and_charges (voucher_type, voucher_id, idx, charge_type,
 ('Sales Order', '99999999-9999-9999-9999-999999999901', 1, 'ON_NET_TOTAL', 'Output VAT / State Sales Tax', 'State Sales Tax 6.25%', 6.2500, 1875.00, 31875.00, 1875.00, 31875.00),
 ('Sales Order', '99999999-9999-9999-9999-999999999901', 2, 'ON_NET_TOTAL', 'Municipal Infrastructure Surcharge', 'City/Municipal Surcharge 2.0%', 2.0000, 600.00, 32475.00, 600.00, 32475.00)
 ON CONFLICT DO NOTHING;
+
+-- 9. CRM Leads Seed
+INSERT INTO leads (id, lead_name, company_name, email, phone, status, lead_source, notes) VALUES
+('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb1', 'Marcus Vance', 'Vance Industrial Automations', 'mvance@vanceauto.com', '+1 (555) 789-0123', 'QUALIFIED', 'Website / Inbound', 'Interested in NextGen Cloud ERP for 50 users'),
+('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2', 'Elena Rostova', 'AeroDynamics Aerospace Ltd', 'elena.r@aerodynamics.io', '+44 20 8912 3456', 'OPEN', 'Cold Outreach', 'Requires edge server appliances and telemetry gateways'),
+('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb3', 'David Chen', 'Pacific Rim Supply Logistics', 'dchen@pacificrim.sg', '+65 6789 4321', 'CONTACTED', 'Trade Show 2026', 'Evaluating ERP migration from legacy SAP')
+ON CONFLICT DO NOTHING;
+
+-- 10. CRM Opportunities Seed
+INSERT INTO opportunities (id, title, opportunity_from, party_id, party_name, opportunity_type, status, deal_size, probability, expected_closing_date, sales_stage, contact_email, notes) VALUES
+('cccccccc-cccc-cccc-cccc-cccccccccc01', 'Cloud ERP Migration - Vance Auto', 'LEAD', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb1', 'Vance Industrial Automations', 'Sales / ERP', 'PROPOSAL', 45000.00, 75.00, CURRENT_DATE + INTERVAL '30 days', 'Solution Proposal Presented', 'mvance@vanceauto.com', 'Sent enterprise pricing proposal'),
+('cccccccc-cccc-cccc-cccc-cccccccccc02', 'Telemetry Hardware Upgrade - Apex Global', 'CUSTOMER', '77777777-7777-7777-7777-777777777701', 'Apex Global Technologies LLC', 'Sales / Hardware', 'NEGOTIATION', 28500.00, 85.00, CURRENT_DATE + INTERVAL '15 days', 'Commercial Negotiation', 'procurement@apexglobal.io', 'Negotiating 2U edge server units discount')
+ON CONFLICT DO NOTHING;
+
+-- 11. Delivery Notes Seed
+INSERT INTO delivery_notes (id, delivery_note_number, sales_order_id, customer_id, customer_name, posting_date, status, carrier, tracking_number, shipping_address, total_qty, total_amount, notes) VALUES
+('dddddddd-dddd-dddd-dddd-ddddddddddd1', 'DN-2026-0001', '99999999-9999-9999-9999-999999999902', '77777777-7777-7777-7777-777777777702', 'Vanguard Industrial Robotics Inc', CURRENT_DATE - INTERVAL '1 days', 'COMPLETED', 'FedEx Express Freight', 'FX-9847291823', 'Vanguard Tech Campus, Building B, Austin TX', 22.0000, 20026.25, 'Full shipment dispatched and signed')
+ON CONFLICT (delivery_note_number) DO NOTHING;
+
+INSERT INTO delivery_note_items (delivery_note_id, item_id, item_code, item_name, qty, uom, rate, amount, warehouse) VALUES
+('dddddddd-dddd-dddd-dddd-ddddddddddd1', '44444444-4444-4444-4444-444444444403', 'SRV-RACK-2U', 'NextGen Edge Server Appliance 2U', 2.0000, 'Nos', 4500.00, 9000.00, 'Stores - US West'),
+('dddddddd-dddd-dddd-dddd-ddddddddddd1', '44444444-4444-4444-4444-444444444404', 'IOT-GW-IND', 'Industrial IoT Telemetry Gateway', 10.0000, 'Nos', 850.00, 8500.00, 'Stores - US West'),
+('dddddddd-dddd-dddd-dddd-ddddddddddd1', '44444444-4444-4444-4444-444444444402', 'ERP-IMPL-SERV', 'ERP Implementation & Migration Services', 10.0000, 'Hours', 100.00, 1000.00, 'Stores - Services')
+ON CONFLICT DO NOTHING;
+
+-- 12. Sales Invoices Seed
+INSERT INTO sales_invoices (id, invoice_number, sales_order_id, delivery_note_id, customer_id, customer_name, posting_date, due_date, status, currency, net_total, total_tax, grand_total, paid_amount, outstanding_amount, payment_terms) VALUES
+('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeee1', 'SINV-2026-0001', '99999999-9999-9999-9999-999999999902', 'dddddddd-dddd-dddd-dddd-ddddddddddd1', '77777777-7777-7777-7777-777777777702', 'Vanguard Industrial Robotics Inc', CURRENT_DATE - INTERVAL '1 days', CURRENT_DATE + INTERVAL '29 days', 'PAID', 'INR', 18500.00, 1526.25, 20026.25, 20026.25, 0.00, 'Net 30 Days')
+ON CONFLICT (invoice_number) DO NOTHING;
+
+INSERT INTO sales_invoice_items (sales_invoice_id, item_id, item_code, item_name, qty, rate, amount) VALUES
+('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeee1', '44444444-4444-4444-4444-444444444403', 'SRV-RACK-2U', 'NextGen Edge Server Appliance 2U', 2.0000, 4500.00, 9000.00),
+('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeee1', '44444444-4444-4444-4444-444444444404', 'IOT-GW-IND', 'Industrial IoT Telemetry Gateway', 10.0000, 850.00, 8500.00),
+('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeee1', '44444444-4444-4444-4444-444444444402', 'ERP-IMPL-SERV', 'ERP Implementation & Migration Services', 10.0000, 100.00, 1000.00)
+ON CONFLICT DO NOTHING;
+
+-- 13. Payment Entries Seed
+INSERT INTO payment_entries (id, payment_number, payment_type, payment_mode, customer_id, sales_invoice_id, sales_order_id, posting_date, paid_amount, reference_no, notes) VALUES
+('ffffffff-ffff-ffff-ffff-fffffffffff1', 'PAY-2026-0001', 'RECEIVE', 'BANK_TRANSFER', '77777777-7777-7777-7777-777777777702', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeee1', '99999999-9999-9999-9999-999999999902', CURRENT_DATE, 20026.25, 'WIRE-VG-992384', 'Full invoice settlement received')
+ON CONFLICT (payment_number) DO NOTHING;
+
+-- 14. Pricing Rules & Coupons Seed
+INSERT INTO pricing_rules (id, title, apply_on, apply_key_id, min_qty, discount_percentage, discount_amount, valid_from, valid_upto, is_active) VALUES
+('12121212-1212-1212-1212-121212121201', 'Enterprise Cloud ERP Volume Promo', 'ITEM_CODE', 'ERP-CLOUD-ENT', 2.0000, 10.00, 0.00, CURRENT_DATE - INTERVAL '30 days', CURRENT_DATE + INTERVAL '180 days', TRUE),
+('12121212-1212-1212-1212-121212121202', 'Hardware Bulk Discount (>5 units)', 'ITEM_GROUP', 'Hardware', 5.0000, 15.00, 0.00, CURRENT_DATE - INTERVAL '30 days', CURRENT_DATE + INTERVAL '180 days', TRUE)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO coupon_codes (id, coupon_name, coupon_code, discount_type, discount_value, min_order_amount, valid_upto, used_count, max_uses, is_active) VALUES
+('13131313-1313-1313-1313-131313131301', 'Q3 Launch Special 10%', 'NEXTGEN10', 'PERCENTAGE', 10.00, 5000.00, CURRENT_DATE + INTERVAL '90 days', 5, 200, TRUE),
+('13131313-1313-1313-1313-131313131302', 'Enterprise Flat INR 2,000 Off', 'FLAT2000', 'FIXED_AMOUNT', 2000.00, 20000.00, CURRENT_DATE + INTERVAL '90 days', 2, 50, TRUE)
+ON CONFLICT (coupon_code) DO NOTHING;

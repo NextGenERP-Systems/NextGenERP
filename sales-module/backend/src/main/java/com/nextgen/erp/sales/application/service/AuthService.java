@@ -6,7 +6,7 @@ import com.nextgen.erp.sales.application.dto.RegisterRequest;
 import com.nextgen.erp.sales.application.dto.UserDto;
 import com.nextgen.erp.sales.domain.model.User;
 import com.nextgen.erp.sales.domain.model.UserRole;
-import com.nextgen.erp.sales.domain.repository.UserRepository;
+import com.nextgen.erp.sales.infrastructure.repository.UserRepository;
 import com.nextgen.erp.sales.infrastructure.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;

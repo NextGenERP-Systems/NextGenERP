@@ -1,4 +1,4 @@
-package com.nextgen.erp.sales.domain.repository;
+package com.nextgen.erp.sales.infrastructure.repository;
 
 import com.nextgen.erp.sales.domain.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;

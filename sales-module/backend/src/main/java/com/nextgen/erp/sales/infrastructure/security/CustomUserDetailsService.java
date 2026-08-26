@@ -1,7 +1,7 @@
 package com.nextgen.erp.sales.infrastructure.security;
 
 import com.nextgen.erp.sales.domain.model.User;
-import com.nextgen.erp.sales.domain.repository.UserRepository;
+import com.nextgen.erp.sales.infrastructure.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;

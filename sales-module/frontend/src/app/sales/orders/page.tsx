@@ -24,6 +24,7 @@ import { StatusBadge } from "@/components/ui/Badge";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { getSalesOrders, submitSalesOrder, cancelSalesOrder } from "@/lib/api";
 import { SalesOrder } from "@/types/sales";
+import { PrintDocumentModal } from "@/components/ui/PrintDocumentModal";
 
 export default function SalesOrdersPage() {
   const [orders, setOrders] = useState<SalesOrder[]>([]);
@@ -33,6 +34,7 @@ export default function SalesOrdersPage() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isPrintOpen, setIsPrintOpen] = useState(false);
 
   useEffect(() => {
     async function loadOrders() {
@@ -285,6 +287,55 @@ export default function SalesOrdersPage() {
                 </div>
               )}
 
+              {/* Quick Downstream Actions: Delivery, Invoice, Print */}
+              <div className="border-t border-slate-200 pt-3 space-y-2">
+                <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  Downstream Documents
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={async () => {
+                      try {
+                        const { makeDeliveryNoteFromOrder } = await import("@/lib/api");
+                        const dn = await makeDeliveryNoteFromOrder(selectedOrder.id);
+                        alert(`Delivery Note ${dn.deliveryNoteNumber} created successfully!`);
+                        window.location.href = "/sales/delivery-notes";
+                      } catch (err: any) {
+                        alert(err.message || "Failed to create delivery note");
+                      }
+                    }}
+                    className="flex items-center justify-center gap-1.5 py-1.5 px-2.5 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-200 text-xs font-semibold transition-all"
+                  >
+                    <Truck className="h-3.5 w-3.5" />
+                    <span>Create Delivery</span>
+                  </button>
+
+                  <button
+                    onClick={async () => {
+                      try {
+                        const { makeInvoiceFromOrder } = await import("@/lib/api");
+                        const inv = await makeInvoiceFromOrder(selectedOrder.id);
+                        alert(`Sales Invoice ${inv.invoiceNumber} created successfully!`);
+                        window.location.href = "/sales/invoices";
+                      } catch (err: any) {
+                        alert(err.message || "Failed to create sales invoice");
+                      }
+                    }}
+                    className="flex items-center justify-center gap-1.5 py-1.5 px-2.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-semibold transition-all"
+                  >
+                    <Receipt className="h-3.5 w-3.5" />
+                    <span>Create Invoice</span>
+                  </button>
+                </div>
+
+                <button
+                  onClick={() => setIsPrintOpen(true)}
+                  className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs font-semibold transition-all"
+                >
+                  <span>🖨️ Print / Export PDF</span>
+                </button>
+              </div>
+
               {/* Lifecycle Actions */}
               <div className="border-t border-slate-200 pt-4 flex items-center gap-2.5">
                 {selectedOrder.status === "DRAFT" && (
@@ -302,7 +353,8 @@ export default function SalesOrdersPage() {
                   <button
                     onClick={() => handleCancel(selectedOrder.id)}
                     disabled={actionLoading}
-                    className="px-3.5 py-2 rounded-lg bg-slate-100 border border-slate-200 hover:bg-red-50 hover:text-red-300 text-slate-400 text-xs font-medium transition-all"
+                    className="px-3.5 py-2 rounded-lg bg-slate-100 border border-slate-200 hover:bg-red-50 hover:text-red-600 text-slate-500 text-xs font-medium transition-all"
+                    title="Cancel Order"
                   >
                     <XCircle className="h-4 w-4" />
                   </button>
@@ -316,6 +368,33 @@ export default function SalesOrdersPage() {
           )}
         </div>
       </div>
+
+      {/* Print Document Modal */}
+      {selectedOrder && (
+        <PrintDocumentModal
+          isOpen={isPrintOpen}
+          onClose={() => setIsPrintOpen(false)}
+          title="Sales Order Confirmation"
+          docNumber={selectedOrder.orderNumber}
+          docDate={selectedOrder.transactionDate}
+          customerName={selectedOrder.customerName}
+          currency={selectedOrder.currency || "INR"}
+          items={selectedOrder.items?.map((it) => ({
+            itemCode: it.itemCode,
+            itemName: it.itemName,
+            qty: it.qty,
+            rate: it.rate,
+            amount: it.amount,
+            uom: it.uom,
+          })) || []}
+          netTotal={selectedOrder.netTotal}
+          totalTax={selectedOrder.totalTaxesAndCharges}
+          grandTotal={selectedOrder.grandTotal}
+          notes={`Delivery Date: ${selectedOrder.deliveryDate} | Terms: ${selectedOrder.paymentTermsTemplate || "Net 30"}`}
+          status={selectedOrder.status}
+        />
+      )}
     </div>
   );
 }
+

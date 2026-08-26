@@ -46,6 +46,8 @@ public class QuotationCreateRequest {
     private String paymentTermsTemplate;
     private String termsAndConditions;
     private String notes;
+    private UUID opportunityId;
+    private String couponCode;
     
     @NotEmpty(message = "Quotation must contain at least one item")
     private List<ItemRequest> items;

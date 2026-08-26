@@ -15,6 +15,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -28,6 +29,7 @@ public class QuotationService {
     private final SalesTaxAndChargeRepository taxRepository;
     private final PricingEngine pricingEngine;
     private final TaxCalculationEngine taxCalculationEngine;
+    private final PricingRuleEngine pricingRuleEngine;
 
     @Transactional(readOnly = true)
     public List<QuotationDto> getAllQuotations() {
@@ -69,6 +71,7 @@ public class QuotationService {
                 .applyDiscountOn(request.getApplyDiscountOn())
                 .paymentTermsTemplate(request.getPaymentTermsTemplate())
                 .termsAndConditions(request.getTermsAndConditions())
+                .opportunityId(request.getOpportunityId())
                 .notes(request.getNotes())
                 .items(new ArrayList<>())
                 .build();
@@ -83,12 +86,27 @@ public class QuotationService {
                     .orElseThrow(() -> new ResourceNotFoundException("Item", itemReq.getItemId()));
 
             BigDecimal priceListRate = itemReq.getPriceListRate() != null ? itemReq.getPriceListRate() : item.getStandardRate();
+            BigDecimal discountPct = itemReq.getDiscountPercentage() != null ? itemReq.getDiscountPercentage() : BigDecimal.ZERO;
+            BigDecimal discountAmt = itemReq.getDiscountAmount() != null ? itemReq.getDiscountAmount() : BigDecimal.ZERO;
+
+            // Wire Pricing Rules: Auto-lookup volume/promotional pricing rule if no manual discount provided
+            if (discountPct.compareTo(BigDecimal.ZERO) == 0 && discountAmt.compareTo(BigDecimal.ZERO) == 0) {
+                Optional<PricingRule> rule = pricingRuleEngine.findBestRule(item.getItemCode(), item.getItemGroup(), itemReq.getQty());
+                if (rule.isPresent()) {
+                    if (rule.get().getDiscountPercentage() != null && rule.get().getDiscountPercentage().compareTo(BigDecimal.ZERO) > 0) {
+                        discountPct = rule.get().getDiscountPercentage();
+                    } else if (rule.get().getDiscountAmount() != null && rule.get().getDiscountAmount().compareTo(BigDecimal.ZERO) > 0) {
+                        discountAmt = rule.get().getDiscountAmount();
+                    }
+                }
+            }
+
             PricingEngine.ItemPricingResult itemCalc = pricingEngine.calculateItemPricing(
                     itemReq.getQty(),
                     BigDecimal.ONE,
                     priceListRate,
-                    itemReq.getDiscountPercentage(),
-                    itemReq.getDiscountAmount(),
+                    discountPct,
+                    discountAmt,
                     quotation.getConversionRate(),
                     item.getValuationRate()
             );
@@ -106,8 +124,8 @@ public class QuotationService {
                     .conversionFactor(BigDecimal.ONE)
                     .stockQty(itemCalc.stockQty())
                     .priceListRate(priceListRate)
-                    .discountPercentage(itemReq.getDiscountPercentage() != null ? itemReq.getDiscountPercentage() : BigDecimal.ZERO)
-                    .discountAmount(itemReq.getDiscountAmount() != null ? itemReq.getDiscountAmount() : BigDecimal.ZERO)
+                    .discountPercentage(discountPct)
+                    .discountAmount(discountAmt)
                     .rate(itemCalc.rate())
                     .baseRate(itemCalc.baseRate())
                     .amount(itemCalc.amount())
@@ -122,6 +140,15 @@ public class QuotationService {
             quotation.getItems().add(qItem);
             totalQty = totalQty.add(qItem.getQty());
             netTotal = netTotal.add(itemCalc.netAmount());
+        }
+
+        // Wire Coupon Codes: Apply promotional coupon discount if provided
+        if (request.getCouponCode() != null && !request.getCouponCode().isBlank()) {
+            CouponApplyResponse couponRes = pricingRuleEngine.validateAndApplyCoupon(
+                    CouponApplyRequest.builder().couponCode(request.getCouponCode()).orderAmount(netTotal).build());
+            if (couponRes.isValid() && couponRes.getCalculatedDiscountAmount() != null) {
+                quotation.setDiscountAmount(quotation.getDiscountAmount().add(couponRes.getCalculatedDiscountAmount()));
+            }
         }
 
         quotation.setTotalQty(totalQty);

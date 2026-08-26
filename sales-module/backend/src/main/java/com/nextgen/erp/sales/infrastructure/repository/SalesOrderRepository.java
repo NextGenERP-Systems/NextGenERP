@@ -16,6 +16,8 @@ public interface SalesOrderRepository extends JpaRepository<SalesOrder, UUID> {
     Optional<SalesOrder> findByOrderNumber(String orderNumber);
     List<SalesOrder> findByCustomerIdOrderByTransactionDateDesc(UUID customerId);
     List<SalesOrder> findByStatusOrderByTransactionDateDesc(SalesOrderStatus status);
+    List<SalesOrder> findAllByOrderByTransactionDateDesc();
+    List<SalesOrder> findAllByOrderByCreatedAtDesc();
     
     @Query("SELECT s FROM SalesOrder s LEFT JOIN FETCH s.items LEFT JOIN FETCH s.paymentSchedules LEFT JOIN FETCH s.stockReservations WHERE s.id = :id")
     Optional<SalesOrder> findByIdWithDetails(UUID id);

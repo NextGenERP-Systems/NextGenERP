@@ -58,6 +58,8 @@ public class SalesOrderCreateRequest {
     
     private String paymentTermsTemplate;
     private String termsAndConditions;
+    private String notes;
+    private String couponCode;
     
     @Builder.Default
     private BigDecimal commissionRate = BigDecimal.ZERO;

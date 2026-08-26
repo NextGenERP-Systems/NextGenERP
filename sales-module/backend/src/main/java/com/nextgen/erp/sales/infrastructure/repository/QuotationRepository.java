@@ -15,6 +15,8 @@ public interface QuotationRepository extends JpaRepository<Quotation, UUID> {
     Optional<Quotation> findByQuotationNumber(String quotationNumber);
     List<Quotation> findByCustomerIdOrderByTransactionDateDesc(UUID customerId);
     List<Quotation> findByStatusOrderByTransactionDateDesc(QuotationStatus status);
+    List<Quotation> findAllByOrderByCreatedAtDesc();
+    List<Quotation> findAllByOrderByTransactionDateDesc();
     
     @Query("SELECT q FROM Quotation q LEFT JOIN FETCH q.items WHERE q.id = :id")
     Optional<Quotation> findByIdWithItems(UUID id);

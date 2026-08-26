@@ -18,6 +18,7 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -36,6 +37,7 @@ public class SalesOrderService {
     private final TaxCalculationEngine taxCalculationEngine;
     private final CreditLimitValidator creditLimitValidator;
     private final CommissionEngine commissionEngine;
+    private final PricingRuleEngine pricingRuleEngine;
 
     @Transactional(readOnly = true)
     public List<SalesOrderDto> getAllSalesOrders() {
@@ -100,12 +102,27 @@ public class SalesOrderService {
                     .orElseThrow(() -> new ResourceNotFoundException("Item", itemReq.getItemId()));
 
             BigDecimal priceListRate = itemReq.getPriceListRate() != null ? itemReq.getPriceListRate() : item.getStandardRate();
+            BigDecimal discountPct = itemReq.getDiscountPercentage() != null ? itemReq.getDiscountPercentage() : BigDecimal.ZERO;
+            BigDecimal discountAmt = itemReq.getDiscountAmount() != null ? itemReq.getDiscountAmount() : BigDecimal.ZERO;
+
+            // Wire Pricing Rules: Auto-lookup volume/promotional pricing rule if no manual discount provided
+            if (discountPct.compareTo(BigDecimal.ZERO) == 0 && discountAmt.compareTo(BigDecimal.ZERO) == 0) {
+                Optional<PricingRule> rule = pricingRuleEngine.findBestRule(item.getItemCode(), item.getItemGroup(), itemReq.getQty());
+                if (rule.isPresent()) {
+                    if (rule.get().getDiscountPercentage() != null && rule.get().getDiscountPercentage().compareTo(BigDecimal.ZERO) > 0) {
+                        discountPct = rule.get().getDiscountPercentage();
+                    } else if (rule.get().getDiscountAmount() != null && rule.get().getDiscountAmount().compareTo(BigDecimal.ZERO) > 0) {
+                        discountAmt = rule.get().getDiscountAmount();
+                    }
+                }
+            }
+
             PricingEngine.ItemPricingResult itemCalc = pricingEngine.calculateItemPricing(
                     itemReq.getQty(),
                     BigDecimal.ONE,
                     priceListRate,
-                    itemReq.getDiscountPercentage(),
-                    itemReq.getDiscountAmount(),
+                    discountPct,
+                    discountAmt,
                     order.getConversionRate(),
                     item.getValuationRate()
             );
@@ -117,16 +134,16 @@ public class SalesOrderService {
                     .itemCode(item.getItemCode())
                     .itemName(item.getItemName())
                     .description(itemReq.getDescription() != null ? itemReq.getDescription() : item.getItemName())
-                    .warehouse(itemReq.getWarehouse() != null ? itemReq.getWarehouse() : "Main Warehouse")
-                    .deliveryDate(itemReq.getDeliveryDate() != null ? itemReq.getDeliveryDate() : request.getDeliveryDate())
+                    .warehouse(itemReq.getWarehouse() != null ? itemReq.getWarehouse() : "Stores - Default")
+                    .deliveryDate(itemReq.getDeliveryDate() != null ? itemReq.getDeliveryDate() : order.getDeliveryDate())
                     .qty(itemReq.getQty() != null ? itemReq.getQty() : BigDecimal.ONE)
                     .stockUom(item.getStockUom())
                     .uom(item.getStockUom())
                     .conversionFactor(BigDecimal.ONE)
                     .stockQty(itemCalc.stockQty())
                     .priceListRate(priceListRate)
-                    .discountPercentage(itemReq.getDiscountPercentage() != null ? itemReq.getDiscountPercentage() : BigDecimal.ZERO)
-                    .discountAmount(itemReq.getDiscountAmount() != null ? itemReq.getDiscountAmount() : BigDecimal.ZERO)
+                    .discountPercentage(discountPct)
+                    .discountAmount(discountAmt)
                     .rate(itemCalc.rate())
                     .baseRate(itemCalc.baseRate())
                     .amount(itemCalc.amount())
@@ -136,13 +153,25 @@ public class SalesOrderService {
                     .baseNetAmount(itemCalc.baseNetAmount())
                     .valuationRate(item.getValuationRate())
                     .grossProfit(itemCalc.grossProfit())
+                    .deliveredQty(BigDecimal.ZERO)
+                    .billedAmt(BigDecimal.ZERO)
+                    .pickedQty(BigDecimal.ZERO)
                     .deliveredBySupplier(Boolean.TRUE.equals(itemReq.getDeliveredBySupplier()))
-                    .grantCommission(itemReq.getGrantCommission() != null ? itemReq.getGrantCommission() : true)
+                    .grantCommission(Boolean.TRUE.equals(itemReq.getGrantCommission()))
                     .build();
 
             order.getItems().add(orderItem);
             totalQty = totalQty.add(orderItem.getQty());
             netTotal = netTotal.add(itemCalc.netAmount());
+        }
+
+        // Wire Coupon Codes: Apply promotional coupon discount if provided
+        if (request.getCouponCode() != null && !request.getCouponCode().isBlank()) {
+            CouponApplyResponse couponRes = pricingRuleEngine.validateAndApplyCoupon(
+                    CouponApplyRequest.builder().couponCode(request.getCouponCode()).orderAmount(netTotal).build());
+            if (couponRes.isValid() && couponRes.getCalculatedDiscountAmount() != null) {
+                order.setDiscountAmount(order.getDiscountAmount().add(couponRes.getCalculatedDiscountAmount()));
+            }
         }
 
         order.setTotalQty(totalQty);

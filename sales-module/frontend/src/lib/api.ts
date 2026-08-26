@@ -4,6 +4,20 @@ import {
   SalesOrder,
   CatalogItem,
   SalesAnalyticsSummary,
+  Lead,
+  Opportunity,
+  DeliveryNote,
+  SalesInvoice,
+  PaymentEntry,
+  PricingRule,
+  CouponCode,
+  SalesOrderAnalysisReport,
+  CustomerCreditAgingReport,
+  QuotationWinLossReport,
+  ItemSalesHistoryReport,
+  SalesTrendsReport,
+  CustomerAcquisitionReport,
+  GlEntry,
 } from "@/types/sales";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api/v1";
@@ -633,3 +647,250 @@ export async function getSalesAnalytics(): Promise<SalesAnalyticsSummary> {
   }
   return MOCK_ANALYTICS;
 }
+
+// --- CRM Leads & Opportunities ---
+export async function getLeads(): Promise<Lead[]> {
+  const res = await fetch(`${API_BASE}/leads`, { cache: "no-store", headers: getAuthHeaders() });
+  if (!res.ok) throw new Error("Failed to fetch leads");
+  return await res.json();
+}
+
+export async function createLead(data: any): Promise<Lead> {
+  const res = await fetch(`${API_BASE}/leads`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error("Failed to create lead");
+  return await res.json();
+}
+
+export async function updateLeadStatus(id: string, status: string): Promise<Lead> {
+  const res = await fetch(`${API_BASE}/leads/${id}/status?status=${status}`, {
+    method: "PATCH",
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) throw new Error("Failed to update lead status");
+  return await res.json();
+}
+
+export async function getOpportunities(): Promise<Opportunity[]> {
+  const res = await fetch(`${API_BASE}/opportunities`, { cache: "no-store", headers: getAuthHeaders() });
+  if (!res.ok) throw new Error("Failed to fetch opportunities");
+  return await res.json();
+}
+
+export async function createOpportunity(data: any): Promise<Opportunity> {
+  const res = await fetch(`${API_BASE}/opportunities`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error("Failed to create opportunity");
+  return await res.json();
+}
+
+export async function updateOpportunityStatus(id: string, status: string, stage?: string): Promise<Opportunity> {
+  let url = `${API_BASE}/opportunities/${id}/status?status=${status}`;
+  if (stage) url += `&stage=${encodeURIComponent(stage)}`;
+  const res = await fetch(url, {
+    method: "PATCH",
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) throw new Error("Failed to update opportunity status");
+  return await res.json();
+}
+
+// --- Fulfilment & Delivery Notes ---
+export async function getDeliveryNotes(): Promise<DeliveryNote[]> {
+  const res = await fetch(`${API_BASE}/delivery-notes`, { cache: "no-store", headers: getAuthHeaders() });
+  if (!res.ok) throw new Error("Failed to fetch delivery notes");
+  return await res.json();
+}
+
+export async function createDeliveryNote(data: any): Promise<DeliveryNote> {
+  const res = await fetch(`${API_BASE}/delivery-notes`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error("Failed to create delivery note");
+  return await res.json();
+}
+
+export async function makeDeliveryNoteFromOrder(salesOrderId: string): Promise<DeliveryNote> {
+  const res = await fetch(`${API_BASE}/delivery-notes/from-order/${salesOrderId}`, {
+    method: "POST",
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) throw new Error("Failed to generate delivery note from order");
+  return await res.json();
+}
+
+// --- Billing & Sales Invoices ---
+export async function getSalesInvoices(): Promise<SalesInvoice[]> {
+  const res = await fetch(`${API_BASE}/sales-invoices`, { cache: "no-store", headers: getAuthHeaders() });
+  if (!res.ok) throw new Error("Failed to fetch sales invoices");
+  return await res.json();
+}
+
+export async function createSalesInvoice(data: any): Promise<SalesInvoice> {
+  const res = await fetch(`${API_BASE}/sales-invoices`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error("Failed to create sales invoice");
+  return await res.json();
+}
+
+export async function makeInvoiceFromOrder(salesOrderId: string): Promise<SalesInvoice> {
+  const res = await fetch(`${API_BASE}/sales-invoices/from-order/${salesOrderId}`, {
+    method: "POST",
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) throw new Error("Failed to generate invoice from order");
+  return await res.json();
+}
+
+export async function makeInvoiceFromDelivery(deliveryNoteId: string): Promise<SalesInvoice> {
+  const res = await fetch(`${API_BASE}/sales-invoices/from-delivery/${deliveryNoteId}`, {
+    method: "POST",
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) throw new Error("Failed to generate invoice from delivery note");
+  return await res.json();
+}
+
+// --- Payment Entries ---
+export async function getPayments(): Promise<PaymentEntry[]> {
+  const res = await fetch(`${API_BASE}/payments`, { cache: "no-store", headers: getAuthHeaders() });
+  if (!res.ok) throw new Error("Failed to fetch payment entries");
+  return await res.json();
+}
+
+export async function recordPayment(data: any): Promise<PaymentEntry> {
+  const res = await fetch(`${API_BASE}/payments`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error("Failed to record payment");
+  return await res.json();
+}
+
+// --- Pricing Rules & Coupons ---
+export async function getPricingRules(): Promise<PricingRule[]> {
+  const res = await fetch(`${API_BASE}/pricing-rules`, { cache: "no-store", headers: getAuthHeaders() });
+  if (!res.ok) throw new Error("Failed to fetch pricing rules");
+  return await res.json();
+}
+
+export async function createPricingRule(data: any): Promise<PricingRule> {
+  const res = await fetch(`${API_BASE}/pricing-rules`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error("Failed to create pricing rule");
+  return await res.json();
+}
+
+export async function getCoupons(): Promise<CouponCode[]> {
+  const res = await fetch(`${API_BASE}/coupons`, { cache: "no-store", headers: getAuthHeaders() });
+  if (!res.ok) throw new Error("Failed to fetch coupons");
+  return await res.json();
+}
+
+export async function createCoupon(data: any): Promise<CouponCode> {
+  const res = await fetch(`${API_BASE}/coupons`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error("Failed to create coupon");
+  return await res.json();
+}
+
+export async function applyCoupon(couponCode: string, orderAmount: number): Promise<any> {
+  const res = await fetch(`${API_BASE}/coupons/apply`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+    body: JSON.stringify({ couponCode, orderAmount }),
+  });
+  if (!res.ok) throw new Error("Failed to apply coupon");
+  return await res.json();
+}
+
+// --- Comprehensive Reports ---
+export async function getSalesOrderAnalysisReport(): Promise<SalesOrderAnalysisReport[]> {
+  const res = await fetch(`${API_BASE}/reports/sales-order-analysis`, { cache: "no-store", headers: getAuthHeaders() });
+  if (!res.ok) throw new Error("Failed to fetch sales order analysis report");
+  return await res.json();
+}
+
+export async function getCustomerCreditAgingReport(): Promise<CustomerCreditAgingReport[]> {
+  const res = await fetch(`${API_BASE}/reports/customer-credit-aging`, { cache: "no-store", headers: getAuthHeaders() });
+  if (!res.ok) throw new Error("Failed to fetch customer credit aging report");
+  return await res.json();
+}
+
+export async function getQuotationWinLossReport(): Promise<QuotationWinLossReport> {
+  const res = await fetch(`${API_BASE}/reports/win-loss-funnel`, { cache: "no-store", headers: getAuthHeaders() });
+  if (!res.ok) throw new Error("Failed to fetch quotation win/loss report");
+  return await res.json();
+}
+
+export async function convertLeadToOpportunity(leadId: string): Promise<Opportunity> {
+  const res = await fetch(`${API_BASE}/leads/${leadId}/convert-to-opportunity`, {
+    method: "POST",
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) throw new Error("Failed to convert lead to opportunity");
+  return await res.json();
+}
+
+export async function convertOpportunityToQuotation(oppId: string, customerId?: string): Promise<Quotation> {
+  const url = customerId 
+    ? `${API_BASE}/opportunities/${oppId}/convert-to-quotation?customerId=${customerId}` 
+    : `${API_BASE}/opportunities/${oppId}/convert-to-quotation`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) throw new Error("Failed to convert opportunity to quotation");
+  return await res.json();
+}
+
+export async function getItemSalesHistoryReport(): Promise<ItemSalesHistoryReport[]> {
+  const res = await fetch(`${API_BASE}/reports/item-sales-history`, { cache: "no-store", headers: getAuthHeaders() });
+  if (!res.ok) throw new Error("Failed to fetch item sales history report");
+  return await res.json();
+}
+
+export async function getSalesTrendsReport(): Promise<SalesTrendsReport[]> {
+  const res = await fetch(`${API_BASE}/reports/sales-trends`, { cache: "no-store", headers: getAuthHeaders() });
+  if (!res.ok) throw new Error("Failed to fetch sales trends report");
+  return await res.json();
+}
+
+export async function getCustomerAcquisitionReport(): Promise<CustomerAcquisitionReport[]> {
+  const res = await fetch(`${API_BASE}/reports/customer-acquisition`, { cache: "no-store", headers: getAuthHeaders() });
+  if (!res.ok) throw new Error("Failed to fetch customer acquisition report");
+  return await res.json();
+}
+
+// --- General Ledger & Accounting ---
+export async function getGlEntries(): Promise<GlEntry[]> {
+  const res = await fetch(`${API_BASE}/accounts/gl-entries`, { cache: "no-store", headers: getAuthHeaders() });
+  if (!res.ok) throw new Error("Failed to fetch GL entries");
+  return await res.json();
+}
+
+export async function getCustomerLedger(customerId: string): Promise<GlEntry[]> {
+  const res = await fetch(`${API_BASE}/accounts/customer-ledger/${customerId}`, { cache: "no-store", headers: getAuthHeaders() });
+  if (!res.ok) throw new Error("Failed to fetch customer ledger");
+  return await res.json();
+}
+
+

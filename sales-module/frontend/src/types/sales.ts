@@ -245,3 +245,268 @@ export interface SalesAnalyticsSummary {
   topCustomers: { customerName: string; totalRevenue: number; ordersCount: number }[];
   salesTeamPerformance: { salesPersonName: string; totalSales: number; incentivesEarned: number }[];
 }
+
+// --- CRM & Pre-Sales ---
+export type LeadStatus = 'OPEN' | 'CONTACTED' | 'QUALIFIED' | 'LOST';
+export type OpportunityStatus = 'QUALIFICATION' | 'PROPOSAL' | 'NEGOTIATION' | 'WON' | 'LOST';
+
+export interface Lead {
+  id: string;
+  leadName: string;
+  companyName?: string;
+  email?: string;
+  phone?: string;
+  status: LeadStatus;
+  leadSource?: string;
+  territoryId?: string;
+  notes?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface Opportunity {
+  id: string;
+  title: string;
+  opportunityFrom: 'LEAD' | 'CUSTOMER';
+  partyId?: string;
+  partyName: string;
+  opportunityType: string;
+  status: OpportunityStatus;
+  dealSize: number;
+  probability: number;
+  expectedClosingDate?: string;
+  salesStage: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  notes?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+// --- Fulfilment & Delivery Notes ---
+export type DeliveryNoteStatus = 'DRAFT' | 'SUBMITTED' | 'COMPLETED' | 'CANCELLED';
+
+export interface DeliveryNoteItem {
+  id?: string;
+  salesOrderItemId?: string;
+  itemId?: string;
+  itemCode: string;
+  itemName: string;
+  qty: number;
+  uom: string;
+  rate: number;
+  amount: number;
+  warehouse?: string;
+}
+
+export interface DeliveryNote {
+  id: string;
+  deliveryNoteNumber: string;
+  salesOrderId?: string;
+  customerId: string;
+  customerName: string;
+  postingDate: string;
+  status: DeliveryNoteStatus;
+  carrier?: string;
+  trackingNumber?: string;
+  shippingAddress?: string;
+  totalQty: number;
+  totalAmount: number;
+  notes?: string;
+  items: DeliveryNoteItem[];
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+// --- Billing & Sales Invoices ---
+export type SalesInvoiceStatus = 'DRAFT' | 'UNPAID' | 'PARTLY_PAID' | 'PAID' | 'OVERDUE' | 'CANCELLED';
+
+export interface SalesInvoiceItem {
+  id?: string;
+  salesOrderItemId?: string;
+  itemId?: string;
+  itemCode: string;
+  itemName: string;
+  qty: number;
+  rate: number;
+  amount: number;
+  incomeAccount?: string;
+}
+
+export interface SalesInvoice {
+  id: string;
+  invoiceNumber: string;
+  salesOrderId?: string;
+  deliveryNoteId?: string;
+  customerId: string;
+  customerName: string;
+  postingDate: string;
+  dueDate: string;
+  status: SalesInvoiceStatus;
+  currency: string;
+  conversionRate?: number;
+  netTotal: number;
+  totalTax: number;
+  grandTotal: number;
+  paidAmount: number;
+  outstandingAmount: number;
+  paymentTerms?: string;
+  notes?: string;
+  items: SalesInvoiceItem[];
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+// --- Payment Entries ---
+export type PaymentType = 'RECEIVE' | 'PAY';
+export type PaymentMode = 'BANK_TRANSFER' | 'CREDIT_CARD' | 'CHEQUE' | 'CASH' | 'UPI';
+
+export interface PaymentEntry {
+  id: string;
+  paymentNumber: string;
+  paymentType: PaymentType;
+  paymentMode: PaymentMode;
+  customerId: string;
+  customerName: string;
+  salesInvoiceId?: string;
+  salesOrderId?: string;
+  postingDate: string;
+  paidAmount: number;
+  referenceNo?: string;
+  referenceDate?: string;
+  notes?: string;
+  createdAt?: string;
+}
+
+// --- Pricing Rules & Coupons ---
+export type PricingRuleApplyOn = 'ITEM_CODE' | 'ITEM_GROUP' | 'CUSTOMER' | 'CUSTOMER_GROUP';
+export type CouponDiscountType = 'PERCENTAGE' | 'FIXED_AMOUNT';
+
+export interface PricingRule {
+  id: string;
+  title: string;
+  applyOn: PricingRuleApplyOn;
+  applyKeyId: string;
+  minQty: number;
+  discountPercentage: number;
+  discountAmount: number;
+  isFreeItem: boolean;
+  freeItemCode?: string;
+  freeQty?: number;
+  validFrom?: string;
+  validUpto?: string;
+  active: boolean;
+  createdAt?: string;
+}
+
+export interface CouponCode {
+  id: string;
+  couponName: string;
+  couponCode: string;
+  discountType: CouponDiscountType;
+  discountValue: number;
+  minOrderAmount: number;
+  validUpto?: string;
+  usedCount: number;
+  maxUses: number;
+  active: boolean;
+  createdAt?: string;
+}
+
+// --- Comprehensive Reports ---
+export interface SalesOrderAnalysisReport {
+  orderId: string;
+  orderNumber: string;
+  transactionDate: string;
+  customerName: string;
+  status: string;
+  grandTotal: number;
+  deliveredPercentage: number;
+  billedPercentage: number;
+  deliveredAmount: number;
+  billedAmount: number;
+  pendingDeliveryAmount: number;
+  pendingBillingAmount: number;
+  deliveryStatus: string;
+  billingStatus: string;
+}
+
+export interface CustomerCreditAgingReport {
+  customerId: string;
+  customerCode: string;
+  customerName: string;
+  customerGroup: string;
+  creditLimit: number;
+  outstandingBalance: number;
+  availableCredit: number;
+  currentDue: number;
+  overdue31to60: number;
+  overdue61to90: number;
+  overdueAbove90: number;
+  creditExceeded: boolean;
+}
+
+export interface QuotationWinLossReport {
+  totalQuotations: number;
+  wonQuotations: number;
+  lostQuotations: number;
+  openQuotations: number;
+  expiredQuotations: number;
+  winRatePercentage: number;
+  totalPipelineValue: number;
+  wonValue: number;
+  lostValue: number;
+  lostReasonsCount: Record<string, number>;
+  lostReasonsValue: Record<string, number>;
+}
+
+export interface ItemSalesHistoryReport {
+  itemId: string;
+  itemCode: string;
+  itemName: string;
+  itemGroup: string;
+  totalQtyOrdered: number;
+  totalQtyDelivered: number;
+  totalQtyBilled: number;
+  totalSalesRevenue: number;
+  averageSellingRate: number;
+}
+
+export interface SalesTrendsReport {
+  period: string;
+  salesOrdersCount: number;
+  confirmedRevenue: number;
+  quotationsCount: number;
+  quotationValue: number;
+  winConversionRate: number;
+}
+
+export interface CustomerAcquisitionReport {
+  customerId: string;
+  customerCode: string;
+  customerName: string;
+  customerGroup: string;
+  territory: string;
+  firstOrderDate: string;
+  lastOrderDate: string;
+  totalOrdersCount: number;
+  lifetimeValue: number;
+  loyaltySegment: string;
+}
+
+export interface GlEntry {
+  id: string;
+  postingDate: string;
+  voucherType: string;
+  voucherNo: string;
+  voucherId?: string;
+  account: string;
+  debit: number;
+  credit: number;
+  customerId?: string;
+  customerName?: string;
+  remarks?: string;
+  cancelled: boolean;
+  createdAt?: string;
+}
+

@@ -398,6 +398,184 @@ CREATE TABLE IF NOT EXISTS stock_reservations (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Quotation Enhancements for CRM & Win/Loss tracking
+ALTER TABLE quotations ADD COLUMN IF NOT EXISTS lost_reason VARCHAR(100);
+ALTER TABLE quotations ADD COLUMN IF NOT EXISTS competitor_name VARCHAR(150);
+ALTER TABLE quotations ADD COLUMN IF NOT EXISTS opportunity_id UUID;
+
+-- 8. CRM: Leads and Opportunities
+CREATE TABLE IF NOT EXISTS leads (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    lead_name VARCHAR(150) NOT NULL,
+    company_name VARCHAR(150),
+    email VARCHAR(150),
+    phone VARCHAR(50),
+    status VARCHAR(50) NOT NULL DEFAULT 'OPEN', -- OPEN, CONTACTED, QUALIFIED, LOST
+    lead_source VARCHAR(100) DEFAULT 'Website / Inbound',
+    territory_id UUID REFERENCES territories(id) ON DELETE SET NULL,
+    notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS opportunities (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    title VARCHAR(200) NOT NULL,
+    opportunity_from VARCHAR(50) NOT NULL DEFAULT 'LEAD', -- LEAD, CUSTOMER
+    party_id UUID,
+    party_name VARCHAR(150) NOT NULL,
+    opportunity_type VARCHAR(100) DEFAULT 'Sales / ERP',
+    status VARCHAR(50) NOT NULL DEFAULT 'QUALIFICATION', -- QUALIFICATION, PROPOSAL, NEGOTIATION, WON, LOST
+    deal_size DECIMAL(15, 2) NOT NULL DEFAULT 0.00,
+    probability DECIMAL(5, 2) DEFAULT 50.00, -- 0-100%
+    expected_closing_date DATE,
+    sales_stage VARCHAR(100) DEFAULT 'Discovery',
+    contact_email VARCHAR(150),
+    contact_phone VARCHAR(50),
+    notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 9. Delivery Notes & Fulfilment
+CREATE TABLE IF NOT EXISTS delivery_notes (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    delivery_note_number VARCHAR(100) NOT NULL UNIQUE,
+    sales_order_id UUID REFERENCES sales_orders(id) ON DELETE SET NULL,
+    customer_id UUID NOT NULL REFERENCES customers(id),
+    customer_name VARCHAR(150) NOT NULL,
+    posting_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    status VARCHAR(50) NOT NULL DEFAULT 'SUBMITTED', -- DRAFT, SUBMITTED, COMPLETED, CANCELLED
+    carrier VARCHAR(100),
+    tracking_number VARCHAR(100),
+    shipping_address TEXT,
+    total_qty DECIMAL(15, 4) NOT NULL DEFAULT 0.0000,
+    total_amount DECIMAL(15, 2) NOT NULL DEFAULT 0.00,
+    notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS delivery_note_items (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    delivery_note_id UUID NOT NULL REFERENCES delivery_notes(id) ON DELETE CASCADE,
+    sales_order_item_id UUID,
+    item_id UUID REFERENCES items(id),
+    item_code VARCHAR(100) NOT NULL,
+    item_name VARCHAR(255) NOT NULL,
+    qty DECIMAL(15, 4) NOT NULL,
+    uom VARCHAR(50) DEFAULT 'Nos',
+    rate DECIMAL(15, 2) NOT NULL,
+    amount DECIMAL(15, 2) NOT NULL,
+    warehouse VARCHAR(100) DEFAULT 'Stores - Default'
+);
+
+-- 10. Sales Invoices & Billing
+CREATE TABLE IF NOT EXISTS sales_invoices (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    invoice_number VARCHAR(100) NOT NULL UNIQUE,
+    sales_order_id UUID REFERENCES sales_orders(id) ON DELETE SET NULL,
+    delivery_note_id UUID REFERENCES delivery_notes(id) ON DELETE SET NULL,
+    customer_id UUID NOT NULL REFERENCES customers(id),
+    customer_name VARCHAR(150) NOT NULL,
+    posting_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    due_date DATE NOT NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'UNPAID', -- DRAFT, UNPAID, PARTLY_PAID, PAID, OVERDUE, CANCELLED
+    currency VARCHAR(10) DEFAULT 'INR',
+    conversion_rate DECIMAL(10, 4) DEFAULT 1.0000,
+    net_total DECIMAL(15, 2) NOT NULL DEFAULT 0.00,
+    total_tax DECIMAL(15, 2) NOT NULL DEFAULT 0.00,
+    grand_total DECIMAL(15, 2) NOT NULL DEFAULT 0.00,
+    paid_amount DECIMAL(15, 2) NOT NULL DEFAULT 0.00,
+    outstanding_amount DECIMAL(15, 2) NOT NULL DEFAULT 0.00,
+    payment_terms VARCHAR(100) DEFAULT 'Payment due upon receipt',
+    notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS sales_invoice_items (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    sales_invoice_id UUID NOT NULL REFERENCES sales_invoices(id) ON DELETE CASCADE,
+    sales_order_item_id UUID,
+    item_id UUID REFERENCES items(id),
+    item_code VARCHAR(100) NOT NULL,
+    item_name VARCHAR(255) NOT NULL,
+    qty DECIMAL(15, 4) NOT NULL,
+    rate DECIMAL(15, 2) NOT NULL,
+    amount DECIMAL(15, 2) NOT NULL,
+    income_account VARCHAR(150) DEFAULT '4110 - Sales Revenue'
+);
+
+-- 11. Payment Entries (Customer Receipts & Advance Payments)
+CREATE TABLE IF NOT EXISTS payment_entries (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    payment_number VARCHAR(100) NOT NULL UNIQUE,
+    payment_type VARCHAR(50) NOT NULL DEFAULT 'RECEIVE', -- RECEIVE, PAY
+    payment_mode VARCHAR(50) NOT NULL DEFAULT 'BANK_TRANSFER', -- BANK_TRANSFER, CREDIT_CARD, CHEQUE, CASH, UPI
+    customer_id UUID NOT NULL REFERENCES customers(id),
+    sales_invoice_id UUID REFERENCES sales_invoices(id) ON DELETE SET NULL,
+    sales_order_id UUID REFERENCES sales_orders(id) ON DELETE SET NULL,
+    posting_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    paid_amount DECIMAL(15, 2) NOT NULL,
+    reference_no VARCHAR(100),
+    reference_date DATE DEFAULT CURRENT_DATE,
+    notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 12. Pricing Rules & Promotional Coupons
+CREATE TABLE IF NOT EXISTS pricing_rules (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    title VARCHAR(150) NOT NULL,
+    apply_on VARCHAR(50) NOT NULL, -- ITEM_CODE, ITEM_GROUP, CUSTOMER, CUSTOMER_GROUP
+    apply_key_id VARCHAR(150) NOT NULL,
+    min_qty DECIMAL(15, 4) DEFAULT 1.0000,
+    discount_percentage DECIMAL(5, 2) DEFAULT 0.00,
+    discount_amount DECIMAL(15, 2) DEFAULT 0.00,
+    is_free_item BOOLEAN DEFAULT FALSE,
+    free_item_code VARCHAR(100),
+    free_qty DECIMAL(15, 4) DEFAULT 0.0000,
+    valid_from DATE DEFAULT CURRENT_DATE,
+    valid_upto DATE,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS coupon_codes (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    coupon_name VARCHAR(150) NOT NULL,
+    coupon_code VARCHAR(50) NOT NULL UNIQUE,
+    discount_type VARCHAR(50) NOT NULL DEFAULT 'PERCENTAGE', -- PERCENTAGE, FIXED_AMOUNT
+    discount_value DECIMAL(15, 2) NOT NULL,
+    min_order_amount DECIMAL(15, 2) DEFAULT 0.00,
+    valid_upto DATE,
+    used_count INT DEFAULT 0,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 13. General Ledger (GL) Double-Entry Accounting
+CREATE TABLE IF NOT EXISTS gl_entries (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    posting_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    voucher_type VARCHAR(50) NOT NULL, -- Sales Invoice, Payment Entry, Journal Entry
+    voucher_no VARCHAR(100) NOT NULL,
+    voucher_id UUID,
+    account VARCHAR(150) NOT NULL, -- e.g. 1310 - Debtors / Accounts Receivable, 4110 - Sales Revenue
+    debit DECIMAL(15, 2) NOT NULL DEFAULT 0.00,
+    credit DECIMAL(15, 2) NOT NULL DEFAULT 0.00,
+    customer_id UUID REFERENCES customers(id) ON DELETE SET NULL,
+    remarks TEXT,
+    is_cancelled BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_gl_entries_voucher ON gl_entries(voucher_type, voucher_no);
+CREATE INDEX IF NOT EXISTS idx_gl_entries_account ON gl_entries(account);
+CREATE INDEX IF NOT EXISTS idx_gl_entries_customer ON gl_entries(customer_id);
+
+
 -- Indexes for High-Performance Queries
 CREATE INDEX IF NOT EXISTS idx_customers_code ON customers(customer_code);
 CREATE INDEX IF NOT EXISTS idx_customers_group ON customers(customer_group_id);
@@ -408,3 +586,10 @@ CREATE INDEX IF NOT EXISTS idx_sales_orders_status ON sales_orders(status);
 CREATE INDEX IF NOT EXISTS idx_sales_orders_date ON sales_orders(transaction_date);
 CREATE INDEX IF NOT EXISTS idx_so_items_order ON sales_order_items(sales_order_id);
 CREATE INDEX IF NOT EXISTS idx_taxes_voucher ON sales_taxes_and_charges(voucher_type, voucher_id);
+CREATE INDEX IF NOT EXISTS idx_dn_sales_order ON delivery_notes(sales_order_id);
+CREATE INDEX IF NOT EXISTS idx_si_sales_order ON sales_invoices(sales_order_id);
+CREATE INDEX IF NOT EXISTS idx_si_customer ON sales_invoices(customer_id);
+CREATE INDEX IF NOT EXISTS idx_payments_invoice ON payment_entries(sales_invoice_id);
+CREATE INDEX IF NOT EXISTS idx_leads_status ON leads(status);
+CREATE INDEX IF NOT EXISTS idx_opp_status ON opportunities(status);
+

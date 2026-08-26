@@ -110,6 +110,16 @@ public class Quotation {
     @Column(columnDefinition = "TEXT")
     private String notes;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "lost_reason", length = 100)
+    private QuotationLostReason lostReason;
+
+    @Column(name = "competitor_name", length = 150)
+    private String competitorName;
+
+    @Column(name = "opportunity_id")
+    private UUID opportunityId;
+
     @OneToMany(mappedBy = "quotation", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<QuotationItem> items = new ArrayList<>();
