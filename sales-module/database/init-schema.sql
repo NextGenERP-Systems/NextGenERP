@@ -575,6 +575,70 @@ CREATE INDEX IF NOT EXISTS idx_gl_entries_voucher ON gl_entries(voucher_type, vo
 CREATE INDEX IF NOT EXISTS idx_gl_entries_account ON gl_entries(account);
 CREATE INDEX IF NOT EXISTS idx_gl_entries_customer ON gl_entries(customer_id);
 
+-- 14. Blanket Orders, Sales Partners, and Sales Persons
+CREATE TABLE IF NOT EXISTS blanket_orders (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    blanket_order_number VARCHAR(50) NOT NULL UNIQUE,
+    customer_id UUID NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
+    customer_name VARCHAR(255) NOT NULL,
+    from_date DATE NOT NULL,
+    to_date DATE NOT NULL,
+    company VARCHAR(150) DEFAULT 'NextGen ERP Corp',
+    status VARCHAR(30) NOT NULL DEFAULT 'ACTIVE',
+    terms_and_conditions TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS blanket_order_items (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    blanket_order_id UUID NOT NULL REFERENCES blanket_orders(id) ON DELETE CASCADE,
+    item_id UUID REFERENCES items(id) ON DELETE SET NULL,
+    item_code VARCHAR(100) NOT NULL,
+    item_name VARCHAR(255) NOT NULL,
+    qty DECIMAL(15, 2) NOT NULL,
+    rate DECIMAL(15, 2) NOT NULL,
+    ordered_qty DECIMAL(15, 2) DEFAULT 0.00
+);
+
+CREATE TABLE IF NOT EXISTS sales_partners (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    partner_name VARCHAR(150) NOT NULL UNIQUE,
+    partner_type VARCHAR(50) NOT NULL DEFAULT 'Channel Partner',
+    commission_rate DECIMAL(5, 2) DEFAULT 5.00,
+    currency VARCHAR(3) DEFAULT 'INR',
+    contact_person VARCHAR(100),
+    email VARCHAR(150),
+    phone VARCHAR(50),
+    territory VARCHAR(100) DEFAULT 'Global',
+    total_allocated_amount DECIMAL(15, 2) DEFAULT 0.00,
+    total_commission_earned DECIMAL(15, 2) DEFAULT 0.00,
+    disabled BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS sales_persons (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    sales_person_name VARCHAR(150) NOT NULL UNIQUE,
+    employee_id VARCHAR(50),
+    email VARCHAR(150),
+    phone VARCHAR(50),
+    parent_sales_person VARCHAR(150),
+    commission_rate DECIMAL(5, 2) DEFAULT 4.50,
+    target_amount DECIMAL(15, 2) DEFAULT 500000.00,
+    allocated_amount DECIMAL(15, 2) DEFAULT 0.00,
+    incentives_earned DECIMAL(15, 2) DEFAULT 0.00,
+    disabled BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_blanket_orders_customer ON blanket_orders(customer_id);
+CREATE INDEX IF NOT EXISTS idx_blanket_order_items_bo ON blanket_order_items(blanket_order_id);
+CREATE INDEX IF NOT EXISTS idx_sales_partners_type ON sales_partners(partner_type);
+CREATE INDEX IF NOT EXISTS idx_sales_persons_name ON sales_persons(sales_person_name);
+
 
 -- Indexes for High-Performance Queries
 CREATE INDEX IF NOT EXISTS idx_customers_code ON customers(customer_code);

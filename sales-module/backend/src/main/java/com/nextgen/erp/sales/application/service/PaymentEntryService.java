@@ -111,23 +111,83 @@ public class PaymentEntryService {
         return toDto(saved);
     }
 
+    @Transactional
+    public PaymentEntryDto cancelPaymentEntry(UUID id) {
+        PaymentEntry payment = paymentEntryRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Payment Entry not found with id: " + id));
+
+        BigDecimal paidAmount = payment.getPaidAmount();
+
+        // 1. Revert allocation against Sales Invoice if present
+        if (payment.getSalesInvoiceId() != null) {
+            SalesInvoice invoice = salesInvoiceRepository.findById(payment.getSalesInvoiceId()).orElse(null);
+            if (invoice != null) {
+                BigDecimal newPaid = invoice.getPaidAmount().subtract(paidAmount);
+                if (newPaid.compareTo(BigDecimal.ZERO) < 0) newPaid = BigDecimal.ZERO;
+                BigDecimal newOutstanding = invoice.getGrandTotal().subtract(newPaid);
+
+                invoice.setPaidAmount(newPaid);
+                invoice.setOutstandingAmount(newOutstanding);
+
+                if (newPaid.compareTo(BigDecimal.ZERO) == 0) {
+                    invoice.setStatus(SalesInvoiceStatus.UNPAID);
+                } else {
+                    invoice.setStatus(SalesInvoiceStatus.PARTLY_PAID);
+                }
+                salesInvoiceRepository.save(invoice);
+                log.info("Reverted payment {} on invoice {}. New outstanding: {}", paidAmount, invoice.getInvoiceNumber(), newOutstanding);
+            }
+        }
+
+        // 2. Revert Sales Order advance if present
+        if (payment.getSalesOrderId() != null) {
+            SalesOrder so = salesOrderRepository.findById(payment.getSalesOrderId()).orElse(null);
+            if (so != null && so.getAdvancePaid() != null) {
+                BigDecimal newAdvance = so.getAdvancePaid().subtract(paidAmount);
+                if (newAdvance.compareTo(BigDecimal.ZERO) < 0) newAdvance = BigDecimal.ZERO;
+                so.setAdvancePaid(newAdvance);
+                salesOrderRepository.save(so);
+            }
+        }
+
+        // 3. Restore customer outstanding balance
+        Customer customer = payment.getCustomer();
+        if (customer != null) {
+            customer.setOutstandingBalance(customer.getOutstandingBalance().add(paidAmount));
+            customerRepository.save(customer);
+        }
+
+        // 4. Post Contra Reversal in General Ledger
+        generalLedgerService.reversePaymentEntryGl(payment);
+
+        // 5. Delete payment record after reversal
+        paymentEntryRepository.delete(payment);
+
+        log.info("Cancelled and deleted Payment Entry {} with GL contra postings", payment.getPaymentNumber());
+        return toDto(payment);
+    }
+
     private String generatePaymentNumber() {
         long count = paymentEntryRepository.count() + 1;
         return String.format("PAY-%d-%04d", LocalDate.now().getYear(), count);
     }
 
     public PaymentEntryDto toDto(PaymentEntry payment) {
+        BigDecimal amount = payment.getPaidAmount() != null ? payment.getPaidAmount() : BigDecimal.ZERO;
+        String inWords = NumberToWordsConverter.convert(amount, "INR");
+
         return PaymentEntryDto.builder()
                 .id(payment.getId())
                 .paymentNumber(payment.getPaymentNumber())
                 .paymentType(payment.getPaymentType())
                 .paymentMode(payment.getPaymentMode())
-                .customerId(payment.getCustomer().getId())
-                .customerName(payment.getCustomer().getCustomerName())
+                .customerId(payment.getCustomer() != null ? payment.getCustomer().getId() : null)
+                .customerName(payment.getCustomer() != null ? payment.getCustomer().getCustomerName() : null)
                 .salesInvoiceId(payment.getSalesInvoiceId())
                 .salesOrderId(payment.getSalesOrderId())
                 .postingDate(payment.getPostingDate())
-                .paidAmount(payment.getPaidAmount())
+                .paidAmount(amount)
+                .inWords(inWords)
                 .referenceNo(payment.getReferenceNo())
                 .referenceDate(payment.getReferenceDate())
                 .notes(payment.getNotes())

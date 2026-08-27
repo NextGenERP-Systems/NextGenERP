@@ -22,6 +22,15 @@ public class CustomerDto {
     private String territoryName;
     private String defaultCurrency;
     private String taxId;
+    private String taxCategory;
+    private String defaultReceivableAccount;
+    private String paymentTerms;
+    private String defaultSalesPartner;
+    private BigDecimal defaultCommissionRate;
+    private Boolean isInternalCustomer;
+    private String representsCompany;
+    private Boolean soRequired;
+    private Boolean dnRequired;
     private BigDecimal creditLimit;
     private BigDecimal outstandingBalance;
     private BigDecimal availableCredit;

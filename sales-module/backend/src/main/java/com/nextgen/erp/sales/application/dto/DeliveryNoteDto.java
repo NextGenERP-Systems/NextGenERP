@@ -26,6 +26,7 @@ public class DeliveryNoteDto {
     private String shippingAddress;
     private BigDecimal totalQty;
     private BigDecimal totalAmount;
+    private String inWords;
     private String notes;
     @Builder.Default
     private List<DeliveryNoteItemDto> items = new ArrayList<>();

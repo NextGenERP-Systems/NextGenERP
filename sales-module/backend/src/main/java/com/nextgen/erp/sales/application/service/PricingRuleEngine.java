@@ -62,6 +62,24 @@ public class PricingRuleEngine {
         List<PricingRule> rules = pricingRuleRepository.findByActiveTrue();
 
         return rules.stream()
+                .filter(r -> !r.isFreeItem())
+                .filter(r -> r.getValidFrom() == null || !r.getValidFrom().isAfter(today))
+                .filter(r -> r.getValidUpto() == null || !r.getValidUpto().isBefore(today))
+                .filter(r -> r.getMinQty() == null || qty.compareTo(r.getMinQty()) >= 0)
+                .filter(r -> (r.getApplyOn() == PricingRuleApplyOn.ITEM_CODE && r.getApplyKeyId().equalsIgnoreCase(itemCode))
+                        || (r.getApplyOn() == PricingRuleApplyOn.ITEM_GROUP && itemGroup != null && r.getApplyKeyId().equalsIgnoreCase(itemGroup)))
+                .findFirst();
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<PricingRule> findFreeItemRule(String itemCode, String itemGroup, BigDecimal qty) {
+        LocalDate today = LocalDate.now();
+        List<PricingRule> rules = pricingRuleRepository.findByActiveTrue();
+
+        return rules.stream()
+                .filter(PricingRule::isFreeItem)
+                .filter(r -> r.getFreeItemCode() != null && !r.getFreeItemCode().isBlank())
+                .filter(r -> r.getFreeQty() != null && r.getFreeQty().compareTo(BigDecimal.ZERO) > 0)
                 .filter(r -> r.getValidFrom() == null || !r.getValidFrom().isAfter(today))
                 .filter(r -> r.getValidUpto() == null || !r.getValidUpto().isBefore(today))
                 .filter(r -> r.getMinQty() == null || qty.compareTo(r.getMinQty()) >= 0)

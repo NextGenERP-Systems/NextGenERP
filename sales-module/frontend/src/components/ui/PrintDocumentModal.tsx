@@ -23,6 +23,14 @@ interface PrintDocumentProps {
   netTotal: number;
   totalTax?: number;
   grandTotal: number;
+  roundedTotal?: number;
+  inWords?: string;
+  taxes?: Array<{
+    description?: string;
+    accountHead?: string;
+    rate?: number;
+    taxAmount?: number;
+  }>;
   notes?: string;
   status?: string;
 }
@@ -59,6 +67,9 @@ export function PrintDocumentModal({
   netTotal,
   totalTax = 0,
   grandTotal,
+  roundedTotal,
+  inWords,
+  taxes,
   notes,
   status,
 }: PrintDocumentProps) {
@@ -202,20 +213,37 @@ export function PrintDocumentModal({
                   {currency} {Number(netTotal).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </span>
               </div>
-              {totalTax > 0 && (
+              {taxes && taxes.length > 0 ? (
+                taxes.map((t, i) => (
+                  <div key={i} className="flex justify-between text-slate-600">
+                    <span>{t.description || t.accountHead || "Tax"}:</span>
+                    <span className="font-mono font-medium">
+                      {currency} {Number(t.taxAmount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                ))
+              ) : totalTax > 0 ? (
                 <div className="flex justify-between text-slate-600">
-                  <span>Taxes (8.25%):</span>
+                  <span>Taxes:</span>
                   <span className="font-mono font-medium">
                     {currency} {Number(totalTax).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                   </span>
                 </div>
-              )}
+              ) : null}
               <div className="flex justify-between text-slate-900 font-bold border-t border-slate-200 pt-2 text-sm">
                 <span>Grand Total:</span>
                 <span className="font-mono text-blue-700">
                   {currency} {Number(grandTotal).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </span>
               </div>
+              {roundedTotal !== undefined && roundedTotal !== grandTotal && (
+                <div className="flex justify-between text-slate-500 text-[11px] pt-0.5">
+                  <span>Rounded Total:</span>
+                  <span className="font-mono font-medium">
+                    {currency} {Number(roundedTotal).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -223,7 +251,7 @@ export function PrintDocumentModal({
           <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs flex items-center justify-between">
             <span className="text-slate-500 font-medium">Amount in Words:</span>
             <span className="font-semibold text-slate-800 italic">
-              {convertAmountToWords(grandTotal, currency)}
+              {inWords || convertAmountToWords(grandTotal, currency)}
             </span>
           </div>
 

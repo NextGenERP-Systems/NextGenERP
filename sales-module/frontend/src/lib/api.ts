@@ -18,6 +18,13 @@ import {
   SalesTrendsReport,
   CustomerAcquisitionReport,
   GlEntry,
+  QuotationTrendsReport,
+  InactiveCustomerReport,
+  SalesCommissionSummary,
+  Customer360Dashboard,
+  BlanketOrder,
+  SalesPartner,
+  SalesPerson,
 } from "@/types/sales";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api/v1";
@@ -540,6 +547,77 @@ export async function getCustomers(): Promise<Customer[]> {
   return MOCK_CUSTOMERS;
 }
 
+export async function createCustomer(data: any): Promise<Customer> {
+  try {
+    const res = await fetch(`${API_BASE}/customers`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+      body: JSON.stringify(data),
+    });
+    if (res.ok) {
+      const created = await res.json();
+      MOCK_CUSTOMERS.unshift(created);
+      return created;
+    }
+  } catch (err) {
+    console.warn("Backend unavailable, storing customer in local state", err);
+  }
+
+  const newCust: Customer = {
+    id: `cust-${Date.now()}`,
+    customerCode: data.customerCode || `CUST-2026-${Math.floor(100 + Math.random() * 900)}`,
+    customerName: data.customerName,
+    customerType: data.customerType || "COMPANY",
+    customerGroupName: data.customerGroupName || "Commercial Enterprise",
+    territoryName: data.territoryName || "North America - US East",
+    defaultCurrency: data.defaultCurrency || "INR",
+    taxId: data.taxId || "GSTIN-27AABCA1234F1Z5",
+    taxCategory: data.taxCategory || "Standard In-State GST/VAT",
+    defaultReceivableAccount: data.defaultReceivableAccount || "1310 - Debtors / Accounts Receivable",
+    paymentTerms: data.paymentTerms || "Net 30 Days",
+    defaultSalesPartner: data.defaultSalesPartner || "Pinnacle Alliance Systems",
+    defaultCommissionRate: data.defaultCommissionRate || 5.0,
+    creditLimit: Number(data.creditLimit) || 50000,
+    outstandingBalance: 0,
+    availableCredit: Number(data.creditLimit) || 50000,
+    bypassCreditLimitCheck: Boolean(data.bypassCreditLimitCheck),
+    isFrozen: false,
+    disabled: false,
+    email: data.email || "contact@company.com",
+    phone: data.phone || "+1 (555) 123-4567",
+    website: data.website || "www.company.com",
+    addresses: data.addresses && data.addresses.length > 0 ? data.addresses : [
+      {
+        id: `addr-${Date.now()}`,
+        addressTitle: "Primary Headquarters",
+        addressType: "Billing",
+        addressLine1: "100 Tech Enterprise Blvd",
+        city: "New York",
+        state: "NY",
+        country: "USA",
+        pincode: "10001",
+        isPrimaryAddress: true,
+        isShippingAddress: true,
+      },
+    ],
+    contacts: data.contacts && data.contacts.length > 0 ? data.contacts : [
+      {
+        id: `ct-${Date.now()}`,
+        firstName: data.customerName.split(" ")[0] || "Primary",
+        lastName: "Contact",
+        emailId: data.email || "contact@company.com",
+        mobileNo: data.phone || "+1 555-0100",
+        designation: "Procurement Officer",
+        isPrimaryContact: true,
+      },
+    ],
+    createdAt: new Date().toISOString(),
+  };
+
+  MOCK_CUSTOMERS.unshift(newCust);
+  return newCust;
+}
+
 export async function getItems(): Promise<CatalogItem[]> {
   try {
     const res = await fetch(`${API_BASE}/items`, { cache: "no-store", headers: getAuthHeaders() });
@@ -549,6 +627,8 @@ export async function getItems(): Promise<CatalogItem[]> {
   }
   return MOCK_ITEMS;
 }
+
+export const getCatalogItems = getItems;
 
 export async function getQuotations(): Promise<Quotation[]> {
   try {
@@ -606,6 +686,101 @@ export async function getSalesOrders(): Promise<SalesOrder[]> {
     console.warn("Backend unavailable, using fallback mock sales orders", err);
   }
   return MOCK_ORDERS;
+}
+
+export async function createSalesOrder(data: any): Promise<SalesOrder> {
+  try {
+    const res = await fetch(`${API_BASE}/sales-orders`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+      body: JSON.stringify(data),
+    });
+    if (res.ok) {
+      const created = await res.json();
+      MOCK_ORDERS.unshift(created);
+      return created;
+    }
+  } catch (err) {
+    console.warn("Backend unavailable, storing sales order locally", err);
+  }
+
+  const cust = MOCK_CUSTOMERS.find((c) => c.id === data.customerId);
+  const items = (data.items || []).map((i: any, idx: number) => ({
+    id: `soi-${Date.now()}-${idx}`,
+    itemId: i.itemId,
+    itemCode: i.itemCode || "ERP-CLOUD-ENT",
+    itemName: i.itemName || "NextGen Cloud ERP Enterprise License",
+    qty: Number(i.qty) || 1,
+    rate: Number(i.rate) || 12000,
+    amount: (Number(i.qty) || 1) * (Number(i.rate) || 12000),
+    netAmount: (Number(i.qty) || 1) * (Number(i.rate) || 12000),
+    valuationRate: 6000,
+    grossProfit: ((Number(i.qty) || 1) * (Number(i.rate) || 12000)) * 0.5,
+    deliveredQty: 0,
+    billedAmt: 0,
+    pickedQty: 0,
+    deliveredBySupplier: false,
+    grantCommission: true,
+  }));
+
+  const netTotal = items.reduce((acc: number, item: any) => acc + item.amount, 0);
+  const grandTotal = netTotal * 1.18;
+
+  const newOrder: SalesOrder = {
+    id: `so-${Date.now()}`,
+    orderNumber: `SO-2026-${Math.floor(1000 + Math.random() * 9000)}`,
+    transactionDate: data.transactionDate || new Date().toISOString().split("T")[0],
+    deliveryDate: data.deliveryDate || new Date(Date.now() + 14 * 86400000).toISOString().split("T")[0],
+    poNo: data.poNo || `PO-CLIENT-${Math.floor(100 + Math.random() * 900)}`,
+    poDate: new Date().toISOString().split("T")[0],
+    customerId: data.customerId,
+    customerName: cust ? cust.customerName : "Customer Account",
+    orderType: data.orderType || "SALES",
+    status: "DRAFT",
+    deliveryStatus: "NOT_DELIVERED",
+    billingStatus: "NOT_BILLED",
+    quotationId: data.quotationId,
+    currency: data.currency || "INR",
+    conversionRate: 1.0,
+    totalQty: items.reduce((acc: number, item: any) => acc + item.qty, 0),
+    netTotal: netTotal,
+    baseNetTotal: netTotal,
+    totalTaxesAndCharges: netTotal * 0.18,
+    discountAmount: 0,
+    additionalDiscountPercentage: 0,
+    applyDiscountOn: "GRAND_TOTAL",
+    grandTotal: grandTotal,
+    baseGrandTotal: grandTotal,
+    roundedTotal: Math.round(grandTotal),
+    baseRoundedTotal: Math.round(grandTotal),
+    inWords: `INR ${Math.round(grandTotal).toLocaleString()} Only`,
+    advancePaid: 0,
+    perDelivered: 0,
+    perBilled: 0,
+    perPicked: 0,
+    reserveStock: true,
+    skipDeliveryNote: false,
+    amountEligibleForCommission: netTotal,
+    commissionRate: 5.0,
+    totalCommission: netTotal * 0.05,
+    items: items,
+    taxes: [
+      {
+        idx: 1,
+        chargeType: "ON_NET_TOTAL",
+        accountHead: "Output IGST / CGST (18%)",
+        rate: 18.0,
+        taxAmount: netTotal * 0.18,
+        total: grandTotal,
+        baseTaxAmount: netTotal * 0.18,
+        baseTotal: grandTotal,
+      },
+    ],
+    createdAt: new Date().toISOString(),
+  };
+
+  MOCK_ORDERS.unshift(newOrder);
+  return newOrder;
 }
 
 export async function submitSalesOrder(orderId: string): Promise<SalesOrder | null> {
@@ -891,6 +1066,425 @@ export async function getCustomerLedger(customerId: string): Promise<GlEntry[]> 
   const res = await fetch(`${API_BASE}/accounts/customer-ledger/${customerId}`, { cache: "no-store", headers: getAuthHeaders() });
   if (!res.ok) throw new Error("Failed to fetch customer ledger");
   return await res.json();
+}
+
+// --- Invoice & Payment Cancellations with GL Contra Reversals ---
+export async function cancelSalesInvoice(id: string): Promise<SalesInvoice> {
+  const res = await fetch(`${API_BASE}/sales-invoices/${id}/cancel`, {
+    method: "POST",
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) throw new Error("Failed to cancel sales invoice");
+  return await res.json();
+}
+
+export async function cancelPaymentEntry(id: string): Promise<PaymentEntry> {
+  const res = await fetch(`${API_BASE}/payments/${id}/cancel`, {
+    method: "POST",
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) throw new Error("Failed to cancel payment entry");
+  return await res.json();
+}
+
+export async function markQuotationLost(id: string, reason: string, competitorName?: string): Promise<Quotation> {
+  const params = new URLSearchParams({ reason });
+  if (competitorName) params.append("competitorName", competitorName);
+  const res = await fetch(`${API_BASE}/quotations/${id}/lost?${params.toString()}`, {
+    method: "POST",
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) throw new Error("Failed to mark quotation as lost");
+  return await res.json();
+}
+
+// --- Additional Analytical Reports ---
+export async function getQuotationTrendsDetailedReport(): Promise<QuotationTrendsReport[]> {
+  const res = await fetch(`${API_BASE}/reports/quotation-trends`, { cache: "no-store", headers: getAuthHeaders() });
+  if (!res.ok) {
+    return [
+      { period: "2026-08", totalQuotations: 12, orderedQuotations: 8, lostQuotations: 2, expiredQuotations: 2, totalQuotationValue: 520000, wonQuotationValue: 395000, conversionRatePercentage: 66.67, avgTurnaroundDays: 3.8 },
+      { period: "2026-07", totalQuotations: 15, orderedQuotations: 9, lostQuotations: 4, expiredQuotations: 2, totalQuotationValue: 680000, wonQuotationValue: 460000, conversionRatePercentage: 60.00, avgTurnaroundDays: 4.2 },
+      { period: "2026-06", totalQuotations: 10, orderedQuotations: 6, lostQuotations: 3, expiredQuotations: 1, totalQuotationValue: 410000, wonQuotationValue: 275000, conversionRatePercentage: 60.00, avgTurnaroundDays: 5.1 },
+    ];
+  }
+  return await res.json();
+}
+
+export async function getInactiveCustomersReport(): Promise<InactiveCustomerReport[]> {
+  const res = await fetch(`${API_BASE}/reports/inactive-customers`, { cache: "no-store", headers: getAuthHeaders() });
+  if (!res.ok) {
+    return [
+      { customerId: "cust-004", customerCode: "CUST-004", customerName: "Quantum Health Systems", customerGroup: "Government", territory: "Europe - Central", lastOrderDate: "2026-04-10", daysSinceLastOrder: 139, totalHistoricalOrders: 1, lifetimeRevenue: 45000, churnRiskLevel: "CRITICAL" },
+      { customerId: "cust-003", customerCode: "CUST-003", customerName: "BlueSky Logistics Corp", customerGroup: "SMB", territory: "North America", lastOrderDate: "2026-06-25", daysSinceLastOrder: 63, totalHistoricalOrders: 2, lifetimeRevenue: 48500, churnRiskLevel: "HIGH" },
+      { customerId: "cust-002", customerCode: "CUST-002", customerName: "Vanguard Industrial Robotics", customerGroup: "Enterprise", territory: "North America", lastOrderDate: "2026-07-20", daysSinceLastOrder: 38, totalHistoricalOrders: 3, lifetimeRevenue: 142000, churnRiskLevel: "MODERATE" },
+    ];
+  }
+  return await res.json();
+}
+
+export async function getSalesCommissionSummaryReport(): Promise<SalesCommissionSummary[]> {
+  const res = await fetch(`${API_BASE}/reports/sales-commission-summary`, { cache: "no-store", headers: getAuthHeaders() });
+  if (!res.ok) {
+    return [
+      { salesPersonName: "Alexander Wright", totalOrdersCount: 8, totalAllocatedAmount: 485000, avgCommissionRate: 5.0, totalCommissionEarned: 24250, totalIncentivesEarned: 5000, totalPayout: 29250 },
+      { salesPersonName: "Sophia Patel", totalOrdersCount: 6, totalAllocatedAmount: 320000, avgCommissionRate: 4.5, totalCommissionEarned: 14400, totalIncentivesEarned: 3500, totalPayout: 17900 },
+      { salesPersonName: "David Kim", totalOrdersCount: 4, totalAllocatedAmount: 190000, avgCommissionRate: 4.0, totalCommissionEarned: 7600, totalIncentivesEarned: 1500, totalPayout: 9100 },
+    ];
+  }
+  return await res.json();
+}
+
+// --- Customer 360 Dashboard ---
+export async function getCustomer360Dashboard(customerId: string): Promise<Customer360Dashboard> {
+  const res = await fetch(`${API_BASE}/customers/${customerId}/dashboard`, { cache: "no-store", headers: getAuthHeaders() });
+  if (!res.ok) {
+    const cust = MOCK_CUSTOMERS.find((c) => c.id === customerId) || MOCK_CUSTOMERS[0];
+    return {
+      customer: cust,
+      totalQuotationsCount: 3,
+      totalQuotationsValue: 145000,
+      totalSalesOrdersCount: 4,
+      totalSalesOrdersValue: 320000,
+      totalDeliveryNotesCount: 3,
+      totalDeliveredQty: 45,
+      totalInvoicesCount: 3,
+      totalInvoicedValue: 285000,
+      totalPaidValue: 240000,
+      totalOutstandingValue: 45000,
+      totalPaymentsCount: 3,
+      totalCollectedAmount: 240000,
+      recentQuotations: [],
+      recentSalesOrders: [],
+      recentDeliveryNotes: [],
+      recentSalesInvoices: [],
+      recentPaymentEntries: [],
+      customerLedger: [],
+    };
+  }
+  return await res.json();
+}
+
+
+
+// In-memory collections for active sessions
+let MOCK_BLANKET_ORDERS: BlanketOrder[] = [
+  {
+    id: "bo-001",
+    blanketOrderNumber: "BO-2026-0001",
+    customerId: "77777777-7777-7777-7777-777777777701",
+    customerName: "Apex Global Technologies LLC",
+    fromDate: "2026-01-01",
+    toDate: "2026-12-31",
+    company: "NextGen ERP Corp",
+    status: "ACTIVE",
+    termsAndConditions: "Annual contract with quarterly releases. Rate locked for 12 months.",
+    items: [
+      { id: "boi-1", itemCode: "ERP-CLOUD-ENT", itemName: "NextGen Cloud ERP Enterprise License", qty: 50, rate: 12000, orderedQty: 20, remainingQty: 30 },
+      { id: "boi-2", itemCode: "CONS-IMPL-SR", itemName: "Senior Solution Architect Consulting", qty: 200, rate: 250, orderedQty: 80, remainingQty: 120 },
+    ],
+    createdAt: "2026-01-05T09:00:00Z",
+  },
+  {
+    id: "bo-002",
+    blanketOrderNumber: "BO-2026-0002",
+    customerId: "77777777-7777-7777-7777-777777777702",
+    customerName: "Vanguard Industrial Robotics",
+    fromDate: "2026-03-01",
+    toDate: "2026-11-30",
+    company: "NextGen ERP Corp",
+    status: "ACTIVE",
+    termsAndConditions: "Tier-1 Industrial supply agreement with standard 30-day fulfillment terms.",
+    items: [
+      { id: "boi-3", itemCode: "SRV-SLA-247", itemName: "24/7 Platinum Enterprise Support SLA", qty: 12, rate: 4500, orderedQty: 6, remainingQty: 6 },
+    ],
+    createdAt: "2026-03-01T10:30:00Z",
+  },
+];
+
+let MOCK_SALES_PARTNERS: SalesPartner[] = [
+  {
+    id: "sp-001",
+    partnerName: "Pinnacle Alliance Systems",
+    partnerType: "Channel Partner",
+    commissionRate: 7.5,
+    currency: "INR",
+    contactPerson: "Marcus Vance",
+    email: "partners@pinnaclealliance.com",
+    phone: "+1 (555) 489-3200",
+    territory: "North America",
+    totalAllocatedAmount: 680000,
+    totalCommissionEarned: 51000,
+    disabled: false,
+    createdAt: "2026-02-10T08:00:00Z",
+  },
+  {
+    id: "sp-002",
+    partnerName: "Nexus Tech Distribution APAC",
+    partnerType: "Distributor",
+    commissionRate: 6.0,
+    currency: "INR",
+    contactPerson: "Eileen Chen",
+    email: "distribution@nexustech.sg",
+    phone: "+65 6789 0123",
+    territory: "Asia Pacific",
+    totalAllocatedAmount: 420000,
+    totalCommissionEarned: 25200,
+    disabled: false,
+    createdAt: "2026-03-15T11:00:00Z",
+  },
+  {
+    id: "sp-003",
+    partnerName: "EuroCommerce Solutions BV",
+    partnerType: "Agent",
+    commissionRate: 5.0,
+    currency: "INR",
+    contactPerson: "Lukas Weber",
+    email: "lukas@eurocommerce.nl",
+    phone: "+31 20 555 1234",
+    territory: "Europe - Central",
+    totalAllocatedAmount: 290000,
+    totalCommissionEarned: 14500,
+    disabled: false,
+    createdAt: "2026-04-01T09:30:00Z",
+  },
+];
+
+let MOCK_SALES_PERSONS: SalesPerson[] = [
+  {
+    id: "sper-001",
+    salesPersonName: "Alexander Wright",
+    employeeId: "EMP-0101",
+    email: "a.wright@nextgen.erp",
+    phone: "+1 (555) 789-0111",
+    parentSalesPerson: "Global VP Sales",
+    commissionRate: 5.0,
+    targetAmount: 600000,
+    allocatedAmount: 485000,
+    incentivesEarned: 5000,
+    disabled: false,
+    createdAt: "2026-01-10T09:00:00Z",
+  },
+  {
+    id: "sper-002",
+    salesPersonName: "Sophia Patel",
+    employeeId: "EMP-0102",
+    email: "s.patel@nextgen.erp",
+    phone: "+1 (555) 789-0122",
+    parentSalesPerson: "Alexander Wright",
+    commissionRate: 4.5,
+    targetAmount: 450000,
+    allocatedAmount: 320000,
+    incentivesEarned: 3500,
+    disabled: false,
+    createdAt: "2026-01-15T10:00:00Z",
+  },
+  {
+    id: "sper-003",
+    salesPersonName: "David Kim",
+    employeeId: "EMP-0103",
+    email: "d.kim@nextgen.erp",
+    phone: "+1 (555) 789-0133",
+    parentSalesPerson: "Alexander Wright",
+    commissionRate: 4.0,
+    targetAmount: 350000,
+    allocatedAmount: 190000,
+    incentivesEarned: 1500,
+    disabled: false,
+    createdAt: "2026-02-01T11:30:00Z",
+  },
+];
+
+// --- Blanket Orders ---
+export async function getBlanketOrders(): Promise<BlanketOrder[]> {
+  try {
+    const res = await fetch(`${API_BASE}/blanket-orders`, { cache: "no-store", headers: getAuthHeaders() });
+    if (res.ok) return await res.json();
+  } catch (err) {
+    console.warn("Backend unavailable, using local blanket orders", err);
+  }
+  return MOCK_BLANKET_ORDERS;
+}
+
+export async function createBlanketOrder(data: any): Promise<BlanketOrder> {
+  try {
+    const res = await fetch(`${API_BASE}/blanket-orders`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+      body: JSON.stringify(data),
+    });
+    if (res.ok) {
+      const created = await res.json();
+      MOCK_BLANKET_ORDERS.unshift(created);
+      return created;
+    }
+  } catch (err) {
+    console.warn("Backend unavailable, storing blanket order locally", err);
+  }
+
+  const cust = MOCK_CUSTOMERS.find((c) => c.id === data.customerId);
+  const newBo: BlanketOrder = {
+    id: `bo-${Date.now()}`,
+    blanketOrderNumber: `BO-2026-${Math.floor(1000 + Math.random() * 9000)}`,
+    customerId: data.customerId,
+    customerName: cust ? cust.customerName : "Customer Account",
+    fromDate: data.fromDate || new Date().toISOString().split("T")[0],
+    toDate: data.toDate || new Date(Date.now() + 365 * 86400000).toISOString().split("T")[0],
+    company: "NextGen ERP Corp",
+    status: "ACTIVE",
+    termsAndConditions: data.termsAndConditions || "Standard annual blanket agreement.",
+    items: (data.items || []).map((i: any, idx: number) => ({
+      id: `boi-${Date.now()}-${idx}`,
+      itemCode: i.itemCode,
+      itemName: i.itemName,
+      qty: Number(i.qty) || 1,
+      rate: Number(i.rate) || 0,
+      orderedQty: 0,
+      remainingQty: Number(i.qty) || 1,
+    })),
+    createdAt: new Date().toISOString(),
+  };
+
+  MOCK_BLANKET_ORDERS.unshift(newBo);
+  return newBo;
+}
+
+export async function closeBlanketOrder(id: string): Promise<BlanketOrder> {
+  try {
+    const res = await fetch(`${API_BASE}/blanket-orders/${id}/close`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+    });
+    if (res.ok) return await res.json();
+  } catch (err) {
+    console.warn("Backend unavailable, closing blanket order locally", err);
+  }
+  const bo = MOCK_BLANKET_ORDERS.find((b) => b.id === id);
+  if (bo) bo.status = "CLOSED";
+  return bo || MOCK_BLANKET_ORDERS[0];
+}
+
+// --- Sales Partners ---
+export async function getSalesPartners(): Promise<SalesPartner[]> {
+  try {
+    const res = await fetch(`${API_BASE}/sales-partners`, { cache: "no-store", headers: getAuthHeaders() });
+    if (res.ok) return await res.json();
+  } catch (err) {
+    console.warn("Backend unavailable, using local sales partners", err);
+  }
+  return MOCK_SALES_PARTNERS;
+}
+
+export async function createSalesPartner(data: any): Promise<SalesPartner> {
+  try {
+    const res = await fetch(`${API_BASE}/sales-partners`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+      body: JSON.stringify(data),
+    });
+    if (res.ok) {
+      const created = await res.json();
+      MOCK_SALES_PARTNERS.unshift(created);
+      return created;
+    }
+  } catch (err) {
+    console.warn("Backend unavailable, storing sales partner locally", err);
+  }
+
+  const newPartner: SalesPartner = {
+    id: `sp-${Date.now()}`,
+    partnerName: data.partnerName,
+    partnerType: data.partnerType || "Channel Partner",
+    commissionRate: Number(data.commissionRate) || 5.0,
+    currency: data.currency || "INR",
+    contactPerson: data.contactPerson || "Primary Partner Rep",
+    email: data.email || "partners@agency.com",
+    phone: data.phone || "+1 (555) 000-1111",
+    territory: data.territory || "Global",
+    totalAllocatedAmount: 0,
+    totalCommissionEarned: 0,
+    disabled: false,
+    createdAt: new Date().toISOString(),
+  };
+
+  MOCK_SALES_PARTNERS.unshift(newPartner);
+  return newPartner;
+}
+
+export async function toggleSalesPartnerStatus(id: string): Promise<SalesPartner> {
+  try {
+    const res = await fetch(`${API_BASE}/sales-partners/${id}/toggle-status`, {
+      method: "PUT",
+      headers: getAuthHeaders(),
+    });
+    if (res.ok) return await res.json();
+  } catch (err) {
+    console.warn("Backend unavailable, toggling sales partner locally", err);
+  }
+  const sp = MOCK_SALES_PARTNERS.find((p) => p.id === id);
+  if (sp) sp.disabled = !sp.disabled;
+  return sp || MOCK_SALES_PARTNERS[0];
+}
+
+// --- Sales Persons ---
+export async function getSalesPersons(): Promise<SalesPerson[]> {
+  try {
+    const res = await fetch(`${API_BASE}/sales-persons`, { cache: "no-store", headers: getAuthHeaders() });
+    if (res.ok) return await res.json();
+  } catch (err) {
+    console.warn("Backend unavailable, using local sales persons", err);
+  }
+  return MOCK_SALES_PERSONS;
+}
+
+export async function createSalesPerson(data: any): Promise<SalesPerson> {
+  try {
+    const res = await fetch(`${API_BASE}/sales-persons`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+      body: JSON.stringify(data),
+    });
+    if (res.ok) {
+      const created = await res.json();
+      MOCK_SALES_PERSONS.unshift(created);
+      return created;
+    }
+  } catch (err) {
+    console.warn("Backend unavailable, storing sales person locally", err);
+  }
+
+  const newPerson: SalesPerson = {
+    id: `sper-${Date.now()}`,
+    salesPersonName: data.salesPersonName,
+    employeeId: data.employeeId || `EMP-${Math.floor(1000 + Math.random() * 9000)}`,
+    email: data.email || "rep@nextgen.erp",
+    phone: data.phone || "+1 (555) 789-0199",
+    parentSalesPerson: data.parentSalesPerson || "Alexander Wright",
+    commissionRate: Number(data.commissionRate) || 4.5,
+    targetAmount: Number(data.targetAmount) || 500000,
+    allocatedAmount: 0,
+    incentivesEarned: 0,
+    disabled: false,
+    createdAt: new Date().toISOString(),
+  };
+
+  MOCK_SALES_PERSONS.unshift(newPerson);
+  return newPerson;
+}
+
+export async function toggleSalesPersonStatus(id: string): Promise<SalesPerson> {
+  try {
+    const res = await fetch(`${API_BASE}/sales-persons/${id}/toggle-status`, {
+      method: "PUT",
+      headers: getAuthHeaders(),
+    });
+    if (res.ok) return await res.json();
+  } catch (err) {
+    console.warn("Backend unavailable, toggling sales person locally", err);
+  }
+  const sp = MOCK_SALES_PERSONS.find((p) => p.id === id);
+  if (sp) sp.disabled = !sp.disabled;
+  return sp || MOCK_SALES_PERSONS[0];
 }
 
 

@@ -95,6 +95,7 @@ public class SalesOrderService {
         // 1. Process Order Items
         BigDecimal totalQty = BigDecimal.ZERO;
         BigDecimal netTotal = BigDecimal.ZERO;
+        List<SalesOrderItem> freeItemsToInject = new ArrayList<>();
 
         for (int i = 0; i < request.getItems().size(); i++) {
             SalesOrderCreateRequest.OrderItemRequest itemReq = request.getItems().get(i);
@@ -114,6 +115,48 @@ public class SalesOrderService {
                     } else if (rule.get().getDiscountAmount() != null && rule.get().getDiscountAmount().compareTo(BigDecimal.ZERO) > 0) {
                         discountAmt = rule.get().getDiscountAmount();
                     }
+                }
+            }
+
+            // Check for Free-Item Promotional Rule
+            Optional<PricingRule> freeRule = pricingRuleEngine.findFreeItemRule(item.getItemCode(), item.getItemGroup(), itemReq.getQty());
+            if (freeRule.isPresent()) {
+                PricingRule fRule = freeRule.get();
+                Optional<Item> optFreeItem = itemRepository.findByItemCode(fRule.getFreeItemCode());
+                if (optFreeItem.isPresent()) {
+                    Item fItem = optFreeItem.get();
+                    SalesOrderItem freeOrderItem = SalesOrderItem.builder()
+                            .salesOrder(order)
+                            .item(fItem)
+                            .itemCode(fItem.getItemCode())
+                            .itemName(fItem.getItemName())
+                            .description("[PROMO - " + fRule.getTitle() + "] Free " + fItem.getItemName())
+                            .warehouse(itemReq.getWarehouse() != null ? itemReq.getWarehouse() : "Stores - Default")
+                            .deliveryDate(itemReq.getDeliveryDate() != null ? itemReq.getDeliveryDate() : order.getDeliveryDate())
+                            .qty(fRule.getFreeQty() != null ? fRule.getFreeQty() : BigDecimal.ONE)
+                            .stockUom(fItem.getStockUom())
+                            .uom(fItem.getStockUom())
+                            .conversionFactor(BigDecimal.ONE)
+                            .stockQty(fRule.getFreeQty() != null ? fRule.getFreeQty() : BigDecimal.ONE)
+                            .priceListRate(BigDecimal.ZERO)
+                            .discountPercentage(BigDecimal.ZERO)
+                            .discountAmount(BigDecimal.ZERO)
+                            .rate(BigDecimal.ZERO)
+                            .baseRate(BigDecimal.ZERO)
+                            .amount(BigDecimal.ZERO)
+                            .baseAmount(BigDecimal.ZERO)
+                            .netRate(BigDecimal.ZERO)
+                            .netAmount(BigDecimal.ZERO)
+                            .baseNetAmount(BigDecimal.ZERO)
+                            .valuationRate(BigDecimal.ZERO)
+                            .grossProfit(BigDecimal.ZERO)
+                            .deliveredQty(BigDecimal.ZERO)
+                            .billedAmt(BigDecimal.ZERO)
+                            .pickedQty(BigDecimal.ZERO)
+                            .deliveredBySupplier(false)
+                            .grantCommission(false)
+                            .build();
+                    freeItemsToInject.add(freeOrderItem);
                 }
             }
 
@@ -163,6 +206,15 @@ public class SalesOrderService {
             order.getItems().add(orderItem);
             totalQty = totalQty.add(orderItem.getQty());
             netTotal = netTotal.add(itemCalc.netAmount());
+        }
+
+        // Inject free promotional items
+        int currentIdx = order.getItems().size();
+        for (SalesOrderItem freeItem : freeItemsToInject) {
+            currentIdx++;
+            freeItem.setIdx(currentIdx);
+            order.getItems().add(freeItem);
+            totalQty = totalQty.add(freeItem.getQty());
         }
 
         // Wire Coupon Codes: Apply promotional coupon discount if provided
@@ -359,6 +411,12 @@ public class SalesOrderService {
         List<SalesTaxAndCharge> taxes = taxRepository.findByVoucherTypeAndVoucherIdOrderByIdxAsc("Sales Order", s.getId());
         List<SalesTeamMember> team = salesTeamRepository.findByVoucherTypeAndVoucherId("Sales Order", s.getId());
 
+        BigDecimal grandTotal = s.getGrandTotal() != null ? s.getGrandTotal() : BigDecimal.ZERO;
+        String inWords = NumberToWordsConverter.convert(grandTotal, s.getCurrency() != null ? s.getCurrency() : "INR");
+        BigDecimal roundedTotal = grandTotal.setScale(0, java.math.RoundingMode.HALF_UP);
+        BigDecimal baseGrandTotal = s.getBaseGrandTotal() != null ? s.getBaseGrandTotal() : grandTotal;
+        BigDecimal baseRoundedTotal = baseGrandTotal.setScale(0, java.math.RoundingMode.HALF_UP);
+
         return SalesOrderDto.builder()
                 .id(s.getId())
                 .orderNumber(s.getOrderNumber())
@@ -385,8 +443,11 @@ public class SalesOrderService {
                 .discountAmount(s.getDiscountAmount())
                 .additionalDiscountPercentage(s.getAdditionalDiscountPercentage())
                 .applyDiscountOn(s.getApplyDiscountOn())
-                .grandTotal(s.getGrandTotal())
-                .baseGrandTotal(s.getBaseGrandTotal())
+                .grandTotal(grandTotal)
+                .baseGrandTotal(baseGrandTotal)
+                .roundedTotal(roundedTotal)
+                .baseRoundedTotal(baseRoundedTotal)
+                .inWords(inWords)
                 .advancePaid(s.getAdvancePaid())
                 .perDelivered(s.getPerDelivered())
                 .perBilled(s.getPerBilled())

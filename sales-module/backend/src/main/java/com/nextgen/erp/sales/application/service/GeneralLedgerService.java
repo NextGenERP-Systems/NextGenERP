@@ -114,6 +114,115 @@ public class GeneralLedgerService {
         return glEntryRepository.saveAll(entries);
     }
 
+    @Transactional
+    public List<GlEntry> reverseSalesInvoiceGl(SalesInvoice invoice) {
+        log.info("Posting reversal GL entries for Cancelled Sales Invoice: {}", invoice.getInvoiceNumber());
+        
+        // 1. Mark existing entries as cancelled
+        List<GlEntry> existingEntries = glEntryRepository.findByVoucherTypeAndVoucherId("Sales Invoice", invoice.getId());
+        for (GlEntry e : existingEntries) {
+            e.setCancelled(true);
+        }
+        glEntryRepository.saveAll(existingEntries);
+
+        // 2. Post Contra Reversal Entries
+        List<GlEntry> contraEntries = new ArrayList<>();
+        LocalDate today = LocalDate.now();
+
+        // DEBIT: Sales Revenue (Contra)
+        contraEntries.add(GlEntry.builder()
+                .postingDate(today)
+                .voucherType("Sales Invoice Reversal")
+                .voucherNo(invoice.getInvoiceNumber())
+                .voucherId(invoice.getId())
+                .account(ACC_SALES_REVENUE)
+                .debit(invoice.getNetTotal())
+                .credit(BigDecimal.ZERO)
+                .customer(invoice.getCustomer())
+                .remarks("Reversal of Sales Revenue on Cancelled Invoice: " + invoice.getInvoiceNumber())
+                .cancelled(false)
+                .build());
+
+        // DEBIT: Tax Liability (Contra)
+        if (invoice.getTotalTax() != null && invoice.getTotalTax().compareTo(BigDecimal.ZERO) > 0) {
+            contraEntries.add(GlEntry.builder()
+                    .postingDate(today)
+                    .voucherType("Sales Invoice Reversal")
+                    .voucherNo(invoice.getInvoiceNumber())
+                    .voucherId(invoice.getId())
+                    .account(ACC_TAX_PAYABLE)
+                    .debit(invoice.getTotalTax())
+                    .credit(BigDecimal.ZERO)
+                    .customer(invoice.getCustomer())
+                    .remarks("Reversal of Output Tax on Cancelled Invoice: " + invoice.getInvoiceNumber())
+                    .cancelled(false)
+                    .build());
+        }
+
+        // CREDIT: Debtors (Contra)
+        contraEntries.add(GlEntry.builder()
+                .postingDate(today)
+                .voucherType("Sales Invoice Reversal")
+                .voucherNo(invoice.getInvoiceNumber())
+                .voucherId(invoice.getId())
+                .account(ACC_DEBTORS)
+                .debit(BigDecimal.ZERO)
+                .credit(invoice.getGrandTotal())
+                .customer(invoice.getCustomer())
+                .remarks("Reversal of Debtors receivable on Cancelled Invoice: " + invoice.getInvoiceNumber())
+                .cancelled(false)
+                .build());
+
+        return glEntryRepository.saveAll(contraEntries);
+    }
+
+    @Transactional
+    public List<GlEntry> reversePaymentEntryGl(PaymentEntry payment) {
+        log.info("Posting reversal GL entries for Cancelled Payment Entry: {}", payment.getPaymentNumber());
+
+        // 1. Mark existing entries as cancelled
+        List<GlEntry> existingEntries = glEntryRepository.findByVoucherTypeAndVoucherId("Payment Entry", payment.getId());
+        for (GlEntry e : existingEntries) {
+            e.setCancelled(true);
+        }
+        glEntryRepository.saveAll(existingEntries);
+
+        // 2. Post Contra Reversal Entries
+        List<GlEntry> contraEntries = new ArrayList<>();
+        LocalDate today = LocalDate.now();
+        String bankOrCashAccount = payment.getPaymentMode() == PaymentMode.CASH ? ACC_CASH : ACC_BANK;
+
+        // DEBIT: Debtors (Restore receivable)
+        contraEntries.add(GlEntry.builder()
+                .postingDate(today)
+                .voucherType("Payment Entry Reversal")
+                .voucherNo(payment.getPaymentNumber())
+                .voucherId(payment.getId())
+                .account(ACC_DEBTORS)
+                .debit(payment.getPaidAmount())
+                .credit(BigDecimal.ZERO)
+                .customer(payment.getCustomer())
+                .remarks("Reversal of Customer AR Payment Settlement: " + payment.getPaymentNumber())
+                .cancelled(false)
+                .build());
+
+        // CREDIT: Bank / Cash (Inflow reversal)
+        contraEntries.add(GlEntry.builder()
+                .postingDate(today)
+                .voucherType("Payment Entry Reversal")
+                .voucherNo(payment.getPaymentNumber())
+                .voucherId(payment.getId())
+                .account(bankOrCashAccount)
+                .debit(BigDecimal.ZERO)
+                .credit(payment.getPaidAmount())
+                .customer(payment.getCustomer())
+                .remarks("Reversal of Bank/Cash receipt on Cancelled Payment: " + payment.getPaymentNumber())
+                .cancelled(false)
+                .build());
+
+        return glEntryRepository.saveAll(contraEntries);
+    }
+
     @Transactional(readOnly = true)
     public List<GlEntryDto> getAllGlEntries() {
         return glEntryRepository.findAllByOrderByPostingDateDescCreatedAtDesc().stream()

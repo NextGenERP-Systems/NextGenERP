@@ -40,4 +40,10 @@ public class CustomerController {
         CustomerDto created = customerService.createCustomer(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
+
+    @GetMapping("/{id}/dashboard")
+    @Operation(summary = "Get Customer 360 Dashboard (Linked Quotations, Orders, Invoices, Delivery Notes, Payments, Ledger)")
+    public ResponseEntity<com.nextgen.erp.sales.application.dto.Customer360DashboardDto> getCustomerDashboard(@PathVariable UUID id) {
+        return ResponseEntity.ok(customerService.getCustomer360Dashboard(id));
+    }
 }

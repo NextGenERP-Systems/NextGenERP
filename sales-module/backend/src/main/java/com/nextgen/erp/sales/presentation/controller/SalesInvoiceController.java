@@ -51,4 +51,10 @@ public class SalesInvoiceController {
     public ResponseEntity<SalesInvoiceDto> makeFromDeliveryNote(@PathVariable UUID deliveryNoteId) {
         return ResponseEntity.status(HttpStatus.CREATED).body(salesInvoiceService.makeFromDeliveryNote(deliveryNoteId));
     }
+
+    @PostMapping("/{id}/cancel")
+    @Operation(summary = "Cancel sales invoice and post contra GL reversal")
+    public ResponseEntity<SalesInvoiceDto> cancelSalesInvoice(@PathVariable UUID id) {
+        return ResponseEntity.ok(salesInvoiceService.cancelSalesInvoice(id));
+    }
 }

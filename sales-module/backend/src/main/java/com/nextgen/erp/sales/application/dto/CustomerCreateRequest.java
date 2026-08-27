@@ -29,6 +29,15 @@ public class CustomerCreateRequest {
     private String defaultCurrency = "INR";
     
     private String taxId;
+    private String taxCategory;
+    private String defaultReceivableAccount;
+    private String paymentTerms;
+    private String defaultSalesPartner;
+    private BigDecimal defaultCommissionRate;
+    private Boolean isInternalCustomer;
+    private String representsCompany;
+    private Boolean soRequired;
+    private Boolean dnRequired;
     
     @Builder.Default
     private BigDecimal creditLimit = new BigDecimal("50000.00");

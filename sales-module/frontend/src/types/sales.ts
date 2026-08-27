@@ -42,6 +42,15 @@ export interface Customer {
   territoryName?: string;
   defaultCurrency: string;
   taxId?: string;
+  taxCategory?: string;
+  defaultReceivableAccount?: string;
+  paymentTerms?: string;
+  defaultSalesPartner?: string;
+  defaultCommissionRate?: number;
+  isInternalCustomer?: boolean;
+  representsCompany?: string;
+  soRequired?: boolean;
+  dnRequired?: boolean;
   creditLimit: number;
   outstandingBalance: number;
   availableCredit: number;
@@ -53,6 +62,86 @@ export interface Customer {
   website?: string;
   addresses?: CustomerAddress[];
   contacts?: CustomerContact[];
+  createdAt?: string;
+}
+
+export interface Customer360Dashboard {
+  customer: Customer;
+  totalQuotationsCount: number;
+  totalQuotationsValue: number;
+  totalSalesOrdersCount: number;
+  totalSalesOrdersValue: number;
+  totalDeliveryNotesCount: number;
+  totalDeliveredQty: number;
+  totalInvoicesCount: number;
+  totalInvoicedValue: number;
+  totalPaidValue: number;
+  totalOutstandingValue: number;
+  totalPaymentsCount: number;
+  totalCollectedAmount: number;
+  recentQuotations: Quotation[];
+  recentSalesOrders: SalesOrder[];
+  recentDeliveryNotes: DeliveryNote[];
+  recentSalesInvoices: SalesInvoice[];
+  recentPaymentEntries: PaymentEntry[];
+  customerLedger: GlEntry[];
+}
+
+export type BlanketOrderStatus = 'DRAFT' | 'ACTIVE' | 'EXPIRED' | 'CLOSED';
+
+export interface BlanketOrderItem {
+  id?: string;
+  itemId?: string;
+  itemCode: string;
+  itemName: string;
+  qty: number;
+  rate: number;
+  orderedQty: number;
+  remainingQty: number;
+}
+
+export interface BlanketOrder {
+  id: string;
+  blanketOrderNumber: string;
+  customerId: string;
+  customerName: string;
+  fromDate: string;
+  toDate: string;
+  company?: string;
+  status: BlanketOrderStatus;
+  termsAndConditions?: string;
+  items: BlanketOrderItem[];
+  createdAt?: string;
+}
+
+export interface SalesPartner {
+  id: string;
+  partnerName: string;
+  partnerType: string;
+  commissionRate: number;
+  currency: string;
+  contactPerson?: string;
+  email?: string;
+  phone?: string;
+  territory?: string;
+  totalAllocatedAmount: number;
+  totalCommissionEarned: number;
+  disabled?: boolean;
+  createdAt?: string;
+}
+
+export interface SalesPerson {
+  id: string;
+  salesPersonName: string;
+  employeeId?: string;
+  email?: string;
+  phone?: string;
+  parentSalesPerson?: string;
+  commissionRate: number;
+  targetAmount: number;
+  allocatedAmount: number;
+  incentivesEarned: number;
+  disabled?: boolean;
   createdAt?: string;
 }
 
@@ -133,9 +222,15 @@ export interface Quotation {
   applyDiscountOn: DiscountApplyOn;
   grandTotal: number;
   baseGrandTotal: number;
+  roundedTotal?: number;
+  baseRoundedTotal?: number;
+  inWords?: string;
   paymentTermsTemplate?: string;
   termsAndConditions?: string;
   notes?: string;
+  opportunityId?: string;
+  lostReason?: string;
+  competitorName?: string;
   items: QuotationItem[];
   taxes: SalesTaxAndCharge[];
   createdAt?: string;
@@ -214,6 +309,9 @@ export interface SalesOrder {
   applyDiscountOn: DiscountApplyOn;
   grandTotal: number;
   baseGrandTotal: number;
+  roundedTotal?: number;
+  baseRoundedTotal?: number;
+  inWords?: string;
   advancePaid: number;
   perDelivered: number;
   perBilled: number;
@@ -312,6 +410,7 @@ export interface DeliveryNote {
   shippingAddress?: string;
   totalQty: number;
   totalAmount: number;
+  inWords?: string;
   notes?: string;
   items: DeliveryNoteItem[];
   createdAt?: string;
@@ -348,11 +447,14 @@ export interface SalesInvoice {
   netTotal: number;
   totalTax: number;
   grandTotal: number;
+  roundedTotal?: number;
+  inWords?: string;
   paidAmount: number;
   outstandingAmount: number;
   paymentTerms?: string;
   notes?: string;
   items: SalesInvoiceItem[];
+  taxes?: SalesTaxAndCharge[];
   createdAt?: string;
   updatedAt?: string;
 }
@@ -366,12 +468,14 @@ export interface PaymentEntry {
   paymentNumber: string;
   paymentType: PaymentType;
   paymentMode: PaymentMode;
+  status?: 'DRAFT' | 'SUBMITTED' | 'CANCELLED';
   customerId: string;
   customerName: string;
   salesInvoiceId?: string;
   salesOrderId?: string;
   postingDate: string;
   paidAmount: number;
+  inWords?: string;
   referenceNo?: string;
   referenceDate?: string;
   notes?: string;
@@ -509,4 +613,40 @@ export interface GlEntry {
   cancelled: boolean;
   createdAt?: string;
 }
+
+export interface QuotationTrendsReport {
+  period: string;
+  totalQuotations: number;
+  orderedQuotations: number;
+  lostQuotations: number;
+  expiredQuotations: number;
+  totalQuotationValue: number;
+  wonQuotationValue: number;
+  conversionRatePercentage: number;
+  avgTurnaroundDays: number;
+}
+
+export interface InactiveCustomerReport {
+  customerId: string;
+  customerCode: string;
+  customerName: string;
+  customerGroup: string;
+  territory: string;
+  lastOrderDate: string;
+  daysSinceLastOrder: number;
+  totalHistoricalOrders: number;
+  lifetimeRevenue: number;
+  churnRiskLevel: string;
+}
+
+export interface SalesCommissionSummary {
+  salesPersonName: string;
+  totalOrdersCount: number;
+  totalAllocatedAmount: number;
+  avgCommissionRate: number;
+  totalCommissionEarned: number;
+  totalIncentivesEarned: number;
+  totalPayout: number;
+}
+
 

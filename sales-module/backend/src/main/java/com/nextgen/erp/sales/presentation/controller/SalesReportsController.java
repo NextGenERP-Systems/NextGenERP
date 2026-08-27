@@ -55,4 +55,22 @@ public class SalesReportsController {
     public ResponseEntity<List<CustomerAcquisitionReportDto>> getCustomerAcquisitionReport() {
         return ResponseEntity.ok(reportsService.getCustomerAcquisitionReport());
     }
+
+    @GetMapping("/quotation-trends")
+    @Operation(summary = "Detailed Quotation Conversion Trends and Win Rate Report")
+    public ResponseEntity<List<QuotationTrendsReportDto>> getQuotationTrendsReport() {
+        return ResponseEntity.ok(reportsService.getQuotationTrendsDetailedReport());
+    }
+
+    @GetMapping("/inactive-customers")
+    @Operation(summary = "Inactive Customers and Churn Risk Scoring Report")
+    public ResponseEntity<List<InactiveCustomerReportDto>> getInactiveCustomersReport() {
+        return ResponseEntity.ok(reportsService.getInactiveCustomersReport());
+    }
+
+    @GetMapping("/sales-commission-summary")
+    @Operation(summary = "Sales Representative Commission and Performance Summary Report")
+    public ResponseEntity<List<SalesCommissionSummaryDto>> getSalesCommissionSummary() {
+        return ResponseEntity.ok(reportsService.getSalesCommissionSummary());
+    }
 }

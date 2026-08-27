@@ -23,6 +23,7 @@ public class PaymentEntryDto {
     private UUID salesOrderId;
     private LocalDate postingDate;
     private BigDecimal paidAmount;
+    private String inWords;
     private String referenceNo;
     private LocalDate referenceDate;
     private String notes;

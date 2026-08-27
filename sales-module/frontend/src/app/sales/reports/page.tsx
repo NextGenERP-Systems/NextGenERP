@@ -23,6 +23,9 @@ import {
   getItemSalesHistoryReport,
   getSalesTrendsReport,
   getCustomerAcquisitionReport,
+  getQuotationTrendsDetailedReport,
+  getInactiveCustomersReport,
+  getSalesCommissionSummaryReport,
 } from "@/lib/api";
 import {
   SalesOrderAnalysisReport,
@@ -31,10 +34,14 @@ import {
   ItemSalesHistoryReport,
   SalesTrendsReport,
   CustomerAcquisitionReport,
+  QuotationTrendsReport,
+  InactiveCustomerReport,
+  SalesCommissionSummary,
 } from "@/types/sales";
+import { Users, AlertOctagon, Award, UserCheck } from "lucide-react";
 
 export default function ReportsHubPage() {
-  const [activeTab, setActiveTab] = useState<"orderAnalysis" | "aging" | "winLoss" | "itemSales" | "trends" | "cohort">("orderAnalysis");
+  const [activeTab, setActiveTab] = useState<"orderAnalysis" | "aging" | "winLoss" | "itemSales" | "trends" | "cohort" | "quoteTrends" | "inactive" | "commission">("orderAnalysis");
   const [loading, setLoading] = useState(true);
 
   const [orderAnalysis, setOrderAnalysis] = useState<SalesOrderAnalysisReport[]>([]);
@@ -43,17 +50,23 @@ export default function ReportsHubPage() {
   const [itemHistory, setItemHistory] = useState<ItemSalesHistoryReport[]>([]);
   const [trends, setTrends] = useState<SalesTrendsReport[]>([]);
   const [cohort, setCohort] = useState<CustomerAcquisitionReport[]>([]);
+  const [quoteTrends, setQuoteTrends] = useState<QuotationTrendsReport[]>([]);
+  const [inactiveCustomers, setInactiveCustomers] = useState<InactiveCustomerReport[]>([]);
+  const [commissions, setCommissions] = useState<SalesCommissionSummary[]>([]);
 
   const loadData = async () => {
     setLoading(true);
     try {
-      const [orderData, agingData, winLossData, itemData, trendsData, cohortData] = await Promise.all([
+      const [orderData, agingData, winLossData, itemData, trendsData, cohortData, qTrendsData, inactData, commData] = await Promise.all([
         getSalesOrderAnalysisReport().catch(() => []),
         getCustomerCreditAgingReport().catch(() => []),
         getQuotationWinLossReport().catch(() => null),
         getItemSalesHistoryReport().catch(() => []),
         getSalesTrendsReport().catch(() => []),
         getCustomerAcquisitionReport().catch(() => []),
+        getQuotationTrendsDetailedReport().catch(() => []),
+        getInactiveCustomersReport().catch(() => []),
+        getSalesCommissionSummaryReport().catch(() => []),
       ]);
       setOrderAnalysis(orderData || []);
       setCreditAging(agingData || []);
@@ -61,6 +74,9 @@ export default function ReportsHubPage() {
       setItemHistory(itemData || []);
       setTrends(trendsData || []);
       setCohort(cohortData || []);
+      setQuoteTrends(qTrendsData || []);
+      setInactiveCustomers(inactData || []);
+      setCommissions(commData || []);
     } catch (err) {
       console.error("Failed to load reports data", err);
     } finally {
@@ -167,6 +183,42 @@ export default function ReportsHubPage() {
         >
           <BarChart3 className="h-4 w-4" />
           <span>Customer Cohort & LTV</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab("quoteTrends")}
+          className={`pb-2.5 transition-all flex items-center gap-2 ${
+            activeTab === "quoteTrends"
+              ? "border-b-2 border-blue-600 text-blue-600 font-semibold"
+              : "text-slate-500 hover:text-slate-800"
+          }`}
+        >
+          <TrendingUp className="h-4 w-4" />
+          <span>Quotation Trends</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab("inactive")}
+          className={`pb-2.5 transition-all flex items-center gap-2 ${
+            activeTab === "inactive"
+              ? "border-b-2 border-blue-600 text-blue-600 font-semibold"
+              : "text-slate-500 hover:text-slate-800"
+          }`}
+        >
+          <AlertOctagon className="h-4 w-4" />
+          <span>Inactive Accounts</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab("commission")}
+          className={`pb-2.5 transition-all flex items-center gap-2 ${
+            activeTab === "commission"
+              ? "border-b-2 border-blue-600 text-blue-600 font-semibold"
+              : "text-slate-500 hover:text-slate-800"
+          }`}
+        >
+          <Award className="h-4 w-4" />
+          <span>Sales Commissions</span>
         </button>
       </div>
 
@@ -515,6 +567,159 @@ export default function ReportsHubPage() {
                       }`}>
                         {c.loyaltySegment}
                       </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 7: Detailed Quotation Conversion Trends */}
+      {activeTab === "quoteTrends" && (
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden p-4 sm:p-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="font-bold text-slate-900 text-sm">Quotation Pipeline Velocity & Conversion Trends</h2>
+            <div className="text-xs text-slate-500">{quoteTrends.length} Monthly Periods</div>
+          </div>
+
+          <div className="overflow-x-auto border border-slate-200 rounded-xl">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-50 border-b border-slate-200 text-slate-700 font-semibold uppercase text-[10px] tracking-wider">
+                <tr>
+                  <th className="py-3 px-4">Period</th>
+                  <th className="py-3 px-4 text-center">Total Quotes</th>
+                  <th className="py-3 px-4 text-center">Converted / Ordered</th>
+                  <th className="py-3 px-4 text-center">Lost</th>
+                  <th className="py-3 px-4 text-center">Expired</th>
+                  <th className="py-3 px-4 text-right">Total Pipeline</th>
+                  <th className="py-3 px-4 text-right">Won Revenue</th>
+                  <th className="py-3 px-4 text-center">Win Rate</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {quoteTrends.map((q) => (
+                  <tr key={q.period} className="hover:bg-slate-50/75 transition-colors">
+                    <td className="py-3 px-4 font-bold text-slate-900 font-mono">{q.period}</td>
+                    <td className="py-3 px-4 text-center font-semibold font-mono text-slate-800">{q.totalQuotations}</td>
+                    <td className="py-3 px-4 text-center font-semibold font-mono text-emerald-600">{q.orderedQuotations}</td>
+                    <td className="py-3 px-4 text-center font-semibold font-mono text-rose-600">{q.lostQuotations}</td>
+                    <td className="py-3 px-4 text-center font-semibold font-mono text-amber-600">{q.expiredQuotations}</td>
+                    <td className="py-3 px-4 text-right font-mono text-slate-700">
+                      ₹{Number(q.totalQuotationValue).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    </td>
+                    <td className="py-3 px-4 text-right font-bold font-mono text-emerald-600">
+                      ₹{Number(q.wonQuotationValue).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        {q.conversionRatePercentage}%
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 8: Inactive Accounts & Churn Risk */}
+      {activeTab === "inactive" && (
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden p-4 sm:p-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="font-bold text-slate-900 text-sm">Inactive Accounts & Churn Risk Early Warning</h2>
+            <div className="text-xs text-slate-500">{inactiveCustomers.length} Monitored Accounts</div>
+          </div>
+
+          <div className="overflow-x-auto border border-slate-200 rounded-xl">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-50 border-b border-slate-200 text-slate-700 font-semibold uppercase text-[10px] tracking-wider">
+                <tr>
+                  <th className="py-3 px-4">Customer</th>
+                  <th className="py-3 px-4">Group & Territory</th>
+                  <th className="py-3 px-4 text-center">Last Order Date</th>
+                  <th className="py-3 px-4 text-center">Days Inactive</th>
+                  <th className="py-3 px-4 text-center">Historical Orders</th>
+                  <th className="py-3 px-4 text-right">Lifetime Revenue</th>
+                  <th className="py-3 px-4 text-center">Churn Risk Level</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {inactiveCustomers.map((c) => (
+                  <tr key={c.customerId} className="hover:bg-slate-50/75 transition-colors">
+                    <td className="py-3 px-4">
+                      <div className="font-semibold text-slate-900">{c.customerName}</div>
+                      <div className="text-[10px] text-slate-400 font-mono">{c.customerCode}</div>
+                    </td>
+                    <td className="py-3 px-4 text-slate-600">
+                      <div>{c.customerGroup}</div>
+                      <div className="text-[10px] text-slate-400">{c.territory}</div>
+                    </td>
+                    <td className="py-3 px-4 text-center font-mono text-slate-600">{c.lastOrderDate}</td>
+                    <td className="py-3 px-4 text-center font-bold font-mono text-slate-800">{c.daysSinceLastOrder} Days</td>
+                    <td className="py-3 px-4 text-center font-mono text-slate-700">{c.totalHistoricalOrders}</td>
+                    <td className="py-3 px-4 text-right font-bold font-mono text-slate-900">
+                      ₹{Number(c.lifetimeRevenue).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                        c.churnRiskLevel === "CRITICAL"
+                          ? "bg-rose-100 text-rose-800 border border-rose-200"
+                          : c.churnRiskLevel === "HIGH"
+                          ? "bg-amber-100 text-amber-800 border border-amber-200"
+                          : "bg-blue-100 text-blue-800 border border-blue-200"
+                      }`}>
+                        {c.churnRiskLevel}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 9: Sales Commissions & Rep Performance */}
+      {activeTab === "commission" && (
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden p-4 sm:p-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="font-bold text-slate-900 text-sm">Sales Representative Commission & Payout Summary</h2>
+            <div className="text-xs text-slate-500">{commissions.length} Sales Representatives</div>
+          </div>
+
+          <div className="overflow-x-auto border border-slate-200 rounded-xl">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-50 border-b border-slate-200 text-slate-700 font-semibold uppercase text-[10px] tracking-wider">
+                <tr>
+                  <th className="py-3 px-4">Sales Representative</th>
+                  <th className="py-3 px-4 text-center">Orders Closed</th>
+                  <th className="py-3 px-4 text-right">Allocated Sales Volume</th>
+                  <th className="py-3 px-4 text-center">Commission %</th>
+                  <th className="py-3 px-4 text-right">Base Commission</th>
+                  <th className="py-3 px-4 text-right">Bonus / Incentives</th>
+                  <th className="py-3 px-4 text-right">Total Payout</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {commissions.map((r) => (
+                  <tr key={r.salesPersonName} className="hover:bg-slate-50/75 transition-colors">
+                    <td className="py-3 px-4 font-semibold text-slate-900">{r.salesPersonName}</td>
+                    <td className="py-3 px-4 text-center font-bold font-mono text-slate-800">{r.totalOrdersCount}</td>
+                    <td className="py-3 px-4 text-right font-bold text-slate-900 font-mono">
+                      ₹{Number(r.totalAllocatedAmount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    </td>
+                    <td className="py-3 px-4 text-center font-mono font-medium text-slate-700">{r.avgCommissionRate}%</td>
+                    <td className="py-3 px-4 text-right font-mono text-emerald-600 font-semibold">
+                      ₹{Number(r.totalCommissionEarned).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    </td>
+                    <td className="py-3 px-4 text-right font-mono text-purple-600 font-semibold">
+                      ₹{Number(r.totalIncentivesEarned).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    </td>
+                    <td className="py-3 px-4 text-right font-bold font-mono text-emerald-700 text-sm">
+                      ₹{Number(r.totalPayout).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                     </td>
                   </tr>
                 ))}

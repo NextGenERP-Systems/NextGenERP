@@ -79,6 +79,7 @@ public class QuotationService {
         // 1. Process Quotation Items
         BigDecimal totalQty = BigDecimal.ZERO;
         BigDecimal netTotal = BigDecimal.ZERO;
+        List<QuotationItem> freeItemsToInject = new ArrayList<>();
 
         for (int i = 0; i < request.getItems().size(); i++) {
             QuotationCreateRequest.ItemRequest itemReq = request.getItems().get(i);
@@ -98,6 +99,41 @@ public class QuotationService {
                     } else if (rule.get().getDiscountAmount() != null && rule.get().getDiscountAmount().compareTo(BigDecimal.ZERO) > 0) {
                         discountAmt = rule.get().getDiscountAmount();
                     }
+                }
+            }
+
+            // Check for Free-Item Promotional Rule
+            Optional<PricingRule> freeRule = pricingRuleEngine.findFreeItemRule(item.getItemCode(), item.getItemGroup(), itemReq.getQty());
+            if (freeRule.isPresent()) {
+                PricingRule fRule = freeRule.get();
+                Optional<Item> optFreeItem = itemRepository.findByItemCode(fRule.getFreeItemCode());
+                if (optFreeItem.isPresent()) {
+                    Item fItem = optFreeItem.get();
+                    QuotationItem freeQItem = QuotationItem.builder()
+                            .quotation(quotation)
+                            .item(fItem)
+                            .itemCode(fItem.getItemCode())
+                            .itemName(fItem.getItemName())
+                            .description("[PROMO - " + fRule.getTitle() + "] Free " + fItem.getItemName())
+                            .qty(fRule.getFreeQty() != null ? fRule.getFreeQty() : BigDecimal.ONE)
+                            .stockUom(fItem.getStockUom())
+                            .uom(fItem.getStockUom())
+                            .conversionFactor(BigDecimal.ONE)
+                            .stockQty(fRule.getFreeQty() != null ? fRule.getFreeQty() : BigDecimal.ONE)
+                            .priceListRate(BigDecimal.ZERO)
+                            .discountPercentage(BigDecimal.ZERO)
+                            .discountAmount(BigDecimal.ZERO)
+                            .rate(BigDecimal.ZERO)
+                            .baseRate(BigDecimal.ZERO)
+                            .amount(BigDecimal.ZERO)
+                            .baseAmount(BigDecimal.ZERO)
+                            .netRate(BigDecimal.ZERO)
+                            .netAmount(BigDecimal.ZERO)
+                            .baseNetAmount(BigDecimal.ZERO)
+                            .valuationRate(BigDecimal.ZERO)
+                            .grossProfit(BigDecimal.ZERO)
+                            .build();
+                    freeItemsToInject.add(freeQItem);
                 }
             }
 
@@ -140,6 +176,15 @@ public class QuotationService {
             quotation.getItems().add(qItem);
             totalQty = totalQty.add(qItem.getQty());
             netTotal = netTotal.add(itemCalc.netAmount());
+        }
+
+        // Inject free promotional items
+        int currentIdx = quotation.getItems().size();
+        for (QuotationItem freeItem : freeItemsToInject) {
+            currentIdx++;
+            freeItem.setIdx(currentIdx);
+            quotation.getItems().add(freeItem);
+            totalQty = totalQty.add(freeItem.getQty());
         }
 
         // Wire Coupon Codes: Apply promotional coupon discount if provided
@@ -219,8 +264,26 @@ public class QuotationService {
         return mapToDto(saved);
     }
 
+    @Transactional
+    public QuotationDto markQuotationLost(UUID id, QuotationLostReason reason, String competitorName) {
+        Quotation quotation = quotationRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Quotation", id));
+
+        quotation.setStatus(QuotationStatus.LOST);
+        quotation.setLostReason(reason);
+        quotation.setCompetitorName(competitorName);
+        Quotation saved = quotationRepository.save(quotation);
+        return mapToDto(saved);
+    }
+
     public QuotationDto mapToDto(Quotation q) {
         List<SalesTaxAndCharge> taxes = taxRepository.findByVoucherTypeAndVoucherIdOrderByIdxAsc("Quotation", q.getId());
+
+        BigDecimal grandTotal = q.getGrandTotal() != null ? q.getGrandTotal() : BigDecimal.ZERO;
+        String inWords = NumberToWordsConverter.convert(grandTotal, q.getCurrency() != null ? q.getCurrency() : "INR");
+        BigDecimal roundedTotal = grandTotal.setScale(0, java.math.RoundingMode.HALF_UP);
+        BigDecimal baseGrandTotal = q.getBaseGrandTotal() != null ? q.getBaseGrandTotal() : grandTotal;
+        BigDecimal baseRoundedTotal = baseGrandTotal.setScale(0, java.math.RoundingMode.HALF_UP);
 
         return QuotationDto.builder()
                 .id(q.getId())
@@ -242,11 +305,17 @@ public class QuotationService {
                 .discountAmount(q.getDiscountAmount())
                 .additionalDiscountPercentage(q.getAdditionalDiscountPercentage())
                 .applyDiscountOn(q.getApplyDiscountOn())
-                .grandTotal(q.getGrandTotal())
-                .baseGrandTotal(q.getBaseGrandTotal())
+                .grandTotal(grandTotal)
+                .baseGrandTotal(baseGrandTotal)
+                .roundedTotal(roundedTotal)
+                .baseRoundedTotal(baseRoundedTotal)
+                .inWords(inWords)
                 .paymentTermsTemplate(q.getPaymentTermsTemplate())
                 .termsAndConditions(q.getTermsAndConditions())
                 .notes(q.getNotes())
+                .opportunityId(q.getOpportunityId())
+                .lostReason(q.getLostReason() != null ? q.getLostReason().name() : null)
+                .competitorName(q.getCompetitorName())
                 .createdAt(q.getCreatedAt())
                 .items(q.getItems() != null ? q.getItems().stream().map(i -> QuotationDto.QuotationItemDto.builder()
                         .id(i.getId())

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   FileText,
   Plus,
@@ -14,14 +15,20 @@ import {
   Percent,
   Layers,
   X,
+  RefreshCw,
+  Printer,
+  User,
+  ShoppingBag,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { StatusBadge } from "@/components/ui/Badge";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { getQuotations, getCustomers, getItems, createQuotation } from "@/lib/api";
 import { Quotation, Customer, CatalogItem } from "@/types/sales";
+import Link from "next/link";
 
-export default function QuotationsPage() {
+function QuotationsContent() {
+  const searchParams = useSearchParams();
   const [quotations, setQuotations] = useState<Quotation[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [items, setItems] = useState<CatalogItem[]>([]);
@@ -29,6 +36,7 @@ export default function QuotationsPage() {
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [actionSuccess, setActionSuccess] = useState<string | null>(null);
 
   // Form State
   const [selectedCustomerId, setSelectedCustomerId] = useState("");
@@ -39,27 +47,50 @@ export default function QuotationsPage() {
     { itemId: string; qty: number; rate: number; discountPercentage: number }[]
   >([]);
 
-  useEffect(() => {
-    async function loadData() {
-      setLoading(true);
-      try {
-        const [qData, cData, iData] = await Promise.all([
-          getQuotations(),
-          getCustomers(),
-          getItems(),
-        ]);
-        setQuotations(qData);
-        setCustomers(cData);
-        setItems(iData);
-        if (cData.length > 0) setSelectedCustomerId(cData[0].id);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const [qData, cData, iData] = await Promise.all([
+        getQuotations(),
+        getCustomers(),
+        getItems(),
+      ]);
+      setQuotations(qData || []);
+      setCustomers(cData || []);
+      setItems(iData || []);
+
+      const qCustId = searchParams.get("customerId");
+      const qOpen = searchParams.get("open");
+
+      if (qCustId) {
+        setSelectedCustomerId(qCustId);
+      } else if (cData && cData.length > 0 && !selectedCustomerId) {
+        setSelectedCustomerId(cData[0].id);
       }
+
+      if (qOpen === "true" || qCustId) {
+        setIsCreateOpen(true);
+        if (iData && iData.length > 0) {
+          setQuotationItems([
+            {
+              itemId: iData[0].id,
+              qty: 1,
+              rate: iData[0].standardRate,
+              discountPercentage: 0,
+            },
+          ]);
+        }
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
+  };
+
+  useEffect(() => {
     loadData();
-  }, []);
+  }, [searchParams]);
 
   const handleAddItemRow = () => {
     if (items.length === 0) return;
@@ -96,7 +127,7 @@ export default function QuotationsPage() {
     return acc + row.qty * rowRate;
   }, 0);
 
-  const calculatedTax = calculatedNetTotal * 0.0825; // 8.25% standard tax
+  const calculatedTax = calculatedNetTotal * 0.18; // 18% standard GST
   const discountVal = (calculatedNetTotal + calculatedTax) * (parseFloat(additionalDiscount || "0") / 100);
   const calculatedGrandTotal = calculatedNetTotal + calculatedTax - discountVal;
 
@@ -107,35 +138,36 @@ export default function QuotationsPage() {
       return;
     }
 
-    const payload = {
-      customerId: selectedCustomerId,
-      orderType,
-      validTill: validTill || new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0],
-      additionalDiscountPercentage: parseFloat(additionalDiscount || "0"),
-      items: quotationItems.map((qi) => ({
-        itemId: qi.itemId,
-        qty: qi.qty,
-        priceListRate: qi.rate,
-        discountPercentage: qi.discountPercentage,
-      })),
-      taxes: [
-        {
-          chargeType: "ON_NET_TOTAL",
-          accountHead: "State Sales Tax (6.25%)",
-          rate: 6.25,
-        },
-        {
-          chargeType: "ON_NET_TOTAL",
-          accountHead: "Municipal Surcharge (2.0%)",
-          rate: 2.0,
-        },
-      ],
-    };
+    try {
+      const payload = {
+        customerId: selectedCustomerId,
+        orderType,
+        validTill: validTill || new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0],
+        additionalDiscountPercentage: parseFloat(additionalDiscount || "0"),
+        items: quotationItems.map((qi) => ({
+          itemId: qi.itemId,
+          qty: qi.qty,
+          priceListRate: qi.rate,
+          discountPercentage: qi.discountPercentage,
+        })),
+        taxes: [
+          {
+            chargeType: "ON_NET_TOTAL",
+            accountHead: "Output IGST / CGST (18%)",
+            rate: 18.0,
+          },
+        ],
+      };
 
-    const created = await createQuotation(payload);
-    setQuotations([created, ...quotations]);
-    setIsCreateOpen(false);
-    setQuotationItems([]);
+      const created = await createQuotation(payload);
+      setQuotations([created, ...quotations]);
+      setIsCreateOpen(false);
+      setQuotationItems([]);
+      setActionSuccess(`Quotation ${created.quotationNumber} generated successfully!`);
+      setTimeout(() => setActionSuccess(null), 4000);
+    } catch (err: any) {
+      alert("Failed to create quotation: " + (err.message || err));
+    }
   };
 
   const filteredQuotations = quotations.filter((q) => {
@@ -152,146 +184,166 @@ export default function QuotationsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
-            Quotations Management
+            <FileText className="h-6 w-6 text-blue-600" />
+            <span>Quotations Management</span>
           </h1>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-slate-500 mt-1">
             Create, calculate, and convert sales quotations with real-time tax & pricing engines.
           </p>
         </div>
-        <button
-          onClick={() => {
-            setIsCreateOpen(true);
-            if (quotationItems.length === 0 && items.length > 0) {
-              setQuotationItems([
-                {
-                  itemId: items[0].id,
-                  qty: 1,
-                  rate: items[0].standardRate,
-                  discountPercentage: 0,
-                },
-              ]);
-            }
-          }}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-sm transition-all active:scale-95"
-        >
-          <Plus className="h-4 w-4" />
-          <span>New Quotation</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={loadData}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs text-slate-700 bg-white border border-slate-200 rounded-lg shadow-sm hover:bg-slate-50 transition-all font-semibold"
+          >
+            <RefreshCw className="h-3.5 w-3.5" />
+            <span>Refresh</span>
+          </button>
+          <button
+            onClick={() => {
+              setIsCreateOpen(true);
+              if (quotationItems.length === 0 && items.length > 0) {
+                setQuotationItems([
+                  {
+                    itemId: items[0].id,
+                    qty: 1,
+                    rate: items[0].standardRate,
+                    discountPercentage: 0,
+                  },
+                ]);
+              }
+            }}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-sm transition-all"
+          >
+            <Plus className="h-4 w-4" />
+            <span>New Quotation</span>
+          </button>
+        </div>
       </div>
 
-      {/* Filter & Search Toolbar */}
-      <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
+      {actionSuccess && (
+        <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs flex items-center gap-2 font-medium">
+          <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+          <span>{actionSuccess}</span>
+        </div>
+      )}
+
+      {/* Filter Bar */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="relative w-full sm:w-80">
           <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
-            placeholder="Search quotations by # or customer..."
+            placeholder="Search by quote # or customer..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-slate-100 border border-slate-200 rounded-lg pl-9 pr-4 py-1.5 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500/30"
+            className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-4 py-1.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
           />
         </div>
-        <div className="flex items-center gap-1.5 p-1 rounded-lg bg-slate-100 border border-slate-200 self-stretch sm:self-auto overflow-x-auto">
-          {["ALL", "OPEN", "ORDERED", "LOST", "CANCELLED"].map((st) => (
+
+        <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto">
+          {["ALL", "DRAFT", "OPEN", "ORDERED", "LOST"].map((status) => (
             <button
-              key={st}
-              onClick={() => setStatusFilter(st)}
-              className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
-                statusFilter === st
-                  ? "bg-slate-100 text-slate-900 shadow-sm border border-blue-200"
-                  : "text-slate-400 hover:text-slate-700"
+              key={status}
+              onClick={() => setStatusFilter(status)}
+              className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${
+                statusFilter === status
+                  ? "bg-slate-900 text-white"
+                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
               }`}
             >
-              {st}
+              {status}
             </button>
           ))}
         </div>
       </div>
 
       {/* Quotation Table */}
-      <Card className="border-slate-200">
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs text-left">
-              <thead className="bg-slate-100 text-slate-400 uppercase font-mono text-[10px] tracking-wider border-b border-slate-200">
+      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs">
+            <thead className="bg-slate-50 border-b border-slate-200 text-slate-700 font-semibold uppercase text-[10px] tracking-wider">
+              <tr>
+                <th className="py-3.5 px-4">Quotation #</th>
+                <th className="py-3.5 px-4">Customer</th>
+                <th className="py-3.5 px-4">Date</th>
+                <th className="py-3.5 px-4">Valid Till</th>
+                <th className="py-3.5 px-4 text-right">Grand Total</th>
+                <th className="py-3.5 px-4 text-center">Status</th>
+                <th className="py-3.5 px-4 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {loading ? (
                 <tr>
-                  <th className="py-3.5 px-4">Quotation #</th>
-                  <th className="py-3.5 px-4">Customer</th>
-                  <th className="py-3.5 px-4">Date</th>
-                  <th className="py-3.5 px-4">Valid Till</th>
-                  <th className="py-3.5 px-4">Net Total</th>
-                  <th className="py-3.5 px-4">Grand Total</th>
-                  <th className="py-3.5 px-4">Status</th>
-                  <th className="py-3.5 px-4 text-right">Actions</th>
+                  <td colSpan={7} className="py-8 text-center text-slate-400">Loading quotations...</td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
-                {filteredQuotations.map((qtn) => (
-                  <tr key={qtn.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="py-3 px-4 font-mono font-semibold text-slate-900">
-                      {qtn.quotationNumber}
+              ) : filteredQuotations.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="py-8 text-center text-slate-400">No quotations found.</td>
+                </tr>
+              ) : (
+                filteredQuotations.map((q) => (
+                  <tr key={q.id} className="hover:bg-slate-50/75 transition-colors">
+                    <td className="py-3.5 px-4 font-mono font-semibold text-blue-600">{q.quotationNumber}</td>
+                    <td className="py-3.5 px-4 font-medium text-slate-800">{q.customerName}</td>
+                    <td className="py-3.5 px-4 text-slate-600 font-mono text-[11px]">{formatDate(q.transactionDate)}</td>
+                    <td className="py-3.5 px-4 text-slate-600 font-mono text-[11px]">{formatDate(q.validTill)}</td>
+                    <td className="py-3.5 px-4 text-right font-bold text-slate-900 font-mono">
+                      {formatCurrency(q.grandTotal)}
                     </td>
-                    <td className="py-3 px-4 truncate max-w-[200px]">{qtn.customerName}</td>
-                    <td className="py-3 px-4 font-mono text-slate-400">{formatDate(qtn.transactionDate)}</td>
-                    <td className="py-3 px-4 font-mono text-slate-400">{formatDate(qtn.validTill)}</td>
-                    <td className="py-3 px-4 font-mono text-slate-500">
-                      {formatCurrency(qtn.netTotal, qtn.currency)}
+                    <td className="py-3.5 px-4 text-center">
+                      <StatusBadge status={q.status} />
                     </td>
-                    <td className="py-3 px-4 font-mono font-bold text-slate-900">
-                      {formatCurrency(qtn.grandTotal, qtn.currency)}
-                    </td>
-                    <td className="py-3 px-4">
-                      <StatusBadge status={qtn.status} />
-                    </td>
-                    <td className="py-3 px-4 text-right">
-                      {qtn.status === "OPEN" && (
-                        <span className="text-[11px] text-slate-500 font-mono flex items-center justify-end gap-1">
-                          Ready for Order <ArrowRight className="h-3 w-3" />
-                        </span>
-                      )}
+                    <td className="py-3.5 px-4 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        {q.status === "OPEN" && (
+                          <Link
+                            href={`/sales/orders?quotationId=${q.id}&customerId=${q.customerId}&open=true`}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200 text-[11px] font-semibold"
+                          >
+                            <ShoppingBag className="h-3 w-3" />
+                            <span>Convert to Order</span>
+                          </Link>
+                        )}
+                      </div>
                     </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
-      {/* Interactive Quotation Builder Drawer / Modal */}
+      {/* Create Modal with Connects */}
       {isCreateOpen && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-50 border border-slate-200 rounded-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl space-y-6 p-6">
-            <div className="flex items-center justify-between border-b border-slate-200 pb-4">
-              <div>
-                <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                  <Calculator className="h-5 w-5 text-slate-500" />
-                  New Quotation Builder
-                </h2>
-                <p className="text-xs text-slate-400">
-                  Dynamic line item discounts, multi-tier tax computations, and price list lookup.
-                </p>
-              </div>
-              <button
-                onClick={() => setIsCreateOpen(false)}
-                className="p-1 rounded-md text-slate-400 hover:text-slate-900 hover:bg-slate-100"
-              >
-                <X className="h-5 w-5" />
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full p-6 border border-slate-200 space-y-4 animate-in fade-in zoom-in-95 duration-150 my-8">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h2 className="font-bold text-slate-800 text-sm flex items-center gap-2">
+                <FileText className="h-4 w-4 text-blue-600" />
+                <span>Create Sales Quotation</span>
+              </h2>
+              <button onClick={() => setIsCreateOpen(false)} className="text-slate-400 hover:text-slate-600">
+                <X className="h-4 w-4" />
               </button>
             </div>
 
-            <form onSubmit={handleCreateQuotation} className="space-y-5">
-              {/* Header Fields */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-500 mb-1.5">
-                    Customer Account
+            <form onSubmit={handleCreateQuotation} className="space-y-4 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="font-semibold text-slate-700 flex items-center gap-1">
+                    <User className="h-3.5 w-3.5 text-blue-600" />
+                    <span>Customer *</span>
                   </label>
                   <select
+                    required
                     value={selectedCustomerId}
                     onChange={(e) => setSelectedCustomerId(e.target.value)}
-                    className="w-full bg-slate-100 border border-slate-200 rounded-md p-2 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500/30"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs font-medium"
                   >
+                    <option value="">Select Customer Master...</option>
                     {customers.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.customerName} ({c.customerCode})
@@ -299,176 +351,125 @@ export default function QuotationsPage() {
                     ))}
                   </select>
                 </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-500 mb-1.5">
-                    Order Type
-                  </label>
-                  <select
-                    value={orderType}
-                    onChange={(e) => setOrderType(e.target.value)}
-                    className="w-full bg-slate-100 border border-slate-200 rounded-md p-2 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500/30"
-                  >
-                    <option value="SALES">Sales Order</option>
-                    <option value="MAINTENANCE">Maintenance Agreement</option>
-                    <option value="SHOPPING_CART">Shopping Cart</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-500 mb-1.5">
-                    Valid Till Date
-                  </label>
+
+                <div className="space-y-1">
+                  <label className="font-semibold text-slate-700">Valid Till Date</label>
                   <input
                     type="date"
                     value={validTill}
                     onChange={(e) => setValidTill(e.target.value)}
-                    className="w-full bg-slate-100 border border-slate-200 rounded-md p-2 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500/30"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs font-mono"
                   />
                 </div>
               </div>
 
               {/* Items Section */}
-              <div className="space-y-3 border-t border-slate-200 pt-4">
+              <div className="space-y-2 border border-slate-200 rounded-xl p-3 bg-slate-50/50">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                    Line Items & Discounts
-                  </h3>
+                  <span className="font-semibold text-slate-800 text-[11px]">Quoted Items</span>
                   <button
                     type="button"
                     onClick={handleAddItemRow}
-                    className="flex items-center gap-1 text-xs text-slate-500 hover:text-white px-2.5 py-1 rounded bg-slate-100 border border-slate-200 hover:bg-slate-100 transition-all"
+                    className="px-2 py-1 rounded bg-blue-50 text-blue-700 hover:bg-blue-100 text-[11px] font-semibold flex items-center gap-1 border border-blue-200"
                   >
-                    <Plus className="h-3 w-3" /> Add Item Row
+                    <Plus className="h-3 w-3" />
+                    <span>Add Item</span>
                   </button>
                 </div>
 
-                <div className="space-y-2">
-                  {quotationItems.map((row, idx) => (
-                    <div
-                      key={idx}
-                      className="grid grid-cols-12 gap-2 items-center p-2.5 rounded-lg bg-slate-50 border border-slate-200 text-xs"
-                    >
-                      <div className="col-span-5">
-                        <select
-                          value={row.itemId}
-                          onChange={(e) => handleItemChange(idx, e.target.value)}
-                          className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-xs text-slate-700 focus:outline-none"
-                        >
-                          {items.map((i) => (
-                            <option key={i.id} value={i.id}>
-                              {i.itemName} ({i.itemCode})
-                            </option>
-                          ))}
-                        </select>
+                {quotationItems.length === 0 ? (
+                  <div className="text-center py-4 text-slate-400 text-xs">No items added. Click &quot;Add Item&quot; above.</div>
+                ) : (
+                  <div className="space-y-2">
+                    {quotationItems.map((item, idx) => (
+                      <div key={idx} className="grid grid-cols-12 gap-2 items-center bg-white p-2.5 rounded-lg border border-slate-200">
+                        <div className="col-span-6 space-y-0.5">
+                          <label className="text-[10px] text-slate-400">Item</label>
+                          <select
+                            value={item.itemId}
+                            onChange={(e) => handleItemChange(idx, e.target.value)}
+                            className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-xs"
+                          >
+                            {items.map((itm) => (
+                              <option key={itm.id} value={itm.id}>
+                                {itm.itemName} ({itm.itemCode})
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="col-span-2 space-y-0.5">
+                          <label className="text-[10px] text-slate-400">Qty</label>
+                          <input
+                            type="number"
+                            min="1"
+                            value={item.qty}
+                            onChange={(e) => {
+                              const updated = [...quotationItems];
+                              updated[idx].qty = Number(e.target.value) || 1;
+                              setQuotationItems(updated);
+                            }}
+                            className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-xs text-center font-mono"
+                          />
+                        </div>
+                        <div className="col-span-3 space-y-0.5">
+                          <label className="text-[10px] text-slate-400">Rate (₹)</label>
+                          <input
+                            type="number"
+                            value={item.rate}
+                            onChange={(e) => {
+                              const updated = [...quotationItems];
+                              updated[idx].rate = Number(e.target.value) || 0;
+                              setQuotationItems(updated);
+                            }}
+                            className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-xs text-right font-mono"
+                          />
+                        </div>
+                        <div className="col-span-1 text-center pt-3">
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveItemRow(idx)}
+                            className="text-slate-400 hover:text-rose-600"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
                       </div>
-                      <div className="col-span-2">
-                        <input
-                          type="number"
-                          min="1"
-                          placeholder="Qty"
-                          value={row.qty}
-                          onChange={(e) => {
-                            const updated = [...quotationItems];
-                            updated[idx].qty = parseFloat(e.target.value) || 1;
-                            setQuotationItems(updated);
-                          }}
-                          className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-xs text-slate-700 text-center focus:outline-none"
-                        />
-                      </div>
-                      <div className="col-span-2">
-                        <input
-                          type="number"
-                          placeholder="Rate"
-                          value={row.rate}
-                          onChange={(e) => {
-                            const updated = [...quotationItems];
-                            updated[idx].rate = parseFloat(e.target.value) || 0;
-                            setQuotationItems(updated);
-                          }}
-                          className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-xs text-slate-700 font-mono text-right focus:outline-none"
-                        />
-                      </div>
-                      <div className="col-span-2">
-                        <input
-                          type="number"
-                          min="0"
-                          max="100"
-                          placeholder="Disc %"
-                          value={row.discountPercentage}
-                          onChange={(e) => {
-                            const updated = [...quotationItems];
-                            updated[idx].discountPercentage = parseFloat(e.target.value) || 0;
-                            setQuotationItems(updated);
-                          }}
-                          className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-xs text-slate-700 text-right focus:outline-none"
-                        />
-                      </div>
-                      <div className="col-span-1 text-center">
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveItemRow(idx)}
-                          className="text-blue-7000 hover:text-red-500 p-1 transition-colors"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+                    ))}
+                  </div>
+                )}
 
-              {/* Tax & Discount Summary */}
-              <div className="border-t border-slate-200 pt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2 text-xs">
-                  <div className="text-slate-400">Additional Overall Discount (%)</div>
-                  <input
-                    type="number"
-                    min="0"
-                    max="100"
-                    value={additionalDiscount}
-                    onChange={(e) => setAdditionalDiscount(e.target.value)}
-                    className="w-32 bg-slate-100 border border-slate-200 rounded p-1.5 text-xs text-slate-700"
-                  />
-                  <div className="text-[11px] text-slate-400 leading-relaxed">
-                    Automatically applies 6.25% State Sales Tax and 2.0% Municipal Surcharge.
-                  </div>
-                </div>
-
-                <div className="p-3.5 rounded-lg bg-slate-100 border border-slate-200 space-y-1.5 text-xs font-mono">
-                  <div className="flex justify-between text-slate-400">
-                    <span>Net Total:</span>
-                    <span>{formatCurrency(calculatedNetTotal)}</span>
-                  </div>
-                  <div className="flex justify-between text-slate-400">
-                    <span>Taxes & Charges (8.25%):</span>
-                    <span>{formatCurrency(calculatedTax)}</span>
-                  </div>
-                  {discountVal > 0 && (
-                    <div className="flex justify-between text-emerald-400">
-                      <span>Discount ({additionalDiscount}%):</span>
-                      <span>-{formatCurrency(discountVal)}</span>
+                {/* Calculation breakdown */}
+                <div className="pt-2 border-t border-slate-200 flex justify-end">
+                  <div className="w-56 space-y-1 text-xs">
+                    <div className="flex justify-between text-slate-600">
+                      <span>Net Total:</span>
+                      <span className="font-mono font-semibold">₹{calculatedNetTotal.toLocaleString()}</span>
                     </div>
-                  )}
-                  <div className="flex justify-between text-sm font-bold text-slate-900 border-t border-slate-200 pt-1.5">
-                    <span>Grand Total:</span>
-                    <span>{formatCurrency(calculatedGrandTotal)}</span>
+                    <div className="flex justify-between text-slate-600">
+                      <span>Output GST (18%):</span>
+                      <span className="font-mono font-semibold text-blue-600">+₹{calculatedTax.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between text-slate-900 font-bold border-t border-slate-200 pt-1 text-sm">
+                      <span>Grand Total:</span>
+                      <span className="font-mono text-emerald-700">₹{calculatedGrandTotal.toLocaleString()}</span>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Modal Actions */}
-              <div className="flex items-center justify-end gap-3 border-t border-slate-200 pt-4">
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setIsCreateOpen(false)}
-                  className="px-4 py-2 rounded-lg bg-slate-100 border border-slate-200 text-slate-500 text-xs font-medium hover:bg-slate-100"
+                  className="px-4 py-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 font-semibold"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-sm transition-all"
+                  className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-sm"
                 >
-                  Create & Calculate Quotation
+                  Save Quotation
                 </button>
               </div>
             </form>
@@ -476,5 +477,13 @@ export default function QuotationsPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function QuotationsPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-xs text-slate-400">Loading Quotations...</div>}>
+      <QuotationsContent />
+    </Suspense>
   );
 }

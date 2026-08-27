@@ -1,22 +1,17 @@
 package com.nextgen.erp.sales.application.service;
 
-import com.nextgen.erp.sales.application.dto.CustomerCreateRequest;
-import com.nextgen.erp.sales.application.dto.CustomerDto;
+import com.nextgen.erp.sales.application.dto.*;
 import com.nextgen.erp.sales.domain.exception.ResourceNotFoundException;
-import com.nextgen.erp.sales.domain.model.Customer;
-import com.nextgen.erp.sales.domain.model.CustomerAddress;
-import com.nextgen.erp.sales.domain.model.CustomerContact;
-import com.nextgen.erp.sales.domain.model.CustomerGroup;
-import com.nextgen.erp.sales.domain.model.Territory;
-import com.nextgen.erp.sales.infrastructure.repository.CustomerGroupRepository;
-import com.nextgen.erp.sales.infrastructure.repository.CustomerRepository;
-import com.nextgen.erp.sales.infrastructure.repository.TerritoryRepository;
+import com.nextgen.erp.sales.domain.model.*;
+import com.nextgen.erp.sales.infrastructure.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -27,6 +22,18 @@ public class CustomerService {
     private final CustomerRepository customerRepository;
     private final CustomerGroupRepository customerGroupRepository;
     private final TerritoryRepository territoryRepository;
+    private final QuotationRepository quotationRepository;
+    private final SalesOrderRepository salesOrderRepository;
+    private final DeliveryNoteRepository deliveryNoteRepository;
+    private final SalesInvoiceRepository salesInvoiceRepository;
+    private final PaymentEntryRepository paymentEntryRepository;
+    private final GlEntryRepository glEntryRepository;
+
+    private final QuotationService quotationService;
+    private final SalesOrderService salesOrderService;
+    private final DeliveryNoteService deliveryNoteService;
+    private final SalesInvoiceService salesInvoiceService;
+    private final PaymentEntryService paymentEntryService;
 
     @Transactional(readOnly = true)
     public List<CustomerDto> getAllCustomers() {
@@ -40,6 +47,95 @@ public class CustomerService {
         Customer customer = customerRepository.findByIdWithDetails(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Customer", id));
         return mapToDto(customer);
+    }
+
+    @Transactional(readOnly = true)
+    public Customer360DashboardDto getCustomer360Dashboard(UUID customerId) {
+        Customer customer = customerRepository.findByIdWithDetails(customerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Customer", customerId));
+
+        CustomerDto custDto = mapToDto(customer);
+
+        List<Quotation> quotations = quotationRepository.findByCustomerIdOrderByTransactionDateDesc(customerId);
+        List<SalesOrder> salesOrders = salesOrderRepository.findByCustomerIdOrderByTransactionDateDesc(customerId);
+        List<DeliveryNote> deliveryNotes = deliveryNoteRepository.findByCustomerId(customerId);
+        List<SalesInvoice> salesInvoices = salesInvoiceRepository.findByCustomerId(customerId);
+        List<PaymentEntry> paymentEntries = paymentEntryRepository.findByCustomerId(customerId);
+        List<GlEntry> glEntries = glEntryRepository.findByCustomerIdOrderByPostingDateDesc(customerId);
+
+        long quotesCount = quotations.size();
+        BigDecimal quotesVal = quotations.stream()
+                .map(Quotation::getGrandTotal)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        long ordersCount = salesOrders.size();
+        BigDecimal ordersVal = salesOrders.stream()
+                .map(SalesOrder::getGrandTotal)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        long dnCount = deliveryNotes.size();
+        BigDecimal deliveredQty = deliveryNotes.stream()
+                .map(DeliveryNote::getTotalQty)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        long invCount = salesInvoices.size();
+        BigDecimal invTotal = salesInvoices.stream()
+                .map(SalesInvoice::getGrandTotal)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal paidTotal = salesInvoices.stream()
+                .map(SalesInvoice::getPaidAmount)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal outTotal = salesInvoices.stream()
+                .map(SalesInvoice::getOutstandingAmount)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        long payCount = paymentEntries.size();
+        BigDecimal collectedTotal = paymentEntries.stream()
+                .map(PaymentEntry::getPaidAmount)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        return Customer360DashboardDto.builder()
+                .customer(custDto)
+                .totalQuotationsCount(quotesCount)
+                .totalQuotationsValue(quotesVal)
+                .totalSalesOrdersCount(ordersCount)
+                .totalSalesOrdersValue(ordersVal)
+                .totalDeliveryNotesCount(dnCount)
+                .totalDeliveredQty(deliveredQty)
+                .totalInvoicesCount(invCount)
+                .totalInvoicedValue(invTotal)
+                .totalPaidValue(paidTotal)
+                .totalOutstandingValue(outTotal)
+                .totalPaymentsCount(payCount)
+                .totalCollectedAmount(collectedTotal)
+                .recentQuotations(quotations.stream().map(quotationService::mapToDto).collect(Collectors.toList()))
+                .recentSalesOrders(salesOrders.stream().map(salesOrderService::mapToDto).collect(Collectors.toList()))
+                .recentDeliveryNotes(deliveryNotes.stream().map(deliveryNoteService::toDto).collect(Collectors.toList()))
+                .recentSalesInvoices(salesInvoices.stream().map(salesInvoiceService::toDto).collect(Collectors.toList()))
+                .recentPaymentEntries(paymentEntries.stream().map(paymentEntryService::toDto).collect(Collectors.toList()))
+                .customerLedger(glEntries.stream().map(g -> GlEntryDto.builder()
+                        .id(g.getId())
+                        .postingDate(g.getPostingDate())
+                        .voucherType(g.getVoucherType())
+                        .voucherNo(g.getVoucherNo())
+                        .voucherId(g.getVoucherId())
+                        .account(g.getAccount())
+                        .debit(g.getDebit())
+                        .credit(g.getCredit())
+                        .customerId(g.getCustomer() != null ? g.getCustomer().getId() : null)
+                        .customerName(g.getCustomer() != null ? g.getCustomer().getCustomerName() : null)
+                        .remarks(g.getRemarks())
+                        .cancelled(g.isCancelled())
+                        .createdAt(g.getCreatedAt())
+                        .build()).collect(Collectors.toList()))
+                .build();
     }
 
     @Transactional
@@ -67,6 +163,15 @@ public class CustomerService {
                 .territory(territory)
                 .defaultCurrency(request.getDefaultCurrency())
                 .taxId(request.getTaxId())
+                .taxCategory(request.getTaxCategory())
+                .defaultReceivableAccount(request.getDefaultReceivableAccount() != null ? request.getDefaultReceivableAccount() : "1310 - Debtors / Accounts Receivable")
+                .paymentTerms(request.getPaymentTerms())
+                .defaultSalesPartner(request.getDefaultSalesPartner())
+                .defaultCommissionRate(request.getDefaultCommissionRate() != null ? request.getDefaultCommissionRate() : BigDecimal.ZERO)
+                .isInternalCustomer(Boolean.TRUE.equals(request.getIsInternalCustomer()))
+                .representsCompany(request.getRepresentsCompany())
+                .soRequired(Boolean.TRUE.equals(request.getSoRequired()))
+                .dnRequired(Boolean.TRUE.equals(request.getDnRequired()))
                 .creditLimit(request.getCreditLimit())
                 .bypassCreditLimitCheck(request.getBypassCreditLimitCheck())
                 .email(request.getEmail())
@@ -112,7 +217,7 @@ public class CustomerService {
         return mapToDto(saved);
     }
 
-    private CustomerDto mapToDto(Customer c) {
+    public CustomerDto mapToDto(Customer c) {
         return CustomerDto.builder()
                 .id(c.getId())
                 .customerCode(c.getCustomerCode())
@@ -124,6 +229,15 @@ public class CustomerService {
                 .territoryName(c.getTerritory() != null ? c.getTerritory().getName() : null)
                 .defaultCurrency(c.getDefaultCurrency())
                 .taxId(c.getTaxId())
+                .taxCategory(c.getTaxCategory())
+                .defaultReceivableAccount(c.getDefaultReceivableAccount())
+                .paymentTerms(c.getPaymentTerms())
+                .defaultSalesPartner(c.getDefaultSalesPartner())
+                .defaultCommissionRate(c.getDefaultCommissionRate())
+                .isInternalCustomer(c.getIsInternalCustomer())
+                .representsCompany(c.getRepresentsCompany())
+                .soRequired(c.getSoRequired())
+                .dnRequired(c.getDnRequired())
                 .creditLimit(c.getCreditLimit())
                 .outstandingBalance(c.getOutstandingBalance())
                 .availableCredit(c.getAvailableCredit())

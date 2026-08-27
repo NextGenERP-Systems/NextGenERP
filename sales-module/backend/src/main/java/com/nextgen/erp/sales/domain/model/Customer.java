@@ -76,6 +76,28 @@ public class Customer {
     @Builder.Default
     private Boolean isFrozen = false;
 
+    @Column(name = "default_sales_partner", length = 150)
+    private String defaultSalesPartner;
+
+    @Column(name = "default_commission_rate", precision = 5, scale = 2)
+    @Builder.Default
+    private BigDecimal defaultCommissionRate = BigDecimal.ZERO;
+
+    @Column(name = "default_receivable_account", length = 150)
+    @Builder.Default
+    private String defaultReceivableAccount = "1310 - Debtors / Accounts Receivable";
+
+    @Column(name = "tax_category", length = 100)
+    private String taxCategory;
+
+    @Column(name = "so_required")
+    @Builder.Default
+    private Boolean soRequired = false;
+
+    @Column(name = "dn_required")
+    @Builder.Default
+    private Boolean dnRequired = false;
+
     @Column(name = "disabled")
     @Builder.Default
     private Boolean disabled = false;

@@ -19,11 +19,15 @@ public class SalesInvoiceCreateRequest {
     private UUID customerId;
     private LocalDate postingDate;
     private LocalDate dueDate;
+    private String currency;
+    private BigDecimal conversionRate;
     private String paymentTerms;
     private String notes;
 
     @NotEmpty(message = "Items list cannot be empty")
     private List<ItemEntry> items;
+
+    private List<TaxEntry> taxes;
 
     @Data
     @Builder
@@ -37,5 +41,17 @@ public class SalesInvoiceCreateRequest {
         private BigDecimal qty;
         private BigDecimal rate;
         private String incomeAccount;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class TaxEntry {
+        private com.nextgen.erp.sales.domain.model.TaxChargeType chargeType;
+        private Integer rowId;
+        private String accountHead;
+        private String description;
+        private BigDecimal rate;
     }
 }

@@ -37,10 +37,16 @@ public class QuotationDto {
     private DiscountApplyOn applyDiscountOn;
     private BigDecimal grandTotal;
     private BigDecimal baseGrandTotal;
+    private BigDecimal roundedTotal;
+    private BigDecimal baseRoundedTotal;
+    private String inWords;
     
     private String paymentTermsTemplate;
     private String termsAndConditions;
     private String notes;
+    private UUID opportunityId;
+    private String lostReason;
+    private String competitorName;
     
     private List<QuotationItemDto> items;
     private List<SalesTaxAndChargeDto> taxes;

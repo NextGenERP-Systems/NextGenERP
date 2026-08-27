@@ -212,6 +212,9 @@ public class DeliveryNoteService {
                         .build())
                 .collect(Collectors.toList());
 
+        BigDecimal totalAmount = dn.getTotalAmount() != null ? dn.getTotalAmount() : BigDecimal.ZERO;
+        String inWords = NumberToWordsConverter.convert(totalAmount, "INR");
+
         return DeliveryNoteDto.builder()
                 .id(dn.getId())
                 .deliveryNoteNumber(dn.getDeliveryNoteNumber())
@@ -224,7 +227,8 @@ public class DeliveryNoteService {
                 .trackingNumber(dn.getTrackingNumber())
                 .shippingAddress(dn.getShippingAddress())
                 .totalQty(dn.getTotalQty())
-                .totalAmount(dn.getTotalAmount())
+                .totalAmount(totalAmount)
+                .inWords(inWords)
                 .notes(dn.getNotes())
                 .items(itemDtos)
                 .createdAt(dn.getCreatedAt())

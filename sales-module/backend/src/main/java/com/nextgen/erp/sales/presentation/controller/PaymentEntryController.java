@@ -39,4 +39,10 @@ public class PaymentEntryController {
     public ResponseEntity<PaymentEntryDto> recordPayment(@Valid @RequestBody PaymentEntryCreateRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(paymentEntryService.recordPayment(request));
     }
+
+    @PostMapping("/{id}/cancel")
+    @Operation(summary = "Cancel customer payment and post contra GL reversal")
+    public ResponseEntity<PaymentEntryDto> cancelPayment(@PathVariable UUID id) {
+        return ResponseEntity.ok(paymentEntryService.cancelPaymentEntry(id));
+    }
 }

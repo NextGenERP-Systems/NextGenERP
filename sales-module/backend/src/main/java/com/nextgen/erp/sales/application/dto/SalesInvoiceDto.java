@@ -28,12 +28,16 @@ public class SalesInvoiceDto {
     private BigDecimal netTotal;
     private BigDecimal totalTax;
     private BigDecimal grandTotal;
+    private BigDecimal roundedTotal;
+    private String inWords;
     private BigDecimal paidAmount;
     private BigDecimal outstandingAmount;
     private String paymentTerms;
     private String notes;
     @Builder.Default
     private List<SalesInvoiceItemDto> items = new ArrayList<>();
+    @Builder.Default
+    private List<SalesTaxAndChargeDto> taxes = new ArrayList<>();
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
 }

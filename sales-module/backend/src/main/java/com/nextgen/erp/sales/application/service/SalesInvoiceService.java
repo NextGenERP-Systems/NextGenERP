@@ -1,6 +1,7 @@
 package com.nextgen.erp.sales.application.service;
 
 import com.nextgen.erp.sales.application.dto.*;
+import com.nextgen.erp.sales.domain.engine.TaxCalculationEngine;
 import com.nextgen.erp.sales.domain.model.*;
 import com.nextgen.erp.sales.infrastructure.repository.*;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +29,8 @@ public class SalesInvoiceService {
     private final SalesOrderRepository salesOrderRepository;
     private final DeliveryNoteRepository deliveryNoteRepository;
     private final ItemRepository itemRepository;
+    private final SalesTaxAndChargeRepository taxRepository;
+    private final TaxCalculationEngine taxCalculationEngine;
     private final GeneralLedgerService generalLedgerService;
 
     @Transactional(readOnly = true)
@@ -52,6 +55,8 @@ public class SalesInvoiceService {
         String invoiceNumber = generateInvoiceNumber();
         LocalDate postingDate = request.getPostingDate() != null ? request.getPostingDate() : LocalDate.now();
         LocalDate dueDate = request.getDueDate() != null ? request.getDueDate() : postingDate.plusDays(30);
+        String currency = request.getCurrency() != null ? request.getCurrency() : "INR";
+        BigDecimal conversionRate = request.getConversionRate() != null ? request.getConversionRate() : BigDecimal.ONE;
 
         SalesInvoice invoice = SalesInvoice.builder()
                 .invoiceNumber(invoiceNumber)
@@ -62,6 +67,8 @@ public class SalesInvoiceService {
                 .postingDate(postingDate)
                 .dueDate(dueDate)
                 .status(SalesInvoiceStatus.UNPAID)
+                .currency(currency)
+                .conversionRate(conversionRate)
                 .paymentTerms(request.getPaymentTerms() != null ? request.getPaymentTerms() : "Net 30 Days")
                 .notes(request.getNotes())
                 .items(new ArrayList<>())
@@ -95,21 +102,67 @@ public class SalesInvoiceService {
             netTotal = netTotal.add(lineAmount);
         }
 
-        // Compute Tax: Check parent Sales Order taxes or standard tax
-        BigDecimal totalTax = BigDecimal.ZERO;
-        if (request.getSalesOrderId() != null) {
-            Optional<SalesOrder> parentSo = salesOrderRepository.findById(request.getSalesOrderId());
-            if (parentSo.isPresent() && parentSo.get().getNetTotal() != null && parentSo.get().getNetTotal().compareTo(BigDecimal.ZERO) > 0) {
-                BigDecimal taxRatio = parentSo.get().getTotalTaxesAndCharges().divide(parentSo.get().getNetTotal(), 4, RoundingMode.HALF_UP);
-                totalTax = netTotal.multiply(taxRatio).setScale(2, RoundingMode.HALF_UP);
+        // --- Tax Calculation using TaxCalculationEngine ---
+        List<SalesTaxAndCharge> taxesToProcess = new ArrayList<>();
+
+        if (request.getTaxes() != null && !request.getTaxes().isEmpty()) {
+            for (int i = 0; i < request.getTaxes().size(); i++) {
+                SalesInvoiceCreateRequest.TaxEntry t = request.getTaxes().get(i);
+                taxesToProcess.add(SalesTaxAndCharge.builder()
+                        .voucherType("Sales Invoice")
+                        .idx(i + 1)
+                        .chargeType(t.getChargeType() != null ? t.getChargeType() : TaxChargeType.ON_NET_TOTAL)
+                        .rowId(t.getRowId())
+                        .accountHead(t.getAccountHead() != null ? t.getAccountHead() : GeneralLedgerService.ACC_TAX_PAYABLE)
+                        .description(t.getDescription() != null ? t.getDescription() : "Output Sales Tax")
+                        .rate(t.getRate() != null ? t.getRate() : new BigDecimal("18.00"))
+                        .build());
+            }
+        } else if (request.getSalesOrderId() != null) {
+            // Carry forward tax structure from parent Sales Order if available
+            List<SalesTaxAndCharge> parentTaxes = taxRepository.findByVoucherTypeAndVoucherIdOrderByIdxAsc("Sales Order", request.getSalesOrderId());
+            if (!parentTaxes.isEmpty()) {
+                for (SalesTaxAndCharge pt : parentTaxes) {
+                    taxesToProcess.add(SalesTaxAndCharge.builder()
+                            .voucherType("Sales Invoice")
+                            .idx(pt.getIdx())
+                            .chargeType(pt.getChargeType())
+                            .rowId(pt.getRowId())
+                            .accountHead(pt.getAccountHead())
+                            .description(pt.getDescription())
+                            .rate(pt.getRate())
+                            .build());
+                }
             } else {
-                totalTax = netTotal.multiply(new BigDecimal("0.0825")).setScale(2, RoundingMode.HALF_UP);
+                taxesToProcess.add(SalesTaxAndCharge.builder()
+                        .voucherType("Sales Invoice")
+                        .idx(1)
+                        .chargeType(TaxChargeType.ON_NET_TOTAL)
+                        .accountHead(GeneralLedgerService.ACC_TAX_PAYABLE)
+                        .description("GST Output Tax (18%)")
+                        .rate(new BigDecimal("18.00"))
+                        .build());
             }
         } else {
-            totalTax = netTotal.multiply(new BigDecimal("0.0825")).setScale(2, RoundingMode.HALF_UP);
+            // Default template tax via TaxCalculationEngine (18% Output GST)
+            taxesToProcess.add(SalesTaxAndCharge.builder()
+                    .voucherType("Sales Invoice")
+                    .idx(1)
+                    .chargeType(TaxChargeType.ON_NET_TOTAL)
+                    .accountHead(GeneralLedgerService.ACC_TAX_PAYABLE)
+                    .description("GST Output Tax (18%)")
+                    .rate(new BigDecimal("18.00"))
+                    .build());
         }
 
-        BigDecimal grandTotal = netTotal.add(totalTax).setScale(2, RoundingMode.HALF_UP);
+        TaxCalculationEngine.TaxCalculationResult taxResult = taxCalculationEngine.calculateTaxes(
+                netTotal,
+                conversionRate,
+                taxesToProcess
+        );
+
+        BigDecimal totalTax = taxResult.totalTaxesAndCharges();
+        BigDecimal grandTotal = taxResult.grandTotal();
 
         invoice.setNetTotal(netTotal);
         invoice.setTotalTax(totalTax);
@@ -118,6 +171,12 @@ public class SalesInvoiceService {
         invoice.setPaidAmount(BigDecimal.ZERO);
 
         SalesInvoice saved = salesInvoiceRepository.save(invoice);
+
+        // Save invoice tax breakdown rows
+        for (SalesTaxAndCharge tax : taxResult.calculatedTaxes()) {
+            tax.setVoucherId(saved.getId());
+            taxRepository.save(tax);
+        }
 
         // 1. Post double-entry General Ledger (GL)
         generalLedgerService.postSalesInvoiceGl(saved);
@@ -131,7 +190,7 @@ public class SalesInvoiceService {
             updateParentSalesOrderBilling(request.getSalesOrderId());
         }
 
-        log.info("Created Sales Invoice {} for customer {} (Amount: {}) with double-entry GL posting", saved.getInvoiceNumber(), saved.getCustomerName(), grandTotal);
+        log.info("Created Sales Invoice {} for customer {} (Grand Total: {}) with double-entry GL posting", saved.getInvoiceNumber(), saved.getCustomerName(), grandTotal);
         return toDto(saved);
     }
 
@@ -194,6 +253,45 @@ public class SalesInvoiceService {
                 .build();
 
         return createSalesInvoice(request);
+    }
+
+    @Transactional
+    public SalesInvoiceDto cancelSalesInvoice(UUID id) {
+        SalesInvoice invoice = salesInvoiceRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Sales Invoice not found with id: " + id));
+
+        if (invoice.getStatus() == SalesInvoiceStatus.CANCELLED) {
+            throw new IllegalStateException("Sales Invoice " + invoice.getInvoiceNumber() + " is already cancelled");
+        }
+
+        if (invoice.getPaidAmount() != null && invoice.getPaidAmount().compareTo(BigDecimal.ZERO) > 0) {
+            throw new IllegalStateException("Cannot cancel invoice " + invoice.getInvoiceNumber() + " with active payments. Cancel payments first.");
+        }
+
+        // 1. Revert customer balance
+        Customer customer = invoice.getCustomer();
+        if (customer != null && invoice.getOutstandingAmount() != null) {
+            BigDecimal newBal = customer.getOutstandingBalance().subtract(invoice.getOutstandingAmount());
+            if (newBal.compareTo(BigDecimal.ZERO) < 0) newBal = BigDecimal.ZERO;
+            customer.setOutstandingBalance(newBal);
+            customerRepository.save(customer);
+        }
+
+        // 2. Post Contra Reversal in General Ledger
+        generalLedgerService.reverseSalesInvoiceGl(invoice);
+
+        // 3. Mark status cancelled
+        invoice.setStatus(SalesInvoiceStatus.CANCELLED);
+        invoice.setOutstandingAmount(BigDecimal.ZERO);
+        SalesInvoice saved = salesInvoiceRepository.save(invoice);
+
+        // 4. Update Parent Sales Order billing status if linked
+        if (saved.getSalesOrderId() != null) {
+            updateParentSalesOrderBilling(saved.getSalesOrderId());
+        }
+
+        log.info("Cancelled Sales Invoice {} with GL contra entries", saved.getInvoiceNumber());
+        return toDto(saved);
     }
 
     @Transactional
@@ -270,6 +368,25 @@ public class SalesInvoiceService {
                         .build())
                 .collect(Collectors.toList());
 
+        List<SalesTaxAndCharge> taxes = taxRepository.findByVoucherTypeAndVoucherIdOrderByIdxAsc("Sales Invoice", invoice.getId());
+        List<SalesTaxAndChargeDto> taxDtos = taxes.stream().map(t -> SalesTaxAndChargeDto.builder()
+                .id(t.getId())
+                .idx(t.getIdx())
+                .chargeType(t.getChargeType())
+                .rowId(t.getRowId())
+                .accountHead(t.getAccountHead())
+                .description(t.getDescription())
+                .rate(t.getRate())
+                .taxAmount(t.getTaxAmount())
+                .total(t.getTotal())
+                .baseTaxAmount(t.getBaseTaxAmount())
+                .baseTotal(t.getBaseTotal())
+                .build()).collect(Collectors.toList());
+
+        BigDecimal grandTotal = invoice.getGrandTotal() != null ? invoice.getGrandTotal() : BigDecimal.ZERO;
+        String inWords = NumberToWordsConverter.convert(grandTotal, invoice.getCurrency() != null ? invoice.getCurrency() : "INR");
+        BigDecimal roundedTotal = grandTotal.setScale(0, RoundingMode.HALF_UP);
+
         return SalesInvoiceDto.builder()
                 .id(invoice.getId())
                 .invoiceNumber(invoice.getInvoiceNumber())
@@ -284,12 +401,15 @@ public class SalesInvoiceService {
                 .conversionRate(invoice.getConversionRate())
                 .netTotal(invoice.getNetTotal())
                 .totalTax(invoice.getTotalTax())
-                .grandTotal(invoice.getGrandTotal())
+                .grandTotal(grandTotal)
+                .roundedTotal(roundedTotal)
+                .inWords(inWords)
                 .paidAmount(invoice.getPaidAmount())
                 .outstandingAmount(invoice.getOutstandingAmount())
                 .paymentTerms(invoice.getPaymentTerms())
                 .notes(invoice.getNotes())
                 .items(itemDtos)
+                .taxes(taxDtos)
                 .createdAt(invoice.getCreatedAt())
                 .updatedAt(invoice.getUpdatedAt())
                 .build();

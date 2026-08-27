@@ -19,6 +19,9 @@ import {
   BarChart3,
   Users,
   FileText,
+  FileCheck,
+  Handshake,
+  UserPlus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -33,15 +36,18 @@ export function Sidebar() {
 
   const SELLING_SUB_NAV = [
     { title: "Dashboard & KPIs", href: "/sales", icon: TrendingUp },
+    { title: "Customers", href: "/sales/customers", icon: Users },
+    { title: "CRM & Pre-Sales", href: "/sales/crm", icon: Target },
+    { title: "Blanket Orders", href: "/sales/blanket-orders", icon: FileCheck },
     { title: "Quotations", href: "/sales/quotations", icon: FileText },
     { title: "Sales Orders", href: "/sales/orders", icon: ShoppingBag },
-    { title: "Customer 360", href: "/sales/customers", icon: Users },
     { title: "Delivery Notes", href: "/sales/delivery-notes", icon: Truck },
     { title: "Sales Invoices", href: "/sales/invoices", icon: Receipt },
-    { title: "Payments & Receipts", href: "/sales/payments", icon: CreditCard },
-    { title: "CRM & Pipeline", href: "/sales/crm", icon: Target },
-    { title: "Pricing & Coupons", href: "/sales/pricing-rules", icon: Tag },
-    { title: "Reports & Analysis", href: "/sales/reports", icon: BarChart3 },
+    { title: "Payment Entries", href: "/sales/payments", icon: CreditCard },
+    { title: "Sales Partners", href: "/sales/sales-partners", icon: Handshake },
+    { title: "Sales Persons", href: "/sales/sales-persons", icon: UserPlus },
+    { title: "Pricing & Rules", href: "/sales/pricing-rules", icon: Tag },
+    { title: "Reports & Analytics", href: "/sales/reports", icon: BarChart3 },
   ];
 
   const OTHER_MODULES = [

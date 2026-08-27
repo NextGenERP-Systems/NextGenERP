@@ -47,4 +47,13 @@ public class QuotationController {
     public ResponseEntity<QuotationDto> updateStatus(@PathVariable UUID id, @RequestParam QuotationStatus status) {
         return ResponseEntity.ok(quotationService.updateQuotationStatus(id, status));
     }
+
+    @PostMapping("/{id}/lost")
+    @Operation(summary = "Mark quotation as lost with competitor and reason")
+    public ResponseEntity<QuotationDto> markLost(
+            @PathVariable UUID id,
+            @RequestParam com.nextgen.erp.sales.domain.model.QuotationLostReason reason,
+            @RequestParam(required = false) String competitorName) {
+        return ResponseEntity.ok(quotationService.markQuotationLost(id, reason, competitorName));
+    }
 }

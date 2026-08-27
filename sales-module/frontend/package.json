@@ -6,7 +6,12 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test:e2e": "node e2e-test.mjs",
+    "test:live": "node e2e-live.mjs",
+    "test:e2e:full": "node e2e-full-lifecycle.mjs --headless",
+    "test:live:full": "node e2e-full-lifecycle.mjs",
+    "test:record": "node e2e-full-lifecycle.mjs --record"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.1",
@@ -28,10 +33,12 @@
     "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@types/node": "^20.16.1",
     "@types/react": "^18.3.4",
     "@types/react-dom": "^18.3.0",
     "autoprefixer": "^10.4.20",
+    "playwright": "^1.62.1",
     "postcss": "^8.4.41",
     "tailwindcss": "^3.4.10",
     "typescript": "^5.5.4"

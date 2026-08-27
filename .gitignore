@@ -35,3 +35,10 @@ target/
 .env.development.local
 .env.test.local
 .env.production.local
+
+# Test scripts & reports
+e2e-*.mjs
+e2e-*.js
+playwright-report/
+test-results/
+
