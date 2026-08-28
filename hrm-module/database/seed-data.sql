@@ -50,5 +50,19 @@ INSERT INTO salary_components (id, component_code, component_name, type, is_tax_
 ('66666666-6666-6666-6666-666666666603', 'SPL_ALLOW', 'Special Allowance', 'EARNING', TRUE, 'base * 0.25', 'Flexible balancing taxable allowance component'),
 ('66666666-6666-6666-6666-666666666604', 'PF_DEDUCT', 'Provident Fund (Employee)', 'DEDUCTION', FALSE, 'basic * 0.12', 'Statutory employee PF contribution (12% of Basic)'),
 ('66666666-6666-6666-6666-666666666605', 'PT_DEDUCT', 'Professional Tax', 'DEDUCTION', FALSE, '200', 'State professional tax monthly statutory deduction'),
-('66666666-6666-6666-6666-666666666606', 'TDS', 'Income Tax Deducted at Source', 'DEDUCTION', FALSE, 'slab_calc', 'Direct income tax withholding per Indian IT slabs')
+('66666666-6666-6666-6666-666666666606', 'TDS', 'Income Tax Deducted at Source', 'DEDUCTION', FALSE, 'slab_calc', 'Direct income tax withholding per Indian IT slabs'),
+('66666666-6666-6666-6666-666666666607', 'SALES_COMM', 'Sales Commission & Incentives', 'EARNING', TRUE, 'comm_sync', 'Monthly earned commission and sales target incentives')
+ON CONFLICT (id) DO NOTHING;
+
+-- 7. EMPLOYEES (SEED DATA)
+INSERT INTO employees (id, employee_code, first_name, last_name, gender, date_of_birth, date_of_joining, status, employment_type, department_id, designation_id, branch_id, work_email, cell_number, panNumber, bank_name, bank_account_number, ifsc_code) VALUES
+('44444444-1111-1111-1111-111111111101', 'EMP-001', 'Alexander', 'Wright', 'MALE', '1988-04-12', '2023-01-15', 'ACTIVE', 'FULL_TIME', '11111111-1111-1111-1111-111111111103', '22222222-2222-2222-2222-222222222205', '33333333-3333-3333-3333-333333333301', 'a.wright@nextgenerp.io', '+91 98111 22334', 'AALPW8910K', 'HDFC Bank', '5010044556677', 'HDFC0000123'),
+('44444444-1111-1111-1111-111111111102', 'EMP-002', 'Sarah', 'Jenkins', 'FEMALE', '1992-09-24', '2023-03-01', 'ACTIVE', 'FULL_TIME', '11111111-1111-1111-1111-111111111103', '22222222-2222-2222-2222-222222222205', '33333333-3333-3333-3333-333333333301', 's.jenkins@nextgenerp.io', '+91 98222 33445', 'BKLPS2241Q', 'ICICI Bank', '001201556677', 'ICIC0000012'),
+('44444444-1111-1111-1111-111111111103', 'EMP-003', 'Elena', 'Rostova', 'FEMALE', '1990-11-18', '2022-06-10', 'ACTIVE', 'FULL_TIME', '11111111-1111-1111-1111-111111111101', '22222222-2222-2222-2222-222222222203', '33333333-3333-3333-3333-333333333301', 'e.rostova@nextgenerp.io', '+91 98333 44556', 'CKLPR9901M', 'State Bank of India', '30998877665', 'SBIN0001234')
+ON CONFLICT (id) DO NOTHING;
+
+-- 8. EXPENSE CLAIMS (CUSTOMER TAGGED)
+INSERT INTO expense_claims (id, claim_number, employee_id, claim_date, expense_type, total_amount, sanctioned_amount, status, description, customer_name, sales_order_id, is_billable) VALUES
+('55555555-1111-1111-1111-111111111101', 'EXP-2026-0001', '44444444-1111-1111-1111-111111111102', CURRENT_DATE - INTERVAL '5 days', 'Client Travel & Accommodation', 1850.00, 1850.00, 'APPROVED', 'On-site technical demo and scoping session at Austin HQ', 'Apex Global Technologies LLC', 'SAL-ORD-2026-0001', TRUE),
+('55555555-1111-1111-1111-111111111102', 'EXP-2026-0002', '44444444-1111-1111-1111-111111111101', CURRENT_DATE - INTERVAL '8 days', 'Customer Dinner & Entertainment', 640.00, 640.00, 'PAID', 'Quarterly roadmap alignment dinner with VP of Procurement', 'Apex Global Technologies LLC', 'SAL-ORD-2026-0001', TRUE)
 ON CONFLICT (id) DO NOTHING;

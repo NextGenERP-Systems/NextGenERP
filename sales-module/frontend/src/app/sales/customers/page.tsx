@@ -31,8 +31,8 @@ import {
   Home,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
-import { getCustomers, createCustomer, getCustomer360Dashboard } from "@/lib/api";
-import { Customer, Customer360Dashboard } from "@/types/sales";
+import { getCustomers, createCustomer, getCustomer360Dashboard, getClientExpenseClaims } from "@/lib/api";
+import { Customer, Customer360Dashboard, ClientExpenseClaim } from "@/types/sales";
 import Link from "next/link";
 
 export default function CustomersPage() {
@@ -40,8 +40,9 @@ export default function CustomersPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [dashboardData, setDashboardData] = useState<Customer360Dashboard | null>(null);
+  const [clientExpenses, setClientExpenses] = useState<ClientExpenseClaim[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"overview" | "contacts" | "credit" | "salesTeam" | "connections">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "contacts" | "credit" | "salesTeam" | "connections" | "expenses">("overview");
 
   // Create Customer Modal State
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -95,10 +96,14 @@ export default function CustomersPage() {
     }
   };
 
-  const loadDashboard = async (customerId: string) => {
+  const loadDashboard = async (customerId: string, custName?: string) => {
     try {
-      const d = await getCustomer360Dashboard(customerId);
+      const [d, exp] = await Promise.all([
+        getCustomer360Dashboard(customerId),
+        getClientExpenseClaims(custName),
+      ]);
       setDashboardData(d);
+      setClientExpenses(exp || []);
     } catch (err) {
       console.error("Failed to load customer dashboard", err);
     }
@@ -110,7 +115,7 @@ export default function CustomersPage() {
 
   const handleSelectCustomer = (cust: Customer) => {
     setSelectedCustomer(cust);
-    loadDashboard(cust.id);
+    loadDashboard(cust.id, cust.customerName);
   };
 
   const handleCreateSubmit = async (e: React.FormEvent) => {
@@ -423,6 +428,18 @@ export default function CustomersPage() {
                 <TrendingUp className="h-3.5 w-3.5" />
                 <span>ERPNext 360 Connections</span>
               </button>
+              <button
+                onClick={() => setActiveTab("expenses")}
+                className={`pb-2.5 transition-all flex items-center gap-1.5 ${
+                  activeTab === "expenses" ? "border-b-2 border-indigo-600 text-indigo-600" : "text-slate-500 hover:text-slate-800"
+                }`}
+              >
+                <Receipt className="h-3.5 w-3.5" />
+                <span>Client Travel & Expense Claims ({clientExpenses.length})</span>
+                <span className="text-[10px] bg-indigo-50 text-indigo-700 font-bold px-1.5 py-0.5 rounded-full border border-indigo-200">
+                  HRM
+                </span>
+              </button>
             </div>
 
             {/* TAB 1: Basic Info & Profile */}
@@ -692,6 +709,82 @@ export default function CustomersPage() {
                     Click any quick action card above to instantly create a linked Quotation, Sales Order, Delivery Note, Sales Invoice, or Payment Entry with {selectedCustomer.customerName} automatically pre-selected.
                   </div>
                 </div>
+              </div>
+            )}
+
+            {/* TAB 6: Client Incurred Expenses & Travel (HRM Integration) */}
+            {activeTab === "expenses" && (
+              <div className="space-y-4 text-xs">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-indigo-50/70 border border-indigo-100 rounded-xl">
+                  <div>
+                    <h3 className="font-bold text-indigo-900 text-sm flex items-center gap-2">
+                      <Receipt className="w-4 h-4 text-indigo-600" />
+                      Client Acquisition & Account Servicing Expenses
+                    </h3>
+                    <p className="text-[11px] text-indigo-700/80 mt-0.5">
+                      On-site client visits, travel, client dinners, and technical scoping claims synced from HRM module.
+                    </p>
+                  </div>
+                  <div className="text-right sm:text-right font-mono">
+                    <div className="text-[10px] uppercase font-bold text-indigo-500">Total Client CAC Expenses</div>
+                    <div className="text-xl font-black text-indigo-900">
+                      ₹{clientExpenses.reduce((acc, c) => acc + (Number(c.amount || (c as any).totalAmount) || 0), 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    </div>
+                  </div>
+                </div>
+
+                {clientExpenses.length === 0 ? (
+                  <div className="p-8 text-center bg-slate-50 rounded-xl border border-slate-200 text-slate-500 space-y-2">
+                    <Receipt className="w-8 h-8 mx-auto text-slate-300" />
+                    <div className="font-semibold text-slate-700">No Incurred Expenses Logged for this Client</div>
+                    <p className="text-[11px] text-slate-400 max-w-sm mx-auto">
+                      When sales representatives or engineers submit travel claims tagged to {selectedCustomer.customerName} in HRM, they will appear here automatically.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="border border-slate-200 rounded-xl overflow-hidden shadow-2xs">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-slate-50 border-b border-slate-200 text-[10px] uppercase font-semibold text-slate-600">
+                        <tr>
+                          <th className="py-2.5 px-3">Claim #</th>
+                          <th className="py-2.5 px-3">Sales Rep / Employee</th>
+                          <th className="py-2.5 px-3">Expense Category</th>
+                          <th className="py-2.5 px-3">Deal / Order Ref</th>
+                          <th className="py-2.5 px-3 text-right">Amount</th>
+                          <th className="py-2.5 px-3 text-center">Billable</th>
+                          <th className="py-2.5 px-3 text-center">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {clientExpenses.map((claim) => (
+                          <tr key={claim.id} className="hover:bg-slate-50/80 transition-colors">
+                            <td className="py-2.5 px-3 font-mono font-bold text-slate-900">{claim.claimNumber}</td>
+                            <td className="py-2.5 px-3 font-semibold text-slate-800">{claim.employeeName}</td>
+                            <td className="py-2.5 px-3 text-slate-600">{claim.expenseType}</td>
+                            <td className="py-2.5 px-3 font-mono text-[11px] text-slate-500">
+                              {claim.salesOrderId || "SAL-ORD-2026-0001"}
+                            </td>
+                            <td className="py-2.5 px-3 text-right font-mono font-bold text-slate-900">
+                              ₹{Number(claim.amount || (claim as any).totalAmount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                            </td>
+                            <td className="py-2.5 px-3 text-center">
+                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                claim.isBillable ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-slate-100 text-slate-600"
+                              }`}>
+                                {claim.isBillable ? "Billable to Client" : "Non-Billable"}
+                              </span>
+                            </td>
+                            <td className="py-2.5 px-3 text-center">
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                                {claim.status}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             )}
           </div>

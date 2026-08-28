@@ -142,7 +142,39 @@ export interface SalesPerson {
   allocatedAmount: number;
   incentivesEarned: number;
   disabled?: boolean;
+  departmentName?: string;
+  designationName?: string;
   createdAt?: string;
+}
+
+export interface ClientExpenseClaim {
+  id: string;
+  claimNumber: string;
+  employeeName: string;
+  expenseType: string;
+  amount: number;
+  claimDate: string;
+  status: string;
+  salesOrderId?: string;
+  isBillable: boolean;
+}
+
+export interface HrmEmployeeOption {
+  id: string;
+  employeeCode: string;
+  fullName: string;
+  workEmail: string;
+  cellNumber: string;
+  departmentName: string;
+  designationName: string;
+  status: string;
+}
+
+
+export interface ItemUomConversion {
+  id?: string;
+  uom: string;
+  conversionFactor: number;
 }
 
 export interface CatalogItem {
@@ -151,22 +183,49 @@ export interface CatalogItem {
   itemName: string;
   itemGroup: string;
   stockUom: string;
+  imageUrl?: string;
   isStockItem: boolean;
   isSalesItem: boolean;
   isPurchaseItem?: boolean;
+  isFixedAsset?: boolean;
+  allowAlternativeItem?: boolean;
+  hasVariants?: boolean;
   standardRate: number;
   valuationRate: number;
   lastPurchaseRate?: number;
+  valuationMethod?: string;
   maxDiscount: number;
+  hasSerialNo?: boolean;
+  hasBatchNo?: boolean;
+  hasExpiryDate?: boolean;
+  shelfLifeInDays?: number;
+  warrantyPeriod?: string;
+  weightPerUnit?: number;
+  weightUom?: string;
+  minOrderQty?: number;
+  safetyStock?: number;
+  leadTimeDays?: number;
   brand?: string;
   description?: string;
   barcode?: string;
-  hasSerialNo?: boolean;
-  hasBatchNo?: boolean;
   disabled?: boolean;
   defaultWarehouse?: string;
   defaultIncomeAccount?: string;
   defaultExpenseAccount?: string;
+  defaultSupplier?: string;
+  deliveredBySupplier?: boolean;
+  grantCommission?: boolean;
+  enableDeferredRevenue?: boolean;
+  enableDeferredExpense?: boolean;
+  includeItemInManufacturing?: boolean;
+  isSubContractedItem?: boolean;
+  defaultBom?: string;
+  productionCapacity?: number;
+  inspectionRequiredBeforePurchase?: boolean;
+  inspectionRequiredBeforeDelivery?: boolean;
+  qualityInspectionTemplate?: string;
+  variantBasedOn?: string;
+  uoms?: ItemUomConversion[];
   createdAt?: string;
 }
 

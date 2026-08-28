@@ -376,6 +376,13 @@ CREATE TABLE IF NOT EXISTS expense_claims (
     description TEXT,
     approved_by_id UUID REFERENCES employees(id),
     payment_reference VARCHAR(100),
+    
+    -- Cross-Module Sales Integration
+    customer_id UUID,
+    customer_name VARCHAR(255),
+    sales_order_id VARCHAR(100),
+    is_billable BOOLEAN DEFAULT FALSE,
+    
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 

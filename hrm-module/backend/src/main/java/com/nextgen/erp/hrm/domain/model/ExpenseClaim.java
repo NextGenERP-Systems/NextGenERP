@@ -59,6 +59,20 @@ public class ExpenseClaim {
     @Column(name = "payment_reference", length = 100)
     private String paymentReference;
 
+    // Cross-Module Sales Integration
+    @Column(name = "customer_id")
+    private UUID customerId;
+
+    @Column(name = "customer_name", length = 255)
+    private String customerName;
+
+    @Column(name = "sales_order_id", length = 100)
+    private String salesOrderId;
+
+    @Column(name = "is_billable")
+    @Builder.Default
+    private Boolean isBillable = false;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private OffsetDateTime createdAt;

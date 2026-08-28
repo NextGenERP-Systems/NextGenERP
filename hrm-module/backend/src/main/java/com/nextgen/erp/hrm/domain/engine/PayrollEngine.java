@@ -40,6 +40,18 @@ public class PayrollEngine {
             BigDecimal totalWorkingDays,
             BigDecimal paymentDays
     ) {
+        return computeSalary(baseMonthlyGross, totalWorkingDays, paymentDays, BigDecimal.ZERO);
+    }
+
+    /**
+     * Overloaded method to compute salary with integrated Sales Commissions & Incentives
+     */
+    public ComputedSalaryResult computeSalary(
+            BigDecimal baseMonthlyGross,
+            BigDecimal totalWorkingDays,
+            BigDecimal paymentDays,
+            BigDecimal salesCommission
+    ) {
         ComputedSalaryResult result = new ComputedSalaryResult();
 
         if (totalWorkingDays == null || totalWorkingDays.compareTo(BigDecimal.ZERO) == 0) {
@@ -47,6 +59,9 @@ public class PayrollEngine {
         }
         if (paymentDays == null) {
             paymentDays = totalWorkingDays;
+        }
+        if (salesCommission == null || salesCommission.compareTo(BigDecimal.ZERO) < 0) {
+            salesCommission = BigDecimal.ZERO;
         }
 
         // Attendance factor (e.g. 28 / 30 = 0.9333)
@@ -61,10 +76,11 @@ public class PayrollEngine {
         // Deductions
         BigDecimal pf = basic.multiply(BigDecimal.valueOf(0.12)).setScale(2, RoundingMode.HALF_UP);
         BigDecimal pt = BigDecimal.valueOf(200.00);
-        BigDecimal tds = effectiveGross.multiply(BigDecimal.valueOf(0.04)).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal taxableIncome = effectiveGross.add(salesCommission);
+        BigDecimal tds = taxableIncome.multiply(BigDecimal.valueOf(0.04)).setScale(2, RoundingMode.HALF_UP);
 
-        BigDecimal gross = basic.add(hra).add(special);
-        BigDecimal deductions = pf.add(pt).add(tds);
+        BigDecimal gross = basic.add(hra).add(special).add(salesCommission).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal deductions = pf.add(pt).add(tds).setScale(2, RoundingMode.HALF_UP);
         BigDecimal net = gross.subtract(deductions).setScale(2, RoundingMode.HALF_UP);
 
         result.grossPay = gross;
@@ -77,6 +93,11 @@ public class PayrollEngine {
         result.items.add(SalarySlipItem.builder().componentName("Basic Salary").type(ComponentType.EARNING).amount(basic).build());
         result.items.add(SalarySlipItem.builder().componentName("House Rent Allowance (HRA)").type(ComponentType.EARNING).amount(hra).build());
         result.items.add(SalarySlipItem.builder().componentName("Special Allowance").type(ComponentType.EARNING).amount(special).build());
+        
+        if (salesCommission.compareTo(BigDecimal.ZERO) > 0) {
+            result.items.add(SalarySlipItem.builder().componentName("Sales Commission & Incentives").type(ComponentType.EARNING).amount(salesCommission).build());
+        }
+
         result.items.add(SalarySlipItem.builder().componentName("Provident Fund (PF 12%)").type(ComponentType.DEDUCTION).amount(pf).build());
         result.items.add(SalarySlipItem.builder().componentName("Professional Tax (PT)").type(ComponentType.DEDUCTION).amount(pt).build());
         result.items.add(SalarySlipItem.builder().componentName("Income Tax (TDS)").type(ComponentType.DEDUCTION).amount(tds).build());

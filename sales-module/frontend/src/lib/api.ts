@@ -218,6 +218,52 @@ const MOCK_ITEMS: CatalogItem[] = [
     defaultIncomeAccount: "4110 - Service Revenue",
     defaultExpenseAccount: "5110 - Cost of Goods Sold",
   },
+  {
+    id: "44444444-4444-4444-4444-444444444410",
+    itemCode: "SKU010",
+    itemName: "Camera",
+    itemGroup: "Hardware",
+    stockUom: "Nos",
+    imageUrl: "https://images.pexels.com/photos/51383/photo-camera-subject-photographer-51383.jpeg",
+    isStockItem: true,
+    isSalesItem: true,
+    isPurchaseItem: true,
+    isFixedAsset: false,
+    allowAlternativeItem: false,
+    hasVariants: false,
+    standardRate: 750.0,
+    valuationRate: 500.0,
+    lastPurchaseRate: 500.0,
+    valuationMethod: "FIFO",
+    maxDiscount: 15.0,
+    hasSerialNo: true,
+    hasBatchNo: false,
+    hasExpiryDate: false,
+    shelfLifeInDays: 730,
+    warrantyPeriod: "24 Months Manufacturer",
+    weightPerUnit: 0.65,
+    weightUom: "Kg",
+    minOrderQty: 5.0,
+    safetyStock: 10.0,
+    leadTimeDays: 7,
+    brand: "OptiView Imaging",
+    description: "Professional high-definition industrial inspection and optical sensor camera system.",
+    barcode: "8901234567890",
+    disabled: false,
+    defaultWarehouse: "Main Warehouse",
+    defaultIncomeAccount: "4110 - Sales Revenue",
+    defaultExpenseAccount: "5110 - Cost of Goods Sold",
+    defaultSupplier: "Global Vision Optics Inc.",
+    deliveredBySupplier: false,
+    grantCommission: true,
+    includeItemInManufacturing: true,
+    isSubContractedItem: false,
+    uoms: [
+      { uom: "Nos", conversionFactor: 1.0 },
+      { uom: "Box (10 Units)", conversionFactor: 10.0 },
+      { uom: "Master Carton (50 Units)", conversionFactor: 50.0 }
+    ],
+  },
 ];
 
 const MOCK_ITEM_GROUPS: ItemGroup[] = [
@@ -3227,5 +3273,122 @@ export async function toggleSalesPersonStatus(id: string): Promise<SalesPerson> 
   if (sp) sp.disabled = !sp.disabled;
   return sp || MOCK_SALES_PERSONS[0];
 }
+
+// ------------------------------------------------------------------------------
+// SALES <-> HRM INTEGRATION CLIENT METHODS
+// ------------------------------------------------------------------------------
+
+export async function getHrmSalesEmployees(): Promise<any[]> {
+  try {
+    const res = await fetch(`http://localhost:8081/api/v1/hrm-integration/sales-employees`, { cache: "no-store" });
+    if (res.ok) return await res.json();
+  } catch (err) {}
+
+  // Fallback to local storage or unified seed
+  if (typeof window !== "undefined") {
+    try {
+      const stored = localStorage.getItem("NEXTGEN_HRM_EMPLOYEES");
+      if (stored) {
+        const emps = JSON.parse(stored);
+        if (Array.isArray(emps) && emps.length > 0) {
+          return emps.map((e: any) => ({
+            id: e.id,
+            employeeCode: e.employeeCode,
+            fullName: `${e.firstName} ${e.lastName}`,
+            workEmail: e.workEmail,
+            cellNumber: e.cellNumber,
+            departmentName: e.department?.departmentName || "Sales & Business Dev",
+            designationName: e.designation?.designationName || "Sales Representative",
+            status: e.status || "ACTIVE",
+          }));
+        }
+      }
+    } catch (e) {}
+  }
+
+  return [
+    {
+      id: "44444444-1111-1111-1111-111111111101",
+      employeeCode: "EMP-001",
+      fullName: "Alexander Wright",
+      workEmail: "a.wright@nextgenerp.io",
+      cellNumber: "+91 98111 22334",
+      departmentName: "Global Sales & Business Dev",
+      designationName: "Enterprise Sales Director",
+      status: "ACTIVE",
+    },
+    {
+      id: "44444444-1111-1111-1111-111111111102",
+      employeeCode: "EMP-002",
+      fullName: "Sarah Jenkins",
+      workEmail: "s.jenkins@nextgenerp.io",
+      cellNumber: "+91 98222 33445",
+      departmentName: "Global Sales & Business Dev",
+      designationName: "Senior Account Executive",
+      status: "ACTIVE",
+    },
+    {
+      id: "44444444-1111-1111-1111-111111111103",
+      employeeCode: "EMP-005",
+      fullName: "Alex Rivera",
+      workEmail: "a.rivera@nextgenerp.io",
+      cellNumber: "+91 98555 66778",
+      departmentName: "Global Sales & Business Dev",
+      designationName: "Solutions Engineer & Sales",
+      status: "ACTIVE",
+    },
+  ];
+}
+
+export async function getClientExpenseClaims(customerName?: string): Promise<any[]> {
+  try {
+    const res = await fetch(`http://localhost:8081/api/v1/hrm-integration/customer-expenses?customerName=${encodeURIComponent(customerName || "")}`);
+    if (res.ok) {
+      const data = await res.json();
+      return data.claims || [];
+    }
+  } catch (err) {}
+
+  // Fallback to local storage or sample dataset
+  if (typeof window !== "undefined") {
+    try {
+      const stored = localStorage.getItem("NEXTGEN_HRM_EXPENSES");
+      if (stored) {
+        const claims = JSON.parse(stored);
+        if (Array.isArray(claims)) {
+          return claims.filter((c: any) => !customerName || (c.customerName && c.customerName.toLowerCase().includes(customerName.toLowerCase())));
+        }
+      }
+    } catch (e) {}
+  }
+
+  return [
+    {
+      id: "exp-001",
+      claimNumber: "EXP-2026-0001",
+      employeeName: "Sarah Jenkins",
+      expenseType: "Client Travel & Accommodation",
+      totalAmount: 1850.0,
+      claimDate: "2026-08-20",
+      status: "APPROVED",
+      customerName: "Apex Global Technologies LLC",
+      salesOrderId: "SAL-ORD-2026-0001",
+      isBillable: true,
+    },
+    {
+      id: "exp-002",
+      claimNumber: "EXP-2026-0002",
+      employeeName: "Alexander Wright",
+      expenseType: "Customer Dinner & Entertainment",
+      totalAmount: 640.0,
+      claimDate: "2026-08-18",
+      status: "PAID",
+      customerName: "Apex Global Technologies LLC",
+      salesOrderId: "SAL-ORD-2026-0001",
+      isBillable: true,
+    },
+  ].filter((c) => !customerName || c.customerName.toLowerCase().includes(customerName.toLowerCase()));
+}
+
 
 

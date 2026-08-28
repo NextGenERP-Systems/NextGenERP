@@ -17,11 +17,12 @@ import {
   Home,
 } from "lucide-react";
 import Link from "next/link";
-import { getSalesPersons, createSalesPerson, toggleSalesPersonStatus } from "@/lib/api";
-import { SalesPerson } from "@/types/sales";
+import { getSalesPersons, createSalesPerson, toggleSalesPersonStatus, getHrmSalesEmployees } from "@/lib/api";
+import { SalesPerson, HrmEmployeeOption } from "@/types/sales";
 
 export default function SalesPersonsPage() {
   const [salesPersons, setSalesPersons] = useState<SalesPerson[]>([]);
+  const [hrmEmployees, setHrmEmployees] = useState<HrmEmployeeOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
@@ -33,14 +34,19 @@ export default function SalesPersonsPage() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [parentSalesPerson, setParentSalesPerson] = useState("Alexander Wright");
-  const [commissionRate, setCommissionRate] = useState("4.5");
+  const [commissionRate, setCommissionRate] = useState("5.0");
   const [targetAmount, setTargetAmount] = useState("500000");
+  const [selectedHrmEmpId, setSelectedHrmEmpId] = useState("");
 
   const loadData = async () => {
     setLoading(true);
     try {
-      const data = await getSalesPersons();
+      const [data, emps] = await Promise.all([
+        getSalesPersons(),
+        getHrmSalesEmployees(),
+      ]);
       setSalesPersons(data || []);
+      setHrmEmployees(emps || []);
     } catch (err) {
       console.error("Failed to load sales persons", err);
     } finally {
@@ -51,6 +57,17 @@ export default function SalesPersonsPage() {
   useEffect(() => {
     loadData();
   }, []);
+
+  const handleSelectHrmEmployee = (empCode: string) => {
+    setSelectedHrmEmpId(empCode);
+    const emp = hrmEmployees.find((e) => e.employeeCode === empCode);
+    if (emp) {
+      setSalesPersonName(emp.fullName);
+      setEmployeeId(emp.employeeCode);
+      setEmail(emp.workEmail);
+      setPhone(emp.cellNumber);
+    }
+  };
 
   const handleToggleStatus = async (id: string, name: string) => {
     try {
@@ -286,6 +303,34 @@ export default function SalesPersonsPage() {
             </div>
 
             <form onSubmit={handleCreateSubmit} className="space-y-3 text-xs">
+              {/* HRM Master Link Dropdown */}
+              <div className="p-3 bg-indigo-50/80 border border-indigo-100 rounded-xl space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="font-bold text-indigo-900 flex items-center gap-1.5 text-[11px]">
+                    <Users className="w-3.5 h-3.5 text-indigo-600" />
+                    Link from HRM Employee Master
+                  </label>
+                  <span className="text-[10px] font-semibold text-indigo-600 bg-white px-2 py-0.5 rounded-full border border-indigo-200">
+                    HR Integration
+                  </span>
+                </div>
+                <select
+                  value={selectedHrmEmpId}
+                  onChange={(e) => handleSelectHrmEmployee(e.target.value)}
+                  className="w-full bg-white border border-indigo-200 rounded-lg p-2 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                >
+                  <option value="">-- Select Employee from HRM Directory --</option>
+                  {hrmEmployees.map((emp) => (
+                    <option key={emp.id} value={emp.employeeCode}>
+                      {emp.employeeCode} - {emp.fullName} ({emp.designationName || emp.departmentName})
+                    </option>
+                  ))}
+                </select>
+                <p className="text-[10px] text-indigo-600/80">
+                  Selecting an HRM employee auto-populates code, name, email, and mobile number.
+                </p>
+              </div>
+
               <div className="space-y-1">
                 <label className="font-semibold text-slate-700">Full Name *</label>
                 <input

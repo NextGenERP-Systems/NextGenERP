@@ -163,3 +163,12 @@ INSERT INTO coupon_codes (id, coupon_name, coupon_code, discount_type, discount_
 ('13131313-1313-1313-1313-131313131301', 'Q3 Launch Special 10%', 'NEXTGEN10', 'PERCENTAGE', 10.00, 5000.00, CURRENT_DATE + INTERVAL '90 days', 5, 200, TRUE),
 ('13131313-1313-1313-1313-131313131302', 'Enterprise Flat INR 2,000 Off', 'FLAT2000', 'FIXED_AMOUNT', 2000.00, 20000.00, CURRENT_DATE + INTERVAL '90 days', 2, 50, TRUE)
 ON CONFLICT (coupon_code) DO NOTHING;
+
+-- 15. Sales Persons Seed (Linked with HRM Employees)
+INSERT INTO sales_persons (id, sales_person_name, employee_id, email, phone, parent_sales_person, commission_rate, target_amount, allocated_amount, incentives_earned, disabled) VALUES
+('14141414-1414-1414-1414-141414141401', 'Alexander Wright', 'EMP-001', 'a.wright@nextgenerp.io', '+91 98111 22334', NULL, 5.00, 1000000.00, 48500.00, 2425.00, FALSE),
+('14141414-1414-1414-1414-141414141402', 'Sarah Jenkins', 'EMP-002', 's.jenkins@nextgenerp.io', '+91 98222 33445', 'Alexander Wright', 5.00, 500000.00, 420000.00, 21000.00, FALSE),
+('14141414-1414-1414-1414-141414141403', 'Alex Rivera', 'EMP-005', 'a.rivera@nextgenerp.io', '+91 98555 66778', 'Alexander Wright', 4.50, 400000.00, 310000.00, 13950.00, FALSE),
+('14141414-1414-1414-1414-141414141404', 'Michael Chang', 'EMP-006', 'm.chang@nextgenerp.io', '+91 98666 77889', 'Sarah Jenkins', 4.00, 350000.00, 290000.00, 11600.00, FALSE)
+ON CONFLICT (sales_person_name) DO NOTHING;
+
