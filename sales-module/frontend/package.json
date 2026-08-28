@@ -11,7 +11,8 @@
     "test:live": "node e2e-live.mjs",
     "test:e2e:full": "node e2e-full-lifecycle.mjs --headless",
     "test:live:full": "node e2e-full-lifecycle.mjs",
-    "test:record": "node e2e-full-lifecycle.mjs --record"
+    "test:record": "node e2e-full-lifecycle.mjs --record",
+    "test:erpnext": "node e2e-erpnext-sales.mjs --record"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.1",

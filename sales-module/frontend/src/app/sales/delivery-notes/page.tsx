@@ -19,7 +19,9 @@ import {
   Trash2,
   User,
   ShoppingBag,
+  Home,
 } from "lucide-react";
+import Link from "next/link";
 import {
   getDeliveryNotes,
   getCustomers,
@@ -257,26 +259,30 @@ function DeliveryNotesContent() {
   );
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2.5">
-            <Truck className="h-6 w-6 text-blue-600" />
-            <span>Delivery Notes & Fulfillment</span>
-          </h1>
-          <p className="text-xs text-slate-500 mt-1">
-            Goods Dispatch notes, packaging lists, warehouse stock issue, and delivery tracking.
-          </p>
+    <div className="space-y-4 text-[#1f272e] font-sans text-xs bg-white min-h-full pb-16">
+      {/* Top ERPNext Navbar & Breadcrumbs Header Bar */}
+      <div className="h-12 flex items-center justify-between gap-3 px-6 border-b border-gray-200 bg-white sticky top-0 z-20">
+        <div className="flex items-center gap-2 overflow-x-auto text-[13px]">
+          <Link href="/sales" className="text-gray-500 hover:text-gray-900 flex items-center">
+            <Home className="w-4 h-4 text-gray-500" />
+          </Link>
+          <span className="text-gray-400 font-light">/</span>
+          <Link href="/sales" className="text-gray-600 hover:text-gray-900 font-normal">
+            Selling
+          </Link>
+          <span className="text-gray-400 font-light">/</span>
+          <span className="font-bold text-gray-900">
+            Delivery Note
+          </span>
         </div>
 
         <div className="flex items-center gap-2">
           <button
             onClick={loadData}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs text-slate-700 bg-white border border-slate-200 rounded-lg shadow-sm hover:bg-slate-50 transition-all font-semibold"
+            className="p-1.5 rounded border border-gray-200 hover:bg-gray-100 text-gray-600 transition-colors"
+            title="Refresh"
           >
-            <RefreshCw className="h-3.5 w-3.5" />
-            <span>Refresh</span>
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
           </button>
           <button
             onClick={() => {
@@ -294,13 +300,15 @@ function DeliveryNotesContent() {
               }
               setIsCreateOpen(true);
             }}
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-sm transition-all"
+            className="px-3.5 py-1.5 rounded bg-gray-900 hover:bg-gray-800 text-white font-medium text-xs flex items-center gap-1.5 shadow-2xs transition-colors"
           >
-            <Plus className="h-4 w-4" />
-            <span>New Delivery Note</span>
+            <Plus className="w-3.5 h-3.5" />
+            <span>Add Delivery Note</span>
           </button>
         </div>
       </div>
+
+      <div className="px-6 space-y-4">
 
       {actionSuccess && (
         <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs flex items-center gap-2 font-medium">
@@ -586,6 +594,7 @@ function DeliveryNotesContent() {
           {...printDoc}
         />
       )}
+      </div>
     </div>
   );
 }

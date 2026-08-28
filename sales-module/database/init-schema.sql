@@ -114,6 +114,15 @@ CREATE TABLE IF NOT EXISTS customer_contacts (
 );
 
 -- 3. Items & Pricing
+CREATE TABLE IF NOT EXISTS item_groups (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    item_group_name VARCHAR(100) NOT NULL UNIQUE,
+    parent_item_group VARCHAR(100) DEFAULT 'All Item Groups',
+    is_group BOOLEAN DEFAULT FALSE,
+    description TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE IF NOT EXISTS items (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     item_code VARCHAR(100) NOT NULL UNIQUE,
@@ -122,12 +131,20 @@ CREATE TABLE IF NOT EXISTS items (
     stock_uom VARCHAR(20) NOT NULL DEFAULT 'Nos',
     is_stock_item BOOLEAN DEFAULT TRUE,
     is_sales_item BOOLEAN DEFAULT TRUE,
+    is_purchase_item BOOLEAN DEFAULT TRUE,
     standard_rate DECIMAL(15, 2) DEFAULT 0.00,
     last_purchase_rate DECIMAL(15, 2) DEFAULT 0.00,
     valuation_rate DECIMAL(15, 2) DEFAULT 0.00,
     max_discount DECIMAL(5, 2) DEFAULT 20.00,
     has_serial_no BOOLEAN DEFAULT FALSE,
     has_batch_no BOOLEAN DEFAULT FALSE,
+    brand VARCHAR(100),
+    description TEXT,
+    barcode VARCHAR(100),
+    disabled BOOLEAN DEFAULT FALSE,
+    default_warehouse VARCHAR(150),
+    default_income_account VARCHAR(150),
+    default_expense_account VARCHAR(150),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -552,6 +569,30 @@ CREATE TABLE IF NOT EXISTS coupon_codes (
     valid_upto DATE,
     used_count INT DEFAULT 0,
     is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS promotional_schemes (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(150) NOT NULL,
+    apply_on VARCHAR(50) DEFAULT 'Item Code',
+    apply_key_id VARCHAR(150),
+    valid_from DATE DEFAULT CURRENT_DATE,
+    valid_upto DATE,
+    description TEXT,
+    disabled BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS shipping_rules (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    shipping_rule_name VARCHAR(150) NOT NULL UNIQUE,
+    calculate_based_on VARCHAR(50) NOT NULL DEFAULT 'Net Total',
+    shipping_amount DECIMAL(15, 2) DEFAULT 0.00,
+    from_value DECIMAL(15, 2) DEFAULT 0.00,
+    to_value DECIMAL(15, 2) DEFAULT 99999999.00,
+    cost_center VARCHAR(100),
+    disabled BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
