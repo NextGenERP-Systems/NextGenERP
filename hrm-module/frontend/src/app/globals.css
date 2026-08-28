@@ -1,0 +1,288 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 40% 98%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+    --radius: 0.75rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply text-slate-900 antialiased selection:bg-indigo-100 selection:text-indigo-900 min-h-screen relative overflow-x-hidden;
+    background: radial-gradient(circle at 10% 20%, #f1f5f9 0%, #e2e8f0 100%);
+    background-color: #f1f5f9;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+/* ==============================================================================
+   APPLE iOS / iPhone AUTHENTIC LIQUID GLASS ENGINE
+   ============================================================================== */
+
+/* 1. Authentic Apple Liquid Glass Container / Card */
+.liquid-glass-card {
+  position: relative;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.75) 0%, rgba(255, 255, 255, 0.4) 100%) !important;
+  backdrop-filter: blur(28px) saturate(200%) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(200%) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.95) !important;
+  border-radius: 1.5rem !important;
+  box-shadow: 
+    0 16px 36px -4px rgba(15, 23, 42, 0.08),
+    0 4px 12px -2px rgba(15, 23, 42, 0.04),
+    inset 0 2px 2px 0 rgba(255, 255, 255, 1),
+    inset 0 -2px 3px 0 rgba(0, 0, 0, 0.03) !important;
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  overflow: hidden;
+}
+
+.liquid-glass-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 40%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0) 100%);
+  pointer-events: none;
+  border-radius: 1.5rem 1.5rem 0 0;
+}
+
+.liquid-glass-card:hover {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.55) 100%) !important;
+  border-color: rgba(255, 255, 255, 1) !important;
+  box-shadow: 
+    0 24px 48px -6px rgba(15, 23, 42, 0.12),
+    0 8px 18px -2px rgba(15, 23, 42, 0.06),
+    inset 0 2.5px 2.5px 0 rgba(255, 255, 255, 1) !important;
+  transform: translateY(-2px);
+}
+
+/* 2. Apple Liquid Glass Inner Panel */
+.liquid-glass {
+  position: relative;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.65) 0%, rgba(255, 255, 255, 0.35) 100%) !important;
+  backdrop-filter: blur(20px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.9) !important;
+  border-radius: 1rem !important;
+  box-shadow: 
+    0 6px 18px 0 rgba(15, 23, 42, 0.05),
+    inset 0 1.5px 1.5px 0 rgba(255, 255, 255, 1) !important;
+}
+
+/* ------------------------------------------------------------------------------
+   APPLE iPhone SKEUOMORPHIC LIQUID GLASS BUTTONS
+   ------------------------------------------------------------------------------ */
+
+/* 1. Apple Liquid Glass Indigo Action Pill */
+.liquid-btn-primary {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, #6366f1 0%, #4f46e5 50%, #4338ca 100%) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  color: #ffffff !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.65) !important;
+  border-radius: 9999px !important;
+  box-shadow: 
+    0 8px 24px -2px rgba(79, 70, 229, 0.45),
+    0 2px 6px 0 rgba(0, 0, 0, 0.1),
+    inset 0 2.5px 3px 0 rgba(255, 255, 255, 0.85),
+    inset 0 -2px 3px 0 rgba(30, 27, 75, 0.35) !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.01em;
+  overflow: hidden;
+  transition: all 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.liquid-btn-primary::before {
+  content: '';
+  position: absolute;
+  top: 1.5px;
+  left: 6%;
+  right: 6%;
+  height: 46%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.75) 0%, rgba(255, 255, 255, 0.05) 100%);
+  border-radius: 9999px 9999px 0 0;
+  pointer-events: none;
+}
+
+.liquid-btn-primary:hover {
+  background: linear-gradient(180deg, #4f46e5 0%, #4338ca 50%, #3730a3 100%) !important;
+  border-color: rgba(255, 255, 255, 0.95) !important;
+  box-shadow: 
+    0 14px 30px -2px rgba(79, 70, 229, 0.55),
+    inset 0 3px 3px 0 rgba(255, 255, 255, 0.95) !important;
+  transform: translateY(-1.5px) scale(1.02);
+}
+
+.liquid-btn-primary:active {
+  transform: translateY(0px) scale(0.97);
+}
+
+/* 2. Apple Liquid Glass Crystal Water Pill (Quick Punch-In / Secondary) */
+.liquid-btn-glass {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.95) 0%, rgba(241, 245, 249, 0.7) 50%, rgba(255, 255, 255, 0.9) 100%) !important;
+  backdrop-filter: blur(24px) saturate(200%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(200%) !important;
+  color: #0f172a !important;
+  border: 1.5px solid rgba(255, 255, 255, 1) !important;
+  border-radius: 9999px !important;
+  box-shadow: 
+    0 8px 20px -3px rgba(15, 23, 42, 0.08),
+    0 2px 6px 0 rgba(0, 0, 0, 0.04),
+    inset 0 2.5px 3px 0 rgba(255, 255, 255, 1),
+    inset 0 -2px 3px 0 rgba(0, 0, 0, 0.06) !important;
+  font-weight: 800 !important;
+  overflow: hidden;
+  transition: all 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.liquid-btn-glass::before {
+  content: '';
+  position: absolute;
+  top: 1.5px;
+  left: 6%;
+  right: 6%;
+  height: 46%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.1) 100%);
+  border-radius: 9999px 9999px 0 0;
+  pointer-events: none;
+}
+
+.liquid-btn-glass:hover {
+  background: linear-gradient(180deg, #ffffff 0%, rgba(248, 250, 252, 0.9) 100%) !important;
+  border-color: #ffffff !important;
+  color: #000000 !important;
+  box-shadow: 
+    0 12px 26px -3px rgba(15, 23, 42, 0.12),
+    inset 0 3px 3px 0 rgba(255, 255, 255, 1) !important;
+  transform: translateY(-1.5px) scale(1.02);
+}
+
+.liquid-btn-glass:active {
+  transform: translateY(0px) scale(0.97);
+}
+
+/* 3. Apple Liquid Glass Emerald Pill (Approve Button) */
+.liquid-btn-emerald {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, #10b981 0%, #059669 50%, #047857 100%) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  color: #ffffff !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.65) !important;
+  border-radius: 9999px !important;
+  box-shadow: 
+    0 8px 24px -2px rgba(16, 185, 129, 0.45),
+    0 2px 6px 0 rgba(0, 0, 0, 0.1),
+    inset 0 2.5px 3px 0 rgba(255, 255, 255, 0.85),
+    inset 0 -2px 3px 0 rgba(4, 47, 46, 0.35) !important;
+  font-weight: 800 !important;
+  overflow: hidden;
+  transition: all 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.liquid-btn-emerald::before {
+  content: '';
+  position: absolute;
+  top: 1.5px;
+  left: 6%;
+  right: 6%;
+  height: 46%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.75) 0%, rgba(255, 255, 255, 0.05) 100%);
+  border-radius: 9999px 9999px 0 0;
+  pointer-events: none;
+}
+
+.liquid-btn-emerald:hover {
+  background: linear-gradient(180deg, #059669 0%, #047857 50%, #064e3b 100%) !important;
+  box-shadow: 
+    0 14px 30px -2px rgba(16, 185, 129, 0.55),
+    inset 0 3px 3px 0 rgba(255, 255, 255, 0.95) !important;
+  transform: translateY(-1.5px) scale(1.02);
+}
+
+.liquid-btn-emerald:active {
+  transform: translateY(0px) scale(0.97);
+}
+
+/* 4. Apple Liquid Glass Active Sidebar Pill */
+.liquid-nav-active {
+  position: relative;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.95) 0%, rgba(238, 242, 255, 0.8) 100%) !important;
+  backdrop-filter: blur(20px) saturate(200%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(200%) !important;
+  color: #4338ca !important;
+  border: 1.5px solid rgba(255, 255, 255, 1) !important;
+  border-radius: 9999px !important;
+  box-shadow: 
+    0 6px 18px -2px rgba(79, 70, 229, 0.15),
+    0 2px 6px 0 rgba(0, 0, 0, 0.03),
+    inset 0 2px 2px 0 rgba(255, 255, 255, 1),
+    inset 0 -1.5px 2px 0 rgba(99, 102, 241, 0.1) !important;
+  font-weight: 800 !important;
+  overflow: hidden;
+}
+
+.liquid-nav-active::before {
+  content: '';
+  position: absolute;
+  top: 1px;
+  left: 6%;
+  right: 6%;
+  height: 46%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0) 100%);
+  border-radius: 9999px 9999px 0 0;
+  pointer-events: none;
+}
+
+/* Custom Clean Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.5);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.7);
+}
