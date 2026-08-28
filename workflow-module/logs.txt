@@ -1,0 +1,53 @@
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.3.3)
+
+2026-08-28T14:23:55.049Z  INFO 1 --- [nextgen-erp-workflow-module] [           main] c.n.e.w.NextGenWorkflowApplication       : Starting NextGenWorkflowApplication v1.0.0-SNAPSHOT using Java 21.0.12 with PID 1 (/app/app.jar started by root in /app)
+2026-08-28T14:23:55.052Z  INFO 1 --- [nextgen-erp-workflow-module] [           main] c.n.e.w.NextGenWorkflowApplication       : No active profile set, falling back to 1 default profile: "default"
+2026-08-28T14:23:56.237Z  INFO 1 --- [nextgen-erp-workflow-module] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-08-28T14:23:56.288Z  INFO 1 --- [nextgen-erp-workflow-module] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 43 ms. Found 7 JPA repository interfaces.
+2026-08-28T14:23:57.159Z  INFO 1 --- [nextgen-erp-workflow-module] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8081 (http)
+2026-08-28T14:23:57.196Z  INFO 1 --- [nextgen-erp-workflow-module] [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-08-28T14:23:57.197Z  INFO 1 --- [nextgen-erp-workflow-module] [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.28]
+2026-08-28T14:23:57.242Z  INFO 1 --- [nextgen-erp-workflow-module] [           main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2026-08-28T14:23:57.243Z  INFO 1 --- [nextgen-erp-workflow-module] [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 2121 ms
+2026-08-28T14:23:57.627Z  INFO 1 --- [nextgen-erp-workflow-module] [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-08-28T14:23:57.685Z  INFO 1 --- [nextgen-erp-workflow-module] [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.5.2.Final
+2026-08-28T14:23:57.711Z  INFO 1 --- [nextgen-erp-workflow-module] [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-08-28T14:23:57.924Z  INFO 1 --- [nextgen-erp-workflow-module] [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-08-28T14:23:57.957Z  INFO 1 --- [nextgen-erp-workflow-module] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-08-28T14:23:58.141Z  INFO 1 --- [nextgen-erp-workflow-module] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection org.postgresql.jdbc.PgConnection@1dc9f5ad
+2026-08-28T14:23:58.143Z  INFO 1 --- [nextgen-erp-workflow-module] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-08-28T14:23:58.172Z  WARN 1 --- [nextgen-erp-workflow-module] [           main] org.hibernate.orm.deprecation            : HHH90000025: PostgreSQLDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2026-08-28T14:23:58.978Z  INFO 1 --- [nextgen-erp-workflow-module] [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+Hibernate: 
+    alter table if exists document_templates 
+       alter column created_by set data type varchar(255)
+Hibernate: 
+    alter table if exists document_templates 
+       alter column category set data type varchar(255)
+Hibernate: 
+    alter table if exists document_templates 
+       alter column html_content set data type TEXT
+Hibernate: 
+    alter table if exists documents 
+       alter column content_html set data type TEXT
+Hibernate: 
+    alter table if exists workflow_history 
+       alter column comments set data type TEXT
+2026-08-28T14:23:59.047Z  INFO 1 --- [nextgen-erp-workflow-module] [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-08-28T14:23:59.753Z  WARN 1 --- [nextgen-erp-workflow-module] [           main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-08-28T14:24:00.541Z  INFO 1 --- [nextgen-erp-workflow-module] [           main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 1 endpoint beneath base path '/actuator'
+2026-08-28T14:24:00.599Z  INFO 1 --- [nextgen-erp-workflow-module] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8081 (http) with context path '/'
+2026-08-28T14:24:00.610Z  INFO 1 --- [nextgen-erp-workflow-module] [           main] c.n.e.w.NextGenWorkflowApplication       : Started NextGenWorkflowApplication in 5.994 seconds (process running for 6.52)
+Hibernate: 
+    select
+        count(*) 
+    from
+        workflows w1_0

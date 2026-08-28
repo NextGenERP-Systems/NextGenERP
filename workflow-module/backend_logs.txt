@@ -1,0 +1,1996 @@
+workflow_backend  | 
+workflow_backend  |   .   ____          _            __ _ _
+workflow_backend  |  /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+workflow_backend  | ( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+workflow_backend  |  \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+workflow_backend  |   '  |____| .__|_| |_|_| |_\__, | / / / /
+workflow_backend  |  =========|_|==============|___/=/_/_/_/
+workflow_backend  | 
+workflow_backend  |  :: Spring Boot ::                (v3.3.3)
+workflow_backend  | 
+workflow_backend  | 2026-08-28T15:01:04.898Z  INFO 1 --- [nextgen-erp-workflow-module] [           main] c.n.e.w.NextGenWorkflowApplication       : Starting NextGenWorkflowApplication v1.0.0-SNAPSHOT using Java 21.0.12 with PID 1 (/app/app.jar started by root in /app)
+workflow_backend  | 2026-08-28T15:01:04.900Z  INFO 1 --- [nextgen-erp-workflow-module] [           main] c.n.e.w.NextGenWorkflowApplication       : No active profile set, falling back to 1 default profile: "default"
+workflow_backend  | 2026-08-28T15:01:06.063Z  INFO 1 --- [nextgen-erp-workflow-module] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+workflow_backend  | 2026-08-28T15:01:06.113Z  INFO 1 --- [nextgen-erp-workflow-module] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 44 ms. Found 7 JPA repository interfaces.
+workflow_backend  | 2026-08-28T15:01:07.016Z  INFO 1 --- [nextgen-erp-workflow-module] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8081 (http)
+workflow_backend  | 2026-08-28T15:01:07.047Z  INFO 1 --- [nextgen-erp-workflow-module] [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+workflow_backend  | 2026-08-28T15:01:07.047Z  INFO 1 --- [nextgen-erp-workflow-module] [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.28]
+workflow_backend  | 2026-08-28T15:01:07.079Z  INFO 1 --- [nextgen-erp-workflow-module] [           main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+workflow_backend  | 2026-08-28T15:01:07.080Z  INFO 1 --- [nextgen-erp-workflow-module] [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 2125 ms
+workflow_backend  | 2026-08-28T15:01:07.439Z  INFO 1 --- [nextgen-erp-workflow-module] [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+workflow_backend  | 2026-08-28T15:01:07.497Z  INFO 1 --- [nextgen-erp-workflow-module] [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.5.2.Final
+workflow_backend  | 2026-08-28T15:01:07.525Z  INFO 1 --- [nextgen-erp-workflow-module] [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+workflow_backend  | 2026-08-28T15:01:07.735Z  INFO 1 --- [nextgen-erp-workflow-module] [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+workflow_backend  | 2026-08-28T15:01:07.753Z  INFO 1 --- [nextgen-erp-workflow-module] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+workflow_backend  | 2026-08-28T15:01:07.913Z  INFO 1 --- [nextgen-erp-workflow-module] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection org.postgresql.jdbc.PgConnection@4a2d66e
+workflow_backend  | 2026-08-28T15:01:07.914Z  INFO 1 --- [nextgen-erp-workflow-module] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+workflow_backend  | 2026-08-28T15:01:07.939Z  WARN 1 --- [nextgen-erp-workflow-module] [           main] org.hibernate.orm.deprecation            : HHH90000025: PostgreSQLDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+workflow_backend  | 2026-08-28T15:01:08.754Z  INFO 1 --- [nextgen-erp-workflow-module] [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+workflow_backend  | Hibernate: 
+workflow_backend  |     alter table if exists document_templates 
+workflow_backend  |        alter column content_html set data type TEXT
+workflow_backend  | Hibernate: 
+workflow_backend  |     alter table if exists documents 
+workflow_backend  |        alter column content_html set data type TEXT
+workflow_backend  | Hibernate: 
+workflow_backend  |     alter table if exists workflow_history 
+workflow_backend  |        alter column comments set data type TEXT
+workflow_backend  | 2026-08-28T15:01:08.821Z  INFO 1 --- [nextgen-erp-workflow-module] [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+workflow_backend  | 2026-08-28T15:01:09.326Z  INFO 1 --- [nextgen-erp-workflow-module] [           main] o.s.d.j.r.query.QueryEnhancerFactory     : Hibernate is in classpath; If applicable, HQL parser will be used.
+workflow_backend  | 2026-08-28T15:01:09.996Z  WARN 1 --- [nextgen-erp-workflow-module] [           main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+workflow_backend  | 2026-08-28T15:01:11.366Z  INFO 1 --- [nextgen-erp-workflow-module] [           main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 1 endpoint beneath base path '/actuator'
+workflow_backend  | 2026-08-28T15:01:11.467Z  INFO 1 --- [nextgen-erp-workflow-module] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8081 (http) with context path '/'
+workflow_backend  | 2026-08-28T15:01:11.487Z  INFO 1 --- [nextgen-erp-workflow-module] [           main] c.n.e.w.NextGenWorkflowApplication       : Started NextGenWorkflowApplication in 6.964 seconds (process running for 7.535)
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         count(*) 
+workflow_backend  |     from
+workflow_backend  |         workflows w1_0
+workflow_backend  | 2026-08-28T15:02:06.561Z  INFO 1 --- [nextgen-erp-workflow-module] [nio-8081-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+workflow_backend  | 2026-08-28T15:02:06.561Z  INFO 1 --- [nextgen-erp-workflow-module] [nio-8081-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+workflow_backend  | 2026-08-28T15:02:06.563Z  INFO 1 --- [nextgen-erp-workflow-module] [nio-8081-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 2 ms
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         w1_0.id,
+workflow_backend  |         w1_0.created_at,
+workflow_backend  |         w1_0.document_type,
+workflow_backend  |         w1_0.is_active,
+workflow_backend  |         w1_0.updated_at,
+workflow_backend  |         w1_0.workflow_name 
+workflow_backend  |     from
+workflow_backend  |         workflows w1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         w1_0.id,
+workflow_backend  |         w1_0.created_at,
+workflow_backend  |         w1_0.document_type,
+workflow_backend  |         w1_0.is_active,
+workflow_backend  |         w1_0.updated_at,
+workflow_backend  |         w1_0.workflow_name 
+workflow_backend  |     from
+workflow_backend  |         workflows w1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         w1_0.id,
+workflow_backend  |         w1_0.created_at,
+workflow_backend  |         w1_0.document_type,
+workflow_backend  |         w1_0.is_active,
+workflow_backend  |         w1_0.updated_at,
+workflow_backend  |         w1_0.workflow_name 
+workflow_backend  |     from
+workflow_backend  |         workflows w1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         w1_0.id,
+workflow_backend  |         w1_0.created_at,
+workflow_backend  |         w1_0.document_type,
+workflow_backend  |         w1_0.is_active,
+workflow_backend  |         w1_0.updated_at,
+workflow_backend  |         w1_0.workflow_name 
+workflow_backend  |     from
+workflow_backend  |         workflows w1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         w1_0.id,
+workflow_backend  |         w1_0.created_at,
+workflow_backend  |         w1_0.document_type,
+workflow_backend  |         w1_0.is_active,
+workflow_backend  |         w1_0.updated_at,
+workflow_backend  |         w1_0.workflow_name 
+workflow_backend  |     from
+workflow_backend  |         workflows w1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         w1_0.id,
+workflow_backend  |         w1_0.created_at,
+workflow_backend  |         w1_0.document_type,
+workflow_backend  |         w1_0.is_active,
+workflow_backend  |         w1_0.updated_at,
+workflow_backend  |         w1_0.workflow_name 
+workflow_backend  |     from
+workflow_backend  |         workflows w1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         ws1_0.id,
+workflow_backend  |         ws1_0.allow_edit_role,
+workflow_backend  |         ws1_0.color_code,
+workflow_backend  |         ws1_0.is_final_state,
+workflow_backend  |         ws1_0.is_initial_state,
+workflow_backend  |         ws1_0.is_optional_state,
+workflow_backend  |         ws1_0.send_email,
+workflow_backend  |         ws1_0.state_name,
+workflow_backend  |         ws1_0.update_field,
+workflow_backend  |         ws1_0.update_value,
+workflow_backend  |         ws1_0.workflow_id 
+workflow_backend  |     from
+workflow_backend  |         workflow_states ws1_0 
+workflow_backend  |     where
+workflow_backend  |         ws1_0.workflow_id=?
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         wt1_0.id,
+workflow_backend  |         wt1_0.action_name,
+workflow_backend  |         wt1_0.allow_self_approval,
+workflow_backend  |         wt1_0.allowed_role,
+workflow_backend  |         wt1_0.condition_expression,
+workflow_backend  |         wt1_0.from_state_id,
+workflow_backend  |         wt1_0.send_email_to_creator,
+workflow_backend  |         wt1_0.to_state_id,
+workflow_backend  |         wt1_0.workflow_id 
+workflow_backend  |     from
+workflow_backend  |         workflow_transitions wt1_0 
+workflow_backend  |     where
+workflow_backend  |         wt1_0.workflow_id=?
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         w1_0.id,
+workflow_backend  |         w1_0.created_at,
+workflow_backend  |         w1_0.document_type,
+workflow_backend  |         w1_0.is_active,
+workflow_backend  |         w1_0.updated_at,
+workflow_backend  |         w1_0.workflow_name 
+workflow_backend  |     from
+workflow_backend  |         workflows w1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         w1_0.id,
+workflow_backend  |         w1_0.created_at,
+workflow_backend  |         w1_0.document_type,
+workflow_backend  |         w1_0.is_active,
+workflow_backend  |         w1_0.updated_at,
+workflow_backend  |         w1_0.workflow_name 
+workflow_backend  |     from
+workflow_backend  |         workflows w1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         w1_0.id,
+workflow_backend  |         w1_0.created_at,
+workflow_backend  |         w1_0.document_type,
+workflow_backend  |         w1_0.is_active,
+workflow_backend  |         w1_0.updated_at,
+workflow_backend  |         w1_0.workflow_name 
+workflow_backend  |     from
+workflow_backend  |         workflows w1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         w1_0.id,
+workflow_backend  |         w1_0.created_at,
+workflow_backend  |         w1_0.document_type,
+workflow_backend  |         w1_0.is_active,
+workflow_backend  |         w1_0.updated_at,
+workflow_backend  |         w1_0.workflow_name 
+workflow_backend  |     from
+workflow_backend  |         workflows w1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         w1_0.id,
+workflow_backend  |         w1_0.created_at,
+workflow_backend  |         w1_0.document_type,
+workflow_backend  |         w1_0.is_active,
+workflow_backend  |         w1_0.updated_at,
+workflow_backend  |         w1_0.workflow_name 
+workflow_backend  |     from
+workflow_backend  |         workflows w1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         w1_0.id,
+workflow_backend  |         w1_0.created_at,
+workflow_backend  |         w1_0.document_type,
+workflow_backend  |         w1_0.is_active,
+workflow_backend  |         w1_0.updated_at,
+workflow_backend  |         w1_0.workflow_name 
+workflow_backend  |     from
+workflow_backend  |         workflows w1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         ws1_0.id,
+workflow_backend  |         ws1_0.allow_edit_role,
+workflow_backend  |         ws1_0.color_code,
+workflow_backend  |         ws1_0.is_final_state,
+workflow_backend  |         ws1_0.is_initial_state,
+workflow_backend  |         ws1_0.is_optional_state,
+workflow_backend  |         ws1_0.send_email,
+workflow_backend  |         ws1_0.state_name,
+workflow_backend  |         ws1_0.update_field,
+workflow_backend  |         ws1_0.update_value,
+workflow_backend  |         ws1_0.workflow_id 
+workflow_backend  |     from
+workflow_backend  |         workflow_states ws1_0 
+workflow_backend  |     where
+workflow_backend  |         ws1_0.workflow_id=?
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         wt1_0.id,
+workflow_backend  |         wt1_0.action_name,
+workflow_backend  |         wt1_0.allow_self_approval,
+workflow_backend  |         wt1_0.allowed_role,
+workflow_backend  |         wt1_0.condition_expression,
+workflow_backend  |         wt1_0.from_state_id,
+workflow_backend  |         wt1_0.send_email_to_creator,
+workflow_backend  |         wt1_0.to_state_id,
+workflow_backend  |         wt1_0.workflow_id 
+workflow_backend  |     from
+workflow_backend  |         workflow_transitions wt1_0 
+workflow_backend  |     where
+workflow_backend  |         wt1_0.workflow_id=?
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         w1_0.id,
+workflow_backend  |         w1_0.created_at,
+workflow_backend  |         w1_0.document_type,
+workflow_backend  |         w1_0.is_active,
+workflow_backend  |         w1_0.updated_at,
+workflow_backend  |         w1_0.workflow_name 
+workflow_backend  |     from
+workflow_backend  |         workflows w1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         w1_0.id,
+workflow_backend  |         w1_0.created_at,
+workflow_backend  |         w1_0.document_type,
+workflow_backend  |         w1_0.is_active,
+workflow_backend  |         w1_0.updated_at,
+workflow_backend  |         w1_0.workflow_name 
+workflow_backend  |     from
+workflow_backend  |         workflows w1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         w1_0.id,
+workflow_backend  |         w1_0.created_at,
+workflow_backend  |         w1_0.document_type,
+workflow_backend  |         w1_0.is_active,
+workflow_backend  |         w1_0.updated_at,
+workflow_backend  |         w1_0.workflow_name 
+workflow_backend  |     from
+workflow_backend  |         workflows w1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         w1_0.id,
+workflow_backend  |         w1_0.created_at,
+workflow_backend  |         w1_0.document_type,
+workflow_backend  |         w1_0.is_active,
+workflow_backend  |         w1_0.updated_at,
+workflow_backend  |         w1_0.workflow_name 
+workflow_backend  |     from
+workflow_backend  |         workflows w1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         w1_0.id,
+workflow_backend  |         w1_0.created_at,
+workflow_backend  |         w1_0.document_type,
+workflow_backend  |         w1_0.is_active,
+workflow_backend  |         w1_0.updated_at,
+workflow_backend  |         w1_0.workflow_name 
+workflow_backend  |     from
+workflow_backend  |         workflows w1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         w1_0.id,
+workflow_backend  |         w1_0.created_at,
+workflow_backend  |         w1_0.document_type,
+workflow_backend  |         w1_0.is_active,
+workflow_backend  |         w1_0.updated_at,
+workflow_backend  |         w1_0.workflow_name 
+workflow_backend  |     from
+workflow_backend  |         workflows w1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         ws1_0.id,
+workflow_backend  |         ws1_0.allow_edit_role,
+workflow_backend  |         ws1_0.color_code,
+workflow_backend  |         ws1_0.is_final_state,
+workflow_backend  |         ws1_0.is_initial_state,
+workflow_backend  |         ws1_0.is_optional_state,
+workflow_backend  |         ws1_0.send_email,
+workflow_backend  |         ws1_0.state_name,
+workflow_backend  |         ws1_0.update_field,
+workflow_backend  |         ws1_0.update_value,
+workflow_backend  |         ws1_0.workflow_id 
+workflow_backend  |     from
+workflow_backend  |         workflow_states ws1_0 
+workflow_backend  |     where
+workflow_backend  |         ws1_0.workflow_id=?
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         wt1_0.id,
+workflow_backend  |         wt1_0.action_name,
+workflow_backend  |         wt1_0.allow_self_approval,
+workflow_backend  |         wt1_0.allowed_role,
+workflow_backend  |         wt1_0.condition_expression,
+workflow_backend  |         wt1_0.from_state_id,
+workflow_backend  |         wt1_0.send_email_to_creator,
+workflow_backend  |         wt1_0.to_state_id,
+workflow_backend  |         wt1_0.workflow_id 
+workflow_backend  |     from
+workflow_backend  |         workflow_transitions wt1_0 
+workflow_backend  |     where
+workflow_backend  |         wt1_0.workflow_id=?
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         w1_0.id,
+workflow_backend  |         w1_0.created_at,
+workflow_backend  |         w1_0.document_type,
+workflow_backend  |         w1_0.is_active,
+workflow_backend  |         w1_0.updated_at,
+workflow_backend  |         w1_0.workflow_name 
+workflow_backend  |     from
+workflow_backend  |         workflows w1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         w1_0.id,
+workflow_backend  |         w1_0.created_at,
+workflow_backend  |         w1_0.document_type,
+workflow_backend  |         w1_0.is_active,
+workflow_backend  |         w1_0.updated_at,
+workflow_backend  |         w1_0.workflow_name 
+workflow_backend  |     from
+workflow_backend  |         workflows w1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         w1_0.id,
+workflow_backend  |         w1_0.created_at,
+workflow_backend  |         w1_0.document_type,
+workflow_backend  |         w1_0.is_active,
+workflow_backend  |         w1_0.updated_at,
+workflow_backend  |         w1_0.workflow_name 
+workflow_backend  |     from
+workflow_backend  |         workflows w1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         w1_0.id,
+workflow_backend  |         w1_0.created_at,
+workflow_backend  |         w1_0.document_type,
+workflow_backend  |         w1_0.is_active,
+workflow_backend  |         w1_0.updated_at,
+workflow_backend  |         w1_0.workflow_name 
+workflow_backend  |     from
+workflow_backend  |         workflows w1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         w1_0.id,
+workflow_backend  |         w1_0.created_at,
+workflow_backend  |         w1_0.document_type,
+workflow_backend  |         w1_0.is_active,
+workflow_backend  |         w1_0.updated_at,
+workflow_backend  |         w1_0.workflow_name 
+workflow_backend  |     from
+workflow_backend  |         workflows w1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         w1_0.id,
+workflow_backend  |         w1_0.created_at,
+workflow_backend  |         w1_0.document_type,
+workflow_backend  |         w1_0.is_active,
+workflow_backend  |         w1_0.updated_at,
+workflow_backend  |         w1_0.workflow_name 
+workflow_backend  |     from
+workflow_backend  |         workflows w1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         ws1_0.id,
+workflow_backend  |         ws1_0.allow_edit_role,
+workflow_backend  |         ws1_0.color_code,
+workflow_backend  |         ws1_0.is_final_state,
+workflow_backend  |         ws1_0.is_initial_state,
+workflow_backend  |         ws1_0.is_optional_state,
+workflow_backend  |         ws1_0.send_email,
+workflow_backend  |         ws1_0.state_name,
+workflow_backend  |         ws1_0.update_field,
+workflow_backend  |         ws1_0.update_value,
+workflow_backend  |         ws1_0.workflow_id 
+workflow_backend  |     from
+workflow_backend  |         workflow_states ws1_0 
+workflow_backend  |     where
+workflow_backend  |         ws1_0.workflow_id=?
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         wt1_0.id,
+workflow_backend  |         wt1_0.action_name,
+workflow_backend  |         wt1_0.allow_self_approval,
+workflow_backend  |         wt1_0.allowed_role,
+workflow_backend  |         wt1_0.condition_expression,
+workflow_backend  |         wt1_0.from_state_id,
+workflow_backend  |         wt1_0.send_email_to_creator,
+workflow_backend  |         wt1_0.to_state_id,
+workflow_backend  |         wt1_0.workflow_id 
+workflow_backend  |     from
+workflow_backend  |         workflow_transitions wt1_0 
+workflow_backend  |     where
+workflow_backend  |         wt1_0.workflow_id=?
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         w1_0.id,
+workflow_backend  |         w1_0.created_at,
+workflow_backend  |         w1_0.document_type,
+workflow_backend  |         w1_0.is_active,
+workflow_backend  |         w1_0.updated_at,
+workflow_backend  |         w1_0.workflow_name 
+workflow_backend  |     from
+workflow_backend  |         workflows w1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         d1_0.id,
+workflow_backend  |         d1_0.amount,
+workflow_backend  |         d1_0.content_html,
+workflow_backend  |         d1_0.created_at,
+workflow_backend  |         d1_0.current_state_id,
+workflow_backend  |         d1_0.document_number,
+workflow_backend  |         d1_0.document_type,
+workflow_backend  |         d1_0.gcs_attachment_url,
+workflow_backend  |         d1_0.owner_username,
+workflow_backend  |         d1_0.status,
+workflow_backend  |         d1_0.template_id,
+workflow_backend  |         d1_0.title,
+workflow_backend  |         d1_0.updated_at,
+workflow_backend  |         d1_0.version,
+workflow_backend  |         d1_0.workflow_id 
+workflow_backend  |     from
+workflow_backend  |         documents d1_0 
+workflow_backend  |     offset
+workflow_backend  |         ? rows 
+workflow_backend  |     fetch
+workflow_backend  |         first ? rows only
+workflow_backend  | 2026-08-28T15:02:14.371Z  WARN 1 --- [nextgen-erp-workflow-module] [nio-8081-exec-4] ration$PageModule$WarningLoggingModifier : Serializing PageImpl instances as-is is not supported, meaning that there is no guarantee about the stability of the resulting JSON structure!
+workflow_backend  | 	For a stable JSON structure, please use Spring Data's PagedModel (globally via @EnableSpringDataWebSupport(pageSerializationMode = VIA_DTO))
+workflow_backend  | 	or Spring HATEOAS and Spring Data's PagedResourcesAssembler as documented in https://docs.spring.io/spring-data/commons/reference/repositories/core-extensions.html#core.web.pageables.
+workflow_backend  | 
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         w1_0.id,
+workflow_backend  |         w1_0.created_at,
+workflow_backend  |         w1_0.document_type,
+workflow_backend  |         w1_0.is_active,
+workflow_backend  |         w1_0.updated_at,
+workflow_backend  |         w1_0.workflow_name 
+workflow_backend  |     from
+workflow_backend  |         workflows w1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         d1_0.id,
+workflow_backend  |         d1_0.amount,
+workflow_backend  |         d1_0.content_html,
+workflow_backend  |         d1_0.created_at,
+workflow_backend  |         d1_0.current_state_id,
+workflow_backend  |         d1_0.document_number,
+workflow_backend  |         d1_0.document_type,
+workflow_backend  |         d1_0.gcs_attachment_url,
+workflow_backend  |         d1_0.owner_username,
+workflow_backend  |         d1_0.status,
+workflow_backend  |         d1_0.template_id,
+workflow_backend  |         d1_0.title,
+workflow_backend  |         d1_0.updated_at,
+workflow_backend  |         d1_0.version,
+workflow_backend  |         d1_0.workflow_id 
+workflow_backend  |     from
+workflow_backend  |         documents d1_0 
+workflow_backend  |     offset
+workflow_backend  |         ? rows 
+workflow_backend  |     fetch
+workflow_backend  |         first ? rows only
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         w1_0.id,
+workflow_backend  |         w1_0.created_at,
+workflow_backend  |         w1_0.document_type,
+workflow_backend  |         w1_0.is_active,
+workflow_backend  |         w1_0.updated_at,
+workflow_backend  |         w1_0.workflow_name 
+workflow_backend  |     from
+workflow_backend  |         workflows w1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         d1_0.id,
+workflow_backend  |         d1_0.amount,
+workflow_backend  |         d1_0.content_html,
+workflow_backend  |         d1_0.created_at,
+workflow_backend  |         d1_0.current_state_id,
+workflow_backend  |         d1_0.document_number,
+workflow_backend  |         d1_0.document_type,
+workflow_backend  |         d1_0.gcs_attachment_url,
+workflow_backend  |         d1_0.owner_username,
+workflow_backend  |         d1_0.status,
+workflow_backend  |         d1_0.template_id,
+workflow_backend  |         d1_0.title,
+workflow_backend  |         d1_0.updated_at,
+workflow_backend  |         d1_0.version,
+workflow_backend  |         d1_0.workflow_id 
+workflow_backend  |     from
+workflow_backend  |         documents d1_0 
+workflow_backend  |     offset
+workflow_backend  |         ? rows 
+workflow_backend  |     fetch
+workflow_backend  |         first ? rows only
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         w1_0.id,
+workflow_backend  |         w1_0.created_at,
+workflow_backend  |         w1_0.document_type,
+workflow_backend  |         w1_0.is_active,
+workflow_backend  |         w1_0.updated_at,
+workflow_backend  |         w1_0.workflow_name 
+workflow_backend  |     from
+workflow_backend  |         workflows w1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         d1_0.id,
+workflow_backend  |         d1_0.amount,
+workflow_backend  |         d1_0.content_html,
+workflow_backend  |         d1_0.created_at,
+workflow_backend  |         d1_0.current_state_id,
+workflow_backend  |         d1_0.document_number,
+workflow_backend  |         d1_0.document_type,
+workflow_backend  |         d1_0.gcs_attachment_url,
+workflow_backend  |         d1_0.owner_username,
+workflow_backend  |         d1_0.status,
+workflow_backend  |         d1_0.template_id,
+workflow_backend  |         d1_0.title,
+workflow_backend  |         d1_0.updated_at,
+workflow_backend  |         d1_0.version,
+workflow_backend  |         d1_0.workflow_id 
+workflow_backend  |     from
+workflow_backend  |         documents d1_0 
+workflow_backend  |     offset
+workflow_backend  |         ? rows 
+workflow_backend  |     fetch
+workflow_backend  |         first ? rows only
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         w1_0.id,
+workflow_backend  |         w1_0.created_at,
+workflow_backend  |         w1_0.document_type,
+workflow_backend  |         w1_0.is_active,
+workflow_backend  |         w1_0.updated_at,
+workflow_backend  |         w1_0.workflow_name 
+workflow_backend  |     from
+workflow_backend  |         workflows w1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         wt1_0.id,
+workflow_backend  |         wt1_0.action_name,
+workflow_backend  |         wt1_0.allow_self_approval,
+workflow_backend  |         wt1_0.allowed_role,
+workflow_backend  |         wt1_0.condition_expression,
+workflow_backend  |         wt1_0.from_state_id,
+workflow_backend  |         wt1_0.send_email_to_creator,
+workflow_backend  |         wt1_0.to_state_id,
+workflow_backend  |         wt1_0.workflow_id 
+workflow_backend  |     from
+workflow_backend  |         workflow_transitions wt1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         d1_0.id,
+workflow_backend  |         d1_0.amount,
+workflow_backend  |         d1_0.content_html,
+workflow_backend  |         d1_0.created_at,
+workflow_backend  |         d1_0.current_state_id,
+workflow_backend  |         d1_0.document_number,
+workflow_backend  |         d1_0.document_type,
+workflow_backend  |         d1_0.gcs_attachment_url,
+workflow_backend  |         d1_0.owner_username,
+workflow_backend  |         d1_0.status,
+workflow_backend  |         d1_0.template_id,
+workflow_backend  |         d1_0.title,
+workflow_backend  |         d1_0.updated_at,
+workflow_backend  |         d1_0.version,
+workflow_backend  |         d1_0.workflow_id 
+workflow_backend  |     from
+workflow_backend  |         documents d1_0 
+workflow_backend  |     where
+workflow_backend  |         d1_0.current_state_id in (?) 
+workflow_backend  |     fetch
+workflow_backend  |         first ? rows only
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         w1_0.id,
+workflow_backend  |         w1_0.created_at,
+workflow_backend  |         w1_0.document_type,
+workflow_backend  |         w1_0.is_active,
+workflow_backend  |         w1_0.updated_at,
+workflow_backend  |         w1_0.workflow_name 
+workflow_backend  |     from
+workflow_backend  |         workflows w1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         w1_0.id,
+workflow_backend  |         w1_0.created_at,
+workflow_backend  |         w1_0.document_type,
+workflow_backend  |         w1_0.is_active,
+workflow_backend  |         w1_0.updated_at,
+workflow_backend  |         w1_0.workflow_name 
+workflow_backend  |     from
+workflow_backend  |         workflows w1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         ws1_0.id,
+workflow_backend  |         ws1_0.allow_edit_role,
+workflow_backend  |         ws1_0.color_code,
+workflow_backend  |         ws1_0.is_final_state,
+workflow_backend  |         ws1_0.is_initial_state,
+workflow_backend  |         ws1_0.is_optional_state,
+workflow_backend  |         ws1_0.send_email,
+workflow_backend  |         ws1_0.state_name,
+workflow_backend  |         ws1_0.update_field,
+workflow_backend  |         ws1_0.update_value,
+workflow_backend  |         ws1_0.workflow_id 
+workflow_backend  |     from
+workflow_backend  |         workflow_states ws1_0 
+workflow_backend  |     where
+workflow_backend  |         ws1_0.workflow_id=?
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         wt1_0.id,
+workflow_backend  |         wt1_0.action_name,
+workflow_backend  |         wt1_0.allow_self_approval,
+workflow_backend  |         wt1_0.allowed_role,
+workflow_backend  |         wt1_0.condition_expression,
+workflow_backend  |         wt1_0.from_state_id,
+workflow_backend  |         wt1_0.send_email_to_creator,
+workflow_backend  |         wt1_0.to_state_id,
+workflow_backend  |         wt1_0.workflow_id 
+workflow_backend  |     from
+workflow_backend  |         workflow_transitions wt1_0 
+workflow_backend  |     where
+workflow_backend  |         wt1_0.workflow_id=?
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         w1_0.id,
+workflow_backend  |         w1_0.created_at,
+workflow_backend  |         w1_0.document_type,
+workflow_backend  |         w1_0.is_active,
+workflow_backend  |         w1_0.updated_at,
+workflow_backend  |         w1_0.workflow_name 
+workflow_backend  |     from
+workflow_backend  |         workflows w1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         w1_0.id,
+workflow_backend  |         w1_0.created_at,
+workflow_backend  |         w1_0.document_type,
+workflow_backend  |         w1_0.is_active,
+workflow_backend  |         w1_0.updated_at,
+workflow_backend  |         w1_0.workflow_name 
+workflow_backend  |     from
+workflow_backend  |         workflows w1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         w1_0.id,
+workflow_backend  |         w1_0.created_at,
+workflow_backend  |         w1_0.document_type,
+workflow_backend  |         w1_0.is_active,
+workflow_backend  |         w1_0.updated_at,
+workflow_backend  |         w1_0.workflow_name 
+workflow_backend  |     from
+workflow_backend  |         workflows w1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         dt1_0.id,
+workflow_backend  |         dt1_0.created_at,
+workflow_backend  |         dt1_0.created_by,
+workflow_backend  |         dt1_0.category,
+workflow_backend  |         dt1_0.content_html,
+workflow_backend  |         dt1_0.is_active,
+workflow_backend  |         dt1_0.template_name,
+workflow_backend  |         dt1_0.updated_at 
+workflow_backend  |     from
+workflow_backend  |         document_templates dt1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         w1_0.id,
+workflow_backend  |         w1_0.created_at,
+workflow_backend  |         w1_0.document_type,
+workflow_backend  |         w1_0.is_active,
+workflow_backend  |         w1_0.updated_at,
+workflow_backend  |         w1_0.workflow_name 
+workflow_backend  |     from
+workflow_backend  |         workflows w1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         w1_0.id,
+workflow_backend  |         w1_0.created_at,
+workflow_backend  |         w1_0.document_type,
+workflow_backend  |         w1_0.is_active,
+workflow_backend  |         w1_0.updated_at,
+workflow_backend  |         w1_0.workflow_name 
+workflow_backend  |     from
+workflow_backend  |         workflows w1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         w1_0.id,
+workflow_backend  |         w1_0.created_at,
+workflow_backend  |         w1_0.document_type,
+workflow_backend  |         w1_0.is_active,
+workflow_backend  |         w1_0.updated_at,
+workflow_backend  |         w1_0.workflow_name 
+workflow_backend  |     from
+workflow_backend  |         workflows w1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         w1_0.id,
+workflow_backend  |         w1_0.created_at,
+workflow_backend  |         w1_0.document_type,
+workflow_backend  |         w1_0.is_active,
+workflow_backend  |         w1_0.updated_at,
+workflow_backend  |         w1_0.workflow_name 
+workflow_backend  |     from
+workflow_backend  |         workflows w1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         w1_0.id,
+workflow_backend  |         w1_0.created_at,
+workflow_backend  |         w1_0.document_type,
+workflow_backend  |         w1_0.is_active,
+workflow_backend  |         w1_0.updated_at,
+workflow_backend  |         w1_0.workflow_name 
+workflow_backend  |     from
+workflow_backend  |         workflows w1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         wt1_0.id,
+workflow_backend  |         wt1_0.action_name,
+workflow_backend  |         wt1_0.allow_self_approval,
+workflow_backend  |         wt1_0.allowed_role,
+workflow_backend  |         wt1_0.condition_expression,
+workflow_backend  |         wt1_0.from_state_id,
+workflow_backend  |         wt1_0.send_email_to_creator,
+workflow_backend  |         wt1_0.to_state_id,
+workflow_backend  |         wt1_0.workflow_id 
+workflow_backend  |     from
+workflow_backend  |         workflow_transitions wt1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         d1_0.id,
+workflow_backend  |         d1_0.amount,
+workflow_backend  |         d1_0.content_html,
+workflow_backend  |         d1_0.created_at,
+workflow_backend  |         d1_0.current_state_id,
+workflow_backend  |         d1_0.document_number,
+workflow_backend  |         d1_0.document_type,
+workflow_backend  |         d1_0.gcs_attachment_url,
+workflow_backend  |         d1_0.owner_username,
+workflow_backend  |         d1_0.status,
+workflow_backend  |         d1_0.template_id,
+workflow_backend  |         d1_0.title,
+workflow_backend  |         d1_0.updated_at,
+workflow_backend  |         d1_0.version,
+workflow_backend  |         d1_0.workflow_id 
+workflow_backend  |     from
+workflow_backend  |         documents d1_0 
+workflow_backend  |     where
+workflow_backend  |         d1_0.current_state_id in (?) 
+workflow_backend  |     fetch
+workflow_backend  |         first ? rows only
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         w1_0.id,
+workflow_backend  |         w1_0.created_at,
+workflow_backend  |         w1_0.document_type,
+workflow_backend  |         w1_0.is_active,
+workflow_backend  |         w1_0.updated_at,
+workflow_backend  |         w1_0.workflow_name 
+workflow_backend  |     from
+workflow_backend  |         workflows w1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         d1_0.id,
+workflow_backend  |         d1_0.amount,
+workflow_backend  |         d1_0.content_html,
+workflow_backend  |         d1_0.created_at,
+workflow_backend  |         d1_0.current_state_id,
+workflow_backend  |         d1_0.document_number,
+workflow_backend  |         d1_0.document_type,
+workflow_backend  |         d1_0.gcs_attachment_url,
+workflow_backend  |         d1_0.owner_username,
+workflow_backend  |         d1_0.status,
+workflow_backend  |         d1_0.template_id,
+workflow_backend  |         d1_0.title,
+workflow_backend  |         d1_0.updated_at,
+workflow_backend  |         d1_0.version,
+workflow_backend  |         d1_0.workflow_id 
+workflow_backend  |     from
+workflow_backend  |         documents d1_0 
+workflow_backend  |     offset
+workflow_backend  |         ? rows 
+workflow_backend  |     fetch
+workflow_backend  |         first ? rows only
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         w1_0.id,
+workflow_backend  |         w1_0.created_at,
+workflow_backend  |         w1_0.document_type,
+workflow_backend  |         w1_0.is_active,
+workflow_backend  |         w1_0.updated_at,
+workflow_backend  |         w1_0.workflow_name 
+workflow_backend  |     from
+workflow_backend  |         workflows w1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         d1_0.id,
+workflow_backend  |         d1_0.amount,
+workflow_backend  |         d1_0.content_html,
+workflow_backend  |         d1_0.created_at,
+workflow_backend  |         d1_0.current_state_id,
+workflow_backend  |         d1_0.document_number,
+workflow_backend  |         d1_0.document_type,
+workflow_backend  |         d1_0.gcs_attachment_url,
+workflow_backend  |         d1_0.owner_username,
+workflow_backend  |         d1_0.status,
+workflow_backend  |         d1_0.template_id,
+workflow_backend  |         d1_0.title,
+workflow_backend  |         d1_0.updated_at,
+workflow_backend  |         d1_0.version,
+workflow_backend  |         d1_0.workflow_id 
+workflow_backend  |     from
+workflow_backend  |         documents d1_0 
+workflow_backend  |     offset
+workflow_backend  |         ? rows 
+workflow_backend  |     fetch
+workflow_backend  |         first ? rows only
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         w1_0.id,
+workflow_backend  |         w1_0.created_at,
+workflow_backend  |         w1_0.document_type,
+workflow_backend  |         w1_0.is_active,
+workflow_backend  |         w1_0.updated_at,
+workflow_backend  |         w1_0.workflow_name 
+workflow_backend  |     from
+workflow_backend  |         workflows w1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         d1_0.id,
+workflow_backend  |         d1_0.amount,
+workflow_backend  |         d1_0.content_html,
+workflow_backend  |         d1_0.created_at,
+workflow_backend  |         d1_0.current_state_id,
+workflow_backend  |         d1_0.document_number,
+workflow_backend  |         d1_0.document_type,
+workflow_backend  |         d1_0.gcs_attachment_url,
+workflow_backend  |         d1_0.owner_username,
+workflow_backend  |         d1_0.status,
+workflow_backend  |         d1_0.template_id,
+workflow_backend  |         d1_0.title,
+workflow_backend  |         d1_0.updated_at,
+workflow_backend  |         d1_0.version,
+workflow_backend  |         d1_0.workflow_id 
+workflow_backend  |     from
+workflow_backend  |         documents d1_0 
+workflow_backend  |     offset
+workflow_backend  |         ? rows 
+workflow_backend  |     fetch
+workflow_backend  |         first ? rows only
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         w1_0.id,
+workflow_backend  |         w1_0.created_at,
+workflow_backend  |         w1_0.document_type,
+workflow_backend  |         w1_0.is_active,
+workflow_backend  |         w1_0.updated_at,
+workflow_backend  |         w1_0.workflow_name 
+workflow_backend  |     from
+workflow_backend  |         workflows w1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         wt1_0.id,
+workflow_backend  |         wt1_0.action_name,
+workflow_backend  |         wt1_0.allow_self_approval,
+workflow_backend  |         wt1_0.allowed_role,
+workflow_backend  |         wt1_0.condition_expression,
+workflow_backend  |         wt1_0.from_state_id,
+workflow_backend  |         wt1_0.send_email_to_creator,
+workflow_backend  |         wt1_0.to_state_id,
+workflow_backend  |         wt1_0.workflow_id 
+workflow_backend  |     from
+workflow_backend  |         workflow_transitions wt1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         d1_0.id,
+workflow_backend  |         d1_0.amount,
+workflow_backend  |         d1_0.content_html,
+workflow_backend  |         d1_0.created_at,
+workflow_backend  |         d1_0.current_state_id,
+workflow_backend  |         d1_0.document_number,
+workflow_backend  |         d1_0.document_type,
+workflow_backend  |         d1_0.gcs_attachment_url,
+workflow_backend  |         d1_0.owner_username,
+workflow_backend  |         d1_0.status,
+workflow_backend  |         d1_0.template_id,
+workflow_backend  |         d1_0.title,
+workflow_backend  |         d1_0.updated_at,
+workflow_backend  |         d1_0.version,
+workflow_backend  |         d1_0.workflow_id 
+workflow_backend  |     from
+workflow_backend  |         documents d1_0 
+workflow_backend  |     where
+workflow_backend  |         d1_0.current_state_id in (?) 
+workflow_backend  |     fetch
+workflow_backend  |         first ? rows only
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         wh1_0.id,
+workflow_backend  |         wh1_0.action_name,
+workflow_backend  |         wh1_0.comments,
+workflow_backend  |         wh1_0.created_at,
+workflow_backend  |         wh1_0.document_id,
+workflow_backend  |         wh1_0.from_state_id,
+workflow_backend  |         wh1_0.performed_by,
+workflow_backend  |         wh1_0.to_state_id 
+workflow_backend  |     from
+workflow_backend  |         workflow_history wh1_0 
+workflow_backend  |     where
+workflow_backend  |         wh1_0.document_id=? 
+workflow_backend  |     order by
+workflow_backend  |         wh1_0.created_at desc
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         wt1_0.id,
+workflow_backend  |         wt1_0.action_name,
+workflow_backend  |         wt1_0.allow_self_approval,
+workflow_backend  |         wt1_0.allowed_role,
+workflow_backend  |         wt1_0.condition_expression,
+workflow_backend  |         wt1_0.from_state_id,
+workflow_backend  |         wt1_0.send_email_to_creator,
+workflow_backend  |         wt1_0.to_state_id,
+workflow_backend  |         wt1_0.workflow_id 
+workflow_backend  |     from
+workflow_backend  |         workflow_transitions wt1_0 
+workflow_backend  |     where
+workflow_backend  |         wt1_0.workflow_id=?
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         d1_0.id,
+workflow_backend  |         d1_0.amount,
+workflow_backend  |         d1_0.content_html,
+workflow_backend  |         d1_0.created_at,
+workflow_backend  |         d1_0.current_state_id,
+workflow_backend  |         d1_0.document_number,
+workflow_backend  |         d1_0.document_type,
+workflow_backend  |         d1_0.gcs_attachment_url,
+workflow_backend  |         d1_0.owner_username,
+workflow_backend  |         d1_0.status,
+workflow_backend  |         d1_0.template_id,
+workflow_backend  |         d1_0.title,
+workflow_backend  |         d1_0.updated_at,
+workflow_backend  |         d1_0.version,
+workflow_backend  |         d1_0.workflow_id 
+workflow_backend  |     from
+workflow_backend  |         documents d1_0 
+workflow_backend  |     where
+workflow_backend  |         d1_0.id=?
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         wt1_0.id,
+workflow_backend  |         wt1_0.action_name,
+workflow_backend  |         wt1_0.allow_self_approval,
+workflow_backend  |         wt1_0.allowed_role,
+workflow_backend  |         wt1_0.condition_expression,
+workflow_backend  |         wt1_0.from_state_id,
+workflow_backend  |         wt1_0.send_email_to_creator,
+workflow_backend  |         wt1_0.to_state_id,
+workflow_backend  |         wt1_0.workflow_id 
+workflow_backend  |     from
+workflow_backend  |         workflow_transitions wt1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         ws1_0.id,
+workflow_backend  |         ws1_0.allow_edit_role,
+workflow_backend  |         ws1_0.color_code,
+workflow_backend  |         ws1_0.is_final_state,
+workflow_backend  |         ws1_0.is_initial_state,
+workflow_backend  |         ws1_0.is_optional_state,
+workflow_backend  |         ws1_0.send_email,
+workflow_backend  |         ws1_0.state_name,
+workflow_backend  |         ws1_0.update_field,
+workflow_backend  |         ws1_0.update_value,
+workflow_backend  |         ws1_0.workflow_id 
+workflow_backend  |     from
+workflow_backend  |         workflow_states ws1_0 
+workflow_backend  |     where
+workflow_backend  |         ws1_0.id=?
+workflow_backend  | 2026-08-28T15:06:41.176Z  INFO 1 --- [nextgen-erp-workflow-module] [nio-8081-exec-9] c.n.e.w.a.service.EmailService           : === EMAIL SENT ===
+workflow_backend  | 2026-08-28T15:06:41.176Z  INFO 1 --- [nextgen-erp-workflow-module] [nio-8081-exec-9] c.n.e.w.a.service.EmailService           : To: role_EMPLOYEE@example.com
+workflow_backend  | 2026-08-28T15:06:41.176Z  INFO 1 --- [nextgen-erp-workflow-module] [nio-8081-exec-9] c.n.e.w.a.service.EmailService           : Subject: Document requires attention
+workflow_backend  | 2026-08-28T15:06:41.176Z  INFO 1 --- [nextgen-erp-workflow-module] [nio-8081-exec-9] c.n.e.w.a.service.EmailService           : Body: Document DOC-1787927983575 is now in state Pending Approval
+workflow_backend  | 2026-08-28T15:06:41.176Z  INFO 1 --- [nextgen-erp-workflow-module] [nio-8081-exec-9] c.n.e.w.a.service.EmailService           : ==================
+workflow_backend  | Hibernate: 
+workflow_backend  |     insert 
+workflow_backend  |     into
+workflow_backend  |         workflow_history
+workflow_backend  |         (action_name, comments, created_at, document_id, from_state_id, performed_by, to_state_id, id) 
+workflow_backend  |     values
+workflow_backend  |         (?, ?, ?, ?, ?, ?, ?, ?)
+workflow_backend  | Hibernate: 
+workflow_backend  |     update
+workflow_backend  |         documents 
+workflow_backend  |     set
+workflow_backend  |         amount=?,
+workflow_backend  |         content_html=?,
+workflow_backend  |         current_state_id=?,
+workflow_backend  |         document_number=?,
+workflow_backend  |         document_type=?,
+workflow_backend  |         gcs_attachment_url=?,
+workflow_backend  |         owner_username=?,
+workflow_backend  |         status=?,
+workflow_backend  |         template_id=?,
+workflow_backend  |         title=?,
+workflow_backend  |         updated_at=?,
+workflow_backend  |         version=?,
+workflow_backend  |         workflow_id=? 
+workflow_backend  |     where
+workflow_backend  |         id=?
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         wh1_0.id,
+workflow_backend  |         wh1_0.action_name,
+workflow_backend  |         wh1_0.comments,
+workflow_backend  |         wh1_0.created_at,
+workflow_backend  |         wh1_0.document_id,
+workflow_backend  |         wh1_0.from_state_id,
+workflow_backend  |         wh1_0.performed_by,
+workflow_backend  |         wh1_0.to_state_id 
+workflow_backend  |     from
+workflow_backend  |         workflow_history wh1_0 
+workflow_backend  |     where
+workflow_backend  |         wh1_0.document_id=? 
+workflow_backend  |     order by
+workflow_backend  |         wh1_0.created_at desc
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         w1_0.id,
+workflow_backend  |         w1_0.created_at,
+workflow_backend  |         w1_0.document_type,
+workflow_backend  |         w1_0.is_active,
+workflow_backend  |         w1_0.updated_at,
+workflow_backend  |         w1_0.workflow_name 
+workflow_backend  |     from
+workflow_backend  |         workflows w1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         wt1_0.id,
+workflow_backend  |         wt1_0.action_name,
+workflow_backend  |         wt1_0.allow_self_approval,
+workflow_backend  |         wt1_0.allowed_role,
+workflow_backend  |         wt1_0.condition_expression,
+workflow_backend  |         wt1_0.from_state_id,
+workflow_backend  |         wt1_0.send_email_to_creator,
+workflow_backend  |         wt1_0.to_state_id,
+workflow_backend  |         wt1_0.workflow_id 
+workflow_backend  |     from
+workflow_backend  |         workflow_transitions wt1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         d1_0.id,
+workflow_backend  |         d1_0.amount,
+workflow_backend  |         d1_0.content_html,
+workflow_backend  |         d1_0.created_at,
+workflow_backend  |         d1_0.current_state_id,
+workflow_backend  |         d1_0.document_number,
+workflow_backend  |         d1_0.document_type,
+workflow_backend  |         d1_0.gcs_attachment_url,
+workflow_backend  |         d1_0.owner_username,
+workflow_backend  |         d1_0.status,
+workflow_backend  |         d1_0.template_id,
+workflow_backend  |         d1_0.title,
+workflow_backend  |         d1_0.updated_at,
+workflow_backend  |         d1_0.version,
+workflow_backend  |         d1_0.workflow_id 
+workflow_backend  |     from
+workflow_backend  |         documents d1_0 
+workflow_backend  |     where
+workflow_backend  |         d1_0.current_state_id in (?) 
+workflow_backend  |     fetch
+workflow_backend  |         first ? rows only
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         w1_0.id,
+workflow_backend  |         w1_0.created_at,
+workflow_backend  |         w1_0.document_type,
+workflow_backend  |         w1_0.is_active,
+workflow_backend  |         w1_0.updated_at,
+workflow_backend  |         w1_0.workflow_name 
+workflow_backend  |     from
+workflow_backend  |         workflows w1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         wt1_0.id,
+workflow_backend  |         wt1_0.action_name,
+workflow_backend  |         wt1_0.allow_self_approval,
+workflow_backend  |         wt1_0.allowed_role,
+workflow_backend  |         wt1_0.condition_expression,
+workflow_backend  |         wt1_0.from_state_id,
+workflow_backend  |         wt1_0.send_email_to_creator,
+workflow_backend  |         wt1_0.to_state_id,
+workflow_backend  |         wt1_0.workflow_id 
+workflow_backend  |     from
+workflow_backend  |         workflow_transitions wt1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         d1_0.id,
+workflow_backend  |         d1_0.amount,
+workflow_backend  |         d1_0.content_html,
+workflow_backend  |         d1_0.created_at,
+workflow_backend  |         d1_0.current_state_id,
+workflow_backend  |         d1_0.document_number,
+workflow_backend  |         d1_0.document_type,
+workflow_backend  |         d1_0.gcs_attachment_url,
+workflow_backend  |         d1_0.owner_username,
+workflow_backend  |         d1_0.status,
+workflow_backend  |         d1_0.template_id,
+workflow_backend  |         d1_0.title,
+workflow_backend  |         d1_0.updated_at,
+workflow_backend  |         d1_0.version,
+workflow_backend  |         d1_0.workflow_id 
+workflow_backend  |     from
+workflow_backend  |         documents d1_0 
+workflow_backend  |     where
+workflow_backend  |         d1_0.current_state_id in (?) 
+workflow_backend  |     fetch
+workflow_backend  |         first ? rows only
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         w1_0.id,
+workflow_backend  |         w1_0.created_at,
+workflow_backend  |         w1_0.document_type,
+workflow_backend  |         w1_0.is_active,
+workflow_backend  |         w1_0.updated_at,
+workflow_backend  |         w1_0.workflow_name 
+workflow_backend  |     from
+workflow_backend  |         workflows w1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         wt1_0.id,
+workflow_backend  |         wt1_0.action_name,
+workflow_backend  |         wt1_0.allow_self_approval,
+workflow_backend  |         wt1_0.allowed_role,
+workflow_backend  |         wt1_0.condition_expression,
+workflow_backend  |         wt1_0.from_state_id,
+workflow_backend  |         wt1_0.send_email_to_creator,
+workflow_backend  |         wt1_0.to_state_id,
+workflow_backend  |         wt1_0.workflow_id 
+workflow_backend  |     from
+workflow_backend  |         workflow_transitions wt1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         d1_0.id,
+workflow_backend  |         d1_0.amount,
+workflow_backend  |         d1_0.content_html,
+workflow_backend  |         d1_0.created_at,
+workflow_backend  |         d1_0.current_state_id,
+workflow_backend  |         d1_0.document_number,
+workflow_backend  |         d1_0.document_type,
+workflow_backend  |         d1_0.gcs_attachment_url,
+workflow_backend  |         d1_0.owner_username,
+workflow_backend  |         d1_0.status,
+workflow_backend  |         d1_0.template_id,
+workflow_backend  |         d1_0.title,
+workflow_backend  |         d1_0.updated_at,
+workflow_backend  |         d1_0.version,
+workflow_backend  |         d1_0.workflow_id 
+workflow_backend  |     from
+workflow_backend  |         documents d1_0 
+workflow_backend  |     where
+workflow_backend  |         d1_0.current_state_id in (?) 
+workflow_backend  |     fetch
+workflow_backend  |         first ? rows only
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         w1_0.id,
+workflow_backend  |         w1_0.created_at,
+workflow_backend  |         w1_0.document_type,
+workflow_backend  |         w1_0.is_active,
+workflow_backend  |         w1_0.updated_at,
+workflow_backend  |         w1_0.workflow_name 
+workflow_backend  |     from
+workflow_backend  |         workflows w1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         wt1_0.id,
+workflow_backend  |         wt1_0.action_name,
+workflow_backend  |         wt1_0.allow_self_approval,
+workflow_backend  |         wt1_0.allowed_role,
+workflow_backend  |         wt1_0.condition_expression,
+workflow_backend  |         wt1_0.from_state_id,
+workflow_backend  |         wt1_0.send_email_to_creator,
+workflow_backend  |         wt1_0.to_state_id,
+workflow_backend  |         wt1_0.workflow_id 
+workflow_backend  |     from
+workflow_backend  |         workflow_transitions wt1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         d1_0.id,
+workflow_backend  |         d1_0.amount,
+workflow_backend  |         d1_0.content_html,
+workflow_backend  |         d1_0.created_at,
+workflow_backend  |         d1_0.current_state_id,
+workflow_backend  |         d1_0.document_number,
+workflow_backend  |         d1_0.document_type,
+workflow_backend  |         d1_0.gcs_attachment_url,
+workflow_backend  |         d1_0.owner_username,
+workflow_backend  |         d1_0.status,
+workflow_backend  |         d1_0.template_id,
+workflow_backend  |         d1_0.title,
+workflow_backend  |         d1_0.updated_at,
+workflow_backend  |         d1_0.version,
+workflow_backend  |         d1_0.workflow_id 
+workflow_backend  |     from
+workflow_backend  |         documents d1_0 
+workflow_backend  |     where
+workflow_backend  |         d1_0.current_state_id in (?) 
+workflow_backend  |     fetch
+workflow_backend  |         first ? rows only
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         wh1_0.id,
+workflow_backend  |         wh1_0.action_name,
+workflow_backend  |         wh1_0.comments,
+workflow_backend  |         wh1_0.created_at,
+workflow_backend  |         wh1_0.document_id,
+workflow_backend  |         wh1_0.from_state_id,
+workflow_backend  |         wh1_0.performed_by,
+workflow_backend  |         wh1_0.to_state_id 
+workflow_backend  |     from
+workflow_backend  |         workflow_history wh1_0 
+workflow_backend  |     where
+workflow_backend  |         wh1_0.document_id=? 
+workflow_backend  |     order by
+workflow_backend  |         wh1_0.created_at desc
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         wt1_0.id,
+workflow_backend  |         wt1_0.action_name,
+workflow_backend  |         wt1_0.allow_self_approval,
+workflow_backend  |         wt1_0.allowed_role,
+workflow_backend  |         wt1_0.condition_expression,
+workflow_backend  |         wt1_0.from_state_id,
+workflow_backend  |         wt1_0.send_email_to_creator,
+workflow_backend  |         wt1_0.to_state_id,
+workflow_backend  |         wt1_0.workflow_id 
+workflow_backend  |     from
+workflow_backend  |         workflow_transitions wt1_0 
+workflow_backend  |     where
+workflow_backend  |         wt1_0.workflow_id=?
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         d1_0.id,
+workflow_backend  |         d1_0.amount,
+workflow_backend  |         d1_0.content_html,
+workflow_backend  |         d1_0.created_at,
+workflow_backend  |         d1_0.current_state_id,
+workflow_backend  |         d1_0.document_number,
+workflow_backend  |         d1_0.document_type,
+workflow_backend  |         d1_0.gcs_attachment_url,
+workflow_backend  |         d1_0.owner_username,
+workflow_backend  |         d1_0.status,
+workflow_backend  |         d1_0.template_id,
+workflow_backend  |         d1_0.title,
+workflow_backend  |         d1_0.updated_at,
+workflow_backend  |         d1_0.version,
+workflow_backend  |         d1_0.workflow_id 
+workflow_backend  |     from
+workflow_backend  |         documents d1_0 
+workflow_backend  |     where
+workflow_backend  |         d1_0.id=?
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         wt1_0.id,
+workflow_backend  |         wt1_0.action_name,
+workflow_backend  |         wt1_0.allow_self_approval,
+workflow_backend  |         wt1_0.allowed_role,
+workflow_backend  |         wt1_0.condition_expression,
+workflow_backend  |         wt1_0.from_state_id,
+workflow_backend  |         wt1_0.send_email_to_creator,
+workflow_backend  |         wt1_0.to_state_id,
+workflow_backend  |         wt1_0.workflow_id 
+workflow_backend  |     from
+workflow_backend  |         workflow_transitions wt1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         d1_0.id,
+workflow_backend  |         d1_0.amount,
+workflow_backend  |         d1_0.content_html,
+workflow_backend  |         d1_0.created_at,
+workflow_backend  |         d1_0.current_state_id,
+workflow_backend  |         d1_0.document_number,
+workflow_backend  |         d1_0.document_type,
+workflow_backend  |         d1_0.gcs_attachment_url,
+workflow_backend  |         d1_0.owner_username,
+workflow_backend  |         d1_0.status,
+workflow_backend  |         d1_0.template_id,
+workflow_backend  |         d1_0.title,
+workflow_backend  |         d1_0.updated_at,
+workflow_backend  |         d1_0.version,
+workflow_backend  |         d1_0.workflow_id 
+workflow_backend  |     from
+workflow_backend  |         documents d1_0 
+workflow_backend  |     where
+workflow_backend  |         d1_0.id=?
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         wt1_0.id,
+workflow_backend  |         wt1_0.action_name,
+workflow_backend  |         wt1_0.allow_self_approval,
+workflow_backend  |         wt1_0.allowed_role,
+workflow_backend  |         wt1_0.condition_expression,
+workflow_backend  |         wt1_0.from_state_id,
+workflow_backend  |         wt1_0.send_email_to_creator,
+workflow_backend  |         wt1_0.to_state_id,
+workflow_backend  |         wt1_0.workflow_id 
+workflow_backend  |     from
+workflow_backend  |         workflow_transitions wt1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         d1_0.id,
+workflow_backend  |         d1_0.amount,
+workflow_backend  |         d1_0.content_html,
+workflow_backend  |         d1_0.created_at,
+workflow_backend  |         d1_0.current_state_id,
+workflow_backend  |         d1_0.document_number,
+workflow_backend  |         d1_0.document_type,
+workflow_backend  |         d1_0.gcs_attachment_url,
+workflow_backend  |         d1_0.owner_username,
+workflow_backend  |         d1_0.status,
+workflow_backend  |         d1_0.template_id,
+workflow_backend  |         d1_0.title,
+workflow_backend  |         d1_0.updated_at,
+workflow_backend  |         d1_0.version,
+workflow_backend  |         d1_0.workflow_id 
+workflow_backend  |     from
+workflow_backend  |         documents d1_0 
+workflow_backend  |     where
+workflow_backend  |         d1_0.id=?
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         wt1_0.id,
+workflow_backend  |         wt1_0.action_name,
+workflow_backend  |         wt1_0.allow_self_approval,
+workflow_backend  |         wt1_0.allowed_role,
+workflow_backend  |         wt1_0.condition_expression,
+workflow_backend  |         wt1_0.from_state_id,
+workflow_backend  |         wt1_0.send_email_to_creator,
+workflow_backend  |         wt1_0.to_state_id,
+workflow_backend  |         wt1_0.workflow_id 
+workflow_backend  |     from
+workflow_backend  |         workflow_transitions wt1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         wh1_0.id,
+workflow_backend  |         wh1_0.action_name,
+workflow_backend  |         wh1_0.comments,
+workflow_backend  |         wh1_0.created_at,
+workflow_backend  |         wh1_0.document_id,
+workflow_backend  |         wh1_0.from_state_id,
+workflow_backend  |         wh1_0.performed_by,
+workflow_backend  |         wh1_0.to_state_id 
+workflow_backend  |     from
+workflow_backend  |         workflow_history wh1_0 
+workflow_backend  |     where
+workflow_backend  |         wh1_0.document_id=? 
+workflow_backend  |     order by
+workflow_backend  |         wh1_0.created_at desc
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         wt1_0.id,
+workflow_backend  |         wt1_0.action_name,
+workflow_backend  |         wt1_0.allow_self_approval,
+workflow_backend  |         wt1_0.allowed_role,
+workflow_backend  |         wt1_0.condition_expression,
+workflow_backend  |         wt1_0.from_state_id,
+workflow_backend  |         wt1_0.send_email_to_creator,
+workflow_backend  |         wt1_0.to_state_id,
+workflow_backend  |         wt1_0.workflow_id 
+workflow_backend  |     from
+workflow_backend  |         workflow_transitions wt1_0 
+workflow_backend  |     where
+workflow_backend  |         wt1_0.workflow_id=?
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         d1_0.id,
+workflow_backend  |         d1_0.amount,
+workflow_backend  |         d1_0.content_html,
+workflow_backend  |         d1_0.created_at,
+workflow_backend  |         d1_0.current_state_id,
+workflow_backend  |         d1_0.document_number,
+workflow_backend  |         d1_0.document_type,
+workflow_backend  |         d1_0.gcs_attachment_url,
+workflow_backend  |         d1_0.owner_username,
+workflow_backend  |         d1_0.status,
+workflow_backend  |         d1_0.template_id,
+workflow_backend  |         d1_0.title,
+workflow_backend  |         d1_0.updated_at,
+workflow_backend  |         d1_0.version,
+workflow_backend  |         d1_0.workflow_id 
+workflow_backend  |     from
+workflow_backend  |         documents d1_0 
+workflow_backend  |     where
+workflow_backend  |         d1_0.id=?
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         wt1_0.id,
+workflow_backend  |         wt1_0.action_name,
+workflow_backend  |         wt1_0.allow_self_approval,
+workflow_backend  |         wt1_0.allowed_role,
+workflow_backend  |         wt1_0.condition_expression,
+workflow_backend  |         wt1_0.from_state_id,
+workflow_backend  |         wt1_0.send_email_to_creator,
+workflow_backend  |         wt1_0.to_state_id,
+workflow_backend  |         wt1_0.workflow_id 
+workflow_backend  |     from
+workflow_backend  |         workflow_transitions wt1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         w1_0.id,
+workflow_backend  |         w1_0.created_at,
+workflow_backend  |         w1_0.document_type,
+workflow_backend  |         w1_0.is_active,
+workflow_backend  |         w1_0.updated_at,
+workflow_backend  |         w1_0.workflow_name 
+workflow_backend  |     from
+workflow_backend  |         workflows w1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         d1_0.id,
+workflow_backend  |         d1_0.amount,
+workflow_backend  |         d1_0.content_html,
+workflow_backend  |         d1_0.created_at,
+workflow_backend  |         d1_0.current_state_id,
+workflow_backend  |         d1_0.document_number,
+workflow_backend  |         d1_0.document_type,
+workflow_backend  |         d1_0.gcs_attachment_url,
+workflow_backend  |         d1_0.owner_username,
+workflow_backend  |         d1_0.status,
+workflow_backend  |         d1_0.template_id,
+workflow_backend  |         d1_0.title,
+workflow_backend  |         d1_0.updated_at,
+workflow_backend  |         d1_0.version,
+workflow_backend  |         d1_0.workflow_id 
+workflow_backend  |     from
+workflow_backend  |         documents d1_0 
+workflow_backend  |     offset
+workflow_backend  |         ? rows 
+workflow_backend  |     fetch
+workflow_backend  |         first ? rows only
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         w1_0.id,
+workflow_backend  |         w1_0.created_at,
+workflow_backend  |         w1_0.document_type,
+workflow_backend  |         w1_0.is_active,
+workflow_backend  |         w1_0.updated_at,
+workflow_backend  |         w1_0.workflow_name 
+workflow_backend  |     from
+workflow_backend  |         workflows w1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         d1_0.id,
+workflow_backend  |         d1_0.amount,
+workflow_backend  |         d1_0.content_html,
+workflow_backend  |         d1_0.created_at,
+workflow_backend  |         d1_0.current_state_id,
+workflow_backend  |         d1_0.document_number,
+workflow_backend  |         d1_0.document_type,
+workflow_backend  |         d1_0.gcs_attachment_url,
+workflow_backend  |         d1_0.owner_username,
+workflow_backend  |         d1_0.status,
+workflow_backend  |         d1_0.template_id,
+workflow_backend  |         d1_0.title,
+workflow_backend  |         d1_0.updated_at,
+workflow_backend  |         d1_0.version,
+workflow_backend  |         d1_0.workflow_id 
+workflow_backend  |     from
+workflow_backend  |         documents d1_0 
+workflow_backend  |     offset
+workflow_backend  |         ? rows 
+workflow_backend  |     fetch
+workflow_backend  |         first ? rows only
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         w1_0.id,
+workflow_backend  |         w1_0.created_at,
+workflow_backend  |         w1_0.document_type,
+workflow_backend  |         w1_0.is_active,
+workflow_backend  |         w1_0.updated_at,
+workflow_backend  |         w1_0.workflow_name 
+workflow_backend  |     from
+workflow_backend  |         workflows w1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         d1_0.id,
+workflow_backend  |         d1_0.amount,
+workflow_backend  |         d1_0.content_html,
+workflow_backend  |         d1_0.created_at,
+workflow_backend  |         d1_0.current_state_id,
+workflow_backend  |         d1_0.document_number,
+workflow_backend  |         d1_0.document_type,
+workflow_backend  |         d1_0.gcs_attachment_url,
+workflow_backend  |         d1_0.owner_username,
+workflow_backend  |         d1_0.status,
+workflow_backend  |         d1_0.template_id,
+workflow_backend  |         d1_0.title,
+workflow_backend  |         d1_0.updated_at,
+workflow_backend  |         d1_0.version,
+workflow_backend  |         d1_0.workflow_id 
+workflow_backend  |     from
+workflow_backend  |         documents d1_0 
+workflow_backend  |     offset
+workflow_backend  |         ? rows 
+workflow_backend  |     fetch
+workflow_backend  |         first ? rows only
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         w1_0.id,
+workflow_backend  |         w1_0.created_at,
+workflow_backend  |         w1_0.document_type,
+workflow_backend  |         w1_0.is_active,
+workflow_backend  |         w1_0.updated_at,
+workflow_backend  |         w1_0.workflow_name 
+workflow_backend  |     from
+workflow_backend  |         workflows w1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         wt1_0.id,
+workflow_backend  |         wt1_0.action_name,
+workflow_backend  |         wt1_0.allow_self_approval,
+workflow_backend  |         wt1_0.allowed_role,
+workflow_backend  |         wt1_0.condition_expression,
+workflow_backend  |         wt1_0.from_state_id,
+workflow_backend  |         wt1_0.send_email_to_creator,
+workflow_backend  |         wt1_0.to_state_id,
+workflow_backend  |         wt1_0.workflow_id 
+workflow_backend  |     from
+workflow_backend  |         workflow_transitions wt1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         d1_0.id,
+workflow_backend  |         d1_0.amount,
+workflow_backend  |         d1_0.content_html,
+workflow_backend  |         d1_0.created_at,
+workflow_backend  |         d1_0.current_state_id,
+workflow_backend  |         d1_0.document_number,
+workflow_backend  |         d1_0.document_type,
+workflow_backend  |         d1_0.gcs_attachment_url,
+workflow_backend  |         d1_0.owner_username,
+workflow_backend  |         d1_0.status,
+workflow_backend  |         d1_0.template_id,
+workflow_backend  |         d1_0.title,
+workflow_backend  |         d1_0.updated_at,
+workflow_backend  |         d1_0.version,
+workflow_backend  |         d1_0.workflow_id 
+workflow_backend  |     from
+workflow_backend  |         documents d1_0 
+workflow_backend  |     where
+workflow_backend  |         d1_0.current_state_id in (?) 
+workflow_backend  |     fetch
+workflow_backend  |         first ? rows only
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         w1_0.id,
+workflow_backend  |         w1_0.created_at,
+workflow_backend  |         w1_0.document_type,
+workflow_backend  |         w1_0.is_active,
+workflow_backend  |         w1_0.updated_at,
+workflow_backend  |         w1_0.workflow_name 
+workflow_backend  |     from
+workflow_backend  |         workflows w1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         d1_0.id,
+workflow_backend  |         d1_0.amount,
+workflow_backend  |         d1_0.content_html,
+workflow_backend  |         d1_0.created_at,
+workflow_backend  |         d1_0.current_state_id,
+workflow_backend  |         d1_0.document_number,
+workflow_backend  |         d1_0.document_type,
+workflow_backend  |         d1_0.gcs_attachment_url,
+workflow_backend  |         d1_0.owner_username,
+workflow_backend  |         d1_0.status,
+workflow_backend  |         d1_0.template_id,
+workflow_backend  |         d1_0.title,
+workflow_backend  |         d1_0.updated_at,
+workflow_backend  |         d1_0.version,
+workflow_backend  |         d1_0.workflow_id 
+workflow_backend  |     from
+workflow_backend  |         documents d1_0 
+workflow_backend  |     offset
+workflow_backend  |         ? rows 
+workflow_backend  |     fetch
+workflow_backend  |         first ? rows only
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         w1_0.id,
+workflow_backend  |         w1_0.created_at,
+workflow_backend  |         w1_0.document_type,
+workflow_backend  |         w1_0.is_active,
+workflow_backend  |         w1_0.updated_at,
+workflow_backend  |         w1_0.workflow_name 
+workflow_backend  |     from
+workflow_backend  |         workflows w1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         dt1_0.id,
+workflow_backend  |         dt1_0.created_at,
+workflow_backend  |         dt1_0.created_by,
+workflow_backend  |         dt1_0.category,
+workflow_backend  |         dt1_0.content_html,
+workflow_backend  |         dt1_0.is_active,
+workflow_backend  |         dt1_0.template_name,
+workflow_backend  |         dt1_0.updated_at 
+workflow_backend  |     from
+workflow_backend  |         document_templates dt1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         w1_0.id,
+workflow_backend  |         w1_0.created_at,
+workflow_backend  |         w1_0.document_type,
+workflow_backend  |         w1_0.is_active,
+workflow_backend  |         w1_0.updated_at,
+workflow_backend  |         w1_0.workflow_name 
+workflow_backend  |     from
+workflow_backend  |         workflows w1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         w1_0.id,
+workflow_backend  |         w1_0.created_at,
+workflow_backend  |         w1_0.document_type,
+workflow_backend  |         w1_0.is_active,
+workflow_backend  |         w1_0.updated_at,
+workflow_backend  |         w1_0.workflow_name 
+workflow_backend  |     from
+workflow_backend  |         workflows w1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         dt1_0.id,
+workflow_backend  |         dt1_0.created_at,
+workflow_backend  |         dt1_0.created_by,
+workflow_backend  |         dt1_0.category,
+workflow_backend  |         dt1_0.content_html,
+workflow_backend  |         dt1_0.is_active,
+workflow_backend  |         dt1_0.template_name,
+workflow_backend  |         dt1_0.updated_at 
+workflow_backend  |     from
+workflow_backend  |         document_templates dt1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         w1_0.id,
+workflow_backend  |         w1_0.created_at,
+workflow_backend  |         w1_0.document_type,
+workflow_backend  |         w1_0.is_active,
+workflow_backend  |         w1_0.updated_at,
+workflow_backend  |         w1_0.workflow_name 
+workflow_backend  |     from
+workflow_backend  |         workflows w1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         w1_0.id,
+workflow_backend  |         w1_0.created_at,
+workflow_backend  |         w1_0.document_type,
+workflow_backend  |         w1_0.is_active,
+workflow_backend  |         w1_0.updated_at,
+workflow_backend  |         w1_0.workflow_name 
+workflow_backend  |     from
+workflow_backend  |         workflows w1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         ws1_0.id,
+workflow_backend  |         ws1_0.allow_edit_role,
+workflow_backend  |         ws1_0.color_code,
+workflow_backend  |         ws1_0.is_final_state,
+workflow_backend  |         ws1_0.is_initial_state,
+workflow_backend  |         ws1_0.is_optional_state,
+workflow_backend  |         ws1_0.send_email,
+workflow_backend  |         ws1_0.state_name,
+workflow_backend  |         ws1_0.update_field,
+workflow_backend  |         ws1_0.update_value,
+workflow_backend  |         ws1_0.workflow_id 
+workflow_backend  |     from
+workflow_backend  |         workflow_states ws1_0 
+workflow_backend  |     where
+workflow_backend  |         ws1_0.workflow_id=?
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         wt1_0.id,
+workflow_backend  |         wt1_0.action_name,
+workflow_backend  |         wt1_0.allow_self_approval,
+workflow_backend  |         wt1_0.allowed_role,
+workflow_backend  |         wt1_0.condition_expression,
+workflow_backend  |         wt1_0.from_state_id,
+workflow_backend  |         wt1_0.send_email_to_creator,
+workflow_backend  |         wt1_0.to_state_id,
+workflow_backend  |         wt1_0.workflow_id 
+workflow_backend  |     from
+workflow_backend  |         workflow_transitions wt1_0 
+workflow_backend  |     where
+workflow_backend  |         wt1_0.workflow_id=?
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         w1_0.id,
+workflow_backend  |         w1_0.created_at,
+workflow_backend  |         w1_0.document_type,
+workflow_backend  |         w1_0.is_active,
+workflow_backend  |         w1_0.updated_at,
+workflow_backend  |         w1_0.workflow_name 
+workflow_backend  |     from
+workflow_backend  |         workflows w1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         d1_0.id,
+workflow_backend  |         d1_0.amount,
+workflow_backend  |         d1_0.content_html,
+workflow_backend  |         d1_0.created_at,
+workflow_backend  |         d1_0.current_state_id,
+workflow_backend  |         d1_0.document_number,
+workflow_backend  |         d1_0.document_type,
+workflow_backend  |         d1_0.gcs_attachment_url,
+workflow_backend  |         d1_0.owner_username,
+workflow_backend  |         d1_0.status,
+workflow_backend  |         d1_0.template_id,
+workflow_backend  |         d1_0.title,
+workflow_backend  |         d1_0.updated_at,
+workflow_backend  |         d1_0.version,
+workflow_backend  |         d1_0.workflow_id 
+workflow_backend  |     from
+workflow_backend  |         documents d1_0 
+workflow_backend  |     offset
+workflow_backend  |         ? rows 
+workflow_backend  |     fetch
+workflow_backend  |         first ? rows only
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         w1_0.id,
+workflow_backend  |         w1_0.created_at,
+workflow_backend  |         w1_0.document_type,
+workflow_backend  |         w1_0.is_active,
+workflow_backend  |         w1_0.updated_at,
+workflow_backend  |         w1_0.workflow_name 
+workflow_backend  |     from
+workflow_backend  |         workflows w1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         w1_0.id,
+workflow_backend  |         w1_0.created_at,
+workflow_backend  |         w1_0.document_type,
+workflow_backend  |         w1_0.is_active,
+workflow_backend  |         w1_0.updated_at,
+workflow_backend  |         w1_0.workflow_name 
+workflow_backend  |     from
+workflow_backend  |         workflows w1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         ws1_0.id,
+workflow_backend  |         ws1_0.allow_edit_role,
+workflow_backend  |         ws1_0.color_code,
+workflow_backend  |         ws1_0.is_final_state,
+workflow_backend  |         ws1_0.is_initial_state,
+workflow_backend  |         ws1_0.is_optional_state,
+workflow_backend  |         ws1_0.send_email,
+workflow_backend  |         ws1_0.state_name,
+workflow_backend  |         ws1_0.update_field,
+workflow_backend  |         ws1_0.update_value,
+workflow_backend  |         ws1_0.workflow_id 
+workflow_backend  |     from
+workflow_backend  |         workflow_states ws1_0 
+workflow_backend  |     where
+workflow_backend  |         ws1_0.workflow_id=?
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         wt1_0.id,
+workflow_backend  |         wt1_0.action_name,
+workflow_backend  |         wt1_0.allow_self_approval,
+workflow_backend  |         wt1_0.allowed_role,
+workflow_backend  |         wt1_0.condition_expression,
+workflow_backend  |         wt1_0.from_state_id,
+workflow_backend  |         wt1_0.send_email_to_creator,
+workflow_backend  |         wt1_0.to_state_id,
+workflow_backend  |         wt1_0.workflow_id 
+workflow_backend  |     from
+workflow_backend  |         workflow_transitions wt1_0 
+workflow_backend  |     where
+workflow_backend  |         wt1_0.workflow_id=?
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         w1_0.id,
+workflow_backend  |         w1_0.created_at,
+workflow_backend  |         w1_0.document_type,
+workflow_backend  |         w1_0.is_active,
+workflow_backend  |         w1_0.updated_at,
+workflow_backend  |         w1_0.workflow_name 
+workflow_backend  |     from
+workflow_backend  |         workflows w1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         w1_0.id,
+workflow_backend  |         w1_0.created_at,
+workflow_backend  |         w1_0.document_type,
+workflow_backend  |         w1_0.is_active,
+workflow_backend  |         w1_0.updated_at,
+workflow_backend  |         w1_0.workflow_name 
+workflow_backend  |     from
+workflow_backend  |         workflows w1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         ws1_0.id,
+workflow_backend  |         ws1_0.allow_edit_role,
+workflow_backend  |         ws1_0.color_code,
+workflow_backend  |         ws1_0.is_final_state,
+workflow_backend  |         ws1_0.is_initial_state,
+workflow_backend  |         ws1_0.is_optional_state,
+workflow_backend  |         ws1_0.send_email,
+workflow_backend  |         ws1_0.state_name,
+workflow_backend  |         ws1_0.update_field,
+workflow_backend  |         ws1_0.update_value,
+workflow_backend  |         ws1_0.workflow_id 
+workflow_backend  |     from
+workflow_backend  |         workflow_states ws1_0 
+workflow_backend  |     where
+workflow_backend  |         ws1_0.workflow_id=?
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         wt1_0.id,
+workflow_backend  |         wt1_0.action_name,
+workflow_backend  |         wt1_0.allow_self_approval,
+workflow_backend  |         wt1_0.allowed_role,
+workflow_backend  |         wt1_0.condition_expression,
+workflow_backend  |         wt1_0.from_state_id,
+workflow_backend  |         wt1_0.send_email_to_creator,
+workflow_backend  |         wt1_0.to_state_id,
+workflow_backend  |         wt1_0.workflow_id 
+workflow_backend  |     from
+workflow_backend  |         workflow_transitions wt1_0 
+workflow_backend  |     where
+workflow_backend  |         wt1_0.workflow_id=?
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         w1_0.id,
+workflow_backend  |         w1_0.created_at,
+workflow_backend  |         w1_0.document_type,
+workflow_backend  |         w1_0.is_active,
+workflow_backend  |         w1_0.updated_at,
+workflow_backend  |         w1_0.workflow_name 
+workflow_backend  |     from
+workflow_backend  |         workflows w1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         d1_0.id,
+workflow_backend  |         d1_0.amount,
+workflow_backend  |         d1_0.content_html,
+workflow_backend  |         d1_0.created_at,
+workflow_backend  |         d1_0.current_state_id,
+workflow_backend  |         d1_0.document_number,
+workflow_backend  |         d1_0.document_type,
+workflow_backend  |         d1_0.gcs_attachment_url,
+workflow_backend  |         d1_0.owner_username,
+workflow_backend  |         d1_0.status,
+workflow_backend  |         d1_0.template_id,
+workflow_backend  |         d1_0.title,
+workflow_backend  |         d1_0.updated_at,
+workflow_backend  |         d1_0.version,
+workflow_backend  |         d1_0.workflow_id 
+workflow_backend  |     from
+workflow_backend  |         documents d1_0 
+workflow_backend  |     offset
+workflow_backend  |         ? rows 
+workflow_backend  |     fetch
+workflow_backend  |         first ? rows only
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         w1_0.id,
+workflow_backend  |         w1_0.created_at,
+workflow_backend  |         w1_0.document_type,
+workflow_backend  |         w1_0.is_active,
+workflow_backend  |         w1_0.updated_at,
+workflow_backend  |         w1_0.workflow_name 
+workflow_backend  |     from
+workflow_backend  |         workflows w1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         w1_0.id,
+workflow_backend  |         w1_0.created_at,
+workflow_backend  |         w1_0.document_type,
+workflow_backend  |         w1_0.is_active,
+workflow_backend  |         w1_0.updated_at,
+workflow_backend  |         w1_0.workflow_name 
+workflow_backend  |     from
+workflow_backend  |         workflows w1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         ws1_0.id,
+workflow_backend  |         ws1_0.allow_edit_role,
+workflow_backend  |         ws1_0.color_code,
+workflow_backend  |         ws1_0.is_final_state,
+workflow_backend  |         ws1_0.is_initial_state,
+workflow_backend  |         ws1_0.is_optional_state,
+workflow_backend  |         ws1_0.send_email,
+workflow_backend  |         ws1_0.state_name,
+workflow_backend  |         ws1_0.update_field,
+workflow_backend  |         ws1_0.update_value,
+workflow_backend  |         ws1_0.workflow_id 
+workflow_backend  |     from
+workflow_backend  |         workflow_states ws1_0 
+workflow_backend  |     where
+workflow_backend  |         ws1_0.workflow_id=?
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         wt1_0.id,
+workflow_backend  |         wt1_0.action_name,
+workflow_backend  |         wt1_0.allow_self_approval,
+workflow_backend  |         wt1_0.allowed_role,
+workflow_backend  |         wt1_0.condition_expression,
+workflow_backend  |         wt1_0.from_state_id,
+workflow_backend  |         wt1_0.send_email_to_creator,
+workflow_backend  |         wt1_0.to_state_id,
+workflow_backend  |         wt1_0.workflow_id 
+workflow_backend  |     from
+workflow_backend  |         workflow_transitions wt1_0 
+workflow_backend  |     where
+workflow_backend  |         wt1_0.workflow_id=?
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         w1_0.id,
+workflow_backend  |         w1_0.created_at,
+workflow_backend  |         w1_0.document_type,
+workflow_backend  |         w1_0.is_active,
+workflow_backend  |         w1_0.updated_at,
+workflow_backend  |         w1_0.workflow_name 
+workflow_backend  |     from
+workflow_backend  |         workflows w1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         w1_0.id,
+workflow_backend  |         w1_0.created_at,
+workflow_backend  |         w1_0.document_type,
+workflow_backend  |         w1_0.is_active,
+workflow_backend  |         w1_0.updated_at,
+workflow_backend  |         w1_0.workflow_name 
+workflow_backend  |     from
+workflow_backend  |         workflows w1_0
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         ws1_0.id,
+workflow_backend  |         ws1_0.allow_edit_role,
+workflow_backend  |         ws1_0.color_code,
+workflow_backend  |         ws1_0.is_final_state,
+workflow_backend  |         ws1_0.is_initial_state,
+workflow_backend  |         ws1_0.is_optional_state,
+workflow_backend  |         ws1_0.send_email,
+workflow_backend  |         ws1_0.state_name,
+workflow_backend  |         ws1_0.update_field,
+workflow_backend  |         ws1_0.update_value,
+workflow_backend  |         ws1_0.workflow_id 
+workflow_backend  |     from
+workflow_backend  |         workflow_states ws1_0 
+workflow_backend  |     where
+workflow_backend  |         ws1_0.workflow_id=?
+workflow_backend  | Hibernate: 
+workflow_backend  |     select
+workflow_backend  |         wt1_0.id,
+workflow_backend  |         wt1_0.action_name,
+workflow_backend  |         wt1_0.allow_self_approval,
+workflow_backend  |         wt1_0.allowed_role,
+workflow_backend  |         wt1_0.condition_expression,
+workflow_backend  |         wt1_0.from_state_id,
+workflow_backend  |         wt1_0.send_email_to_creator,
+workflow_backend  |         wt1_0.to_state_id,
+workflow_backend  |         wt1_0.workflow_id 
+workflow_backend  |     from
+workflow_backend  |         workflow_transitions wt1_0 
+workflow_backend  |     where
+workflow_backend  |         wt1_0.workflow_id=?
+workflow_backend  | 2026-08-28T15:10:41.685Z  WARN 1 --- [nextgen-erp-workflow-module] [nio-8081-exec-1] .w.s.m.s.DefaultHandlerExceptionResolver : Resolved [org.springframework.web.method.annotation.MethodArgumentTypeMismatchException: Failed to convert value of type 'java.lang.String' to required type 'java.util.UUID'; Invalid UUID string: 123]
