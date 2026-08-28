@@ -38,7 +38,8 @@ import {
   InactiveCustomerReport,
   SalesCommissionSummary,
 } from "@/types/sales";
-import { Users, AlertOctagon, Award, UserCheck } from "lucide-react";
+import { Users, AlertOctagon, Award, UserCheck, Home } from "lucide-react";
+import Link from "next/link";
 
 export default function ReportsHubPage() {
   const [activeTab, setActiveTab] = useState<"orderAnalysis" | "aging" | "winLoss" | "itemSales" | "trends" | "cohort" | "quoteTrends" | "inactive" | "commission">("orderAnalysis");
@@ -89,27 +90,35 @@ export default function ReportsHubPage() {
   }, []);
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2.5">
-            <BarChart3 className="h-6 w-6 text-blue-600" />
-            <span>Selling Reports & Intelligence Suite</span>
-          </h1>
-          <p className="text-xs text-slate-500 mt-1">
-            Enterprise analytics for fulfilment ratios, AR aging buckets, win/loss conversion, and SKU sales velocity.
-          </p>
+    <div className="space-y-4 text-[#1f272e] font-sans text-xs bg-white min-h-full pb-16">
+      {/* Top ERPNext Navbar & Breadcrumbs Header Bar */}
+      <div className="h-12 flex items-center justify-between gap-3 px-6 border-b border-gray-200 bg-white sticky top-0 z-20">
+        <div className="flex items-center gap-2 overflow-x-auto text-[13px]">
+          <Link href="/sales" className="text-gray-500 hover:text-gray-900 flex items-center">
+            <Home className="w-4 h-4 text-gray-500" />
+          </Link>
+          <span className="text-gray-400 font-light">/</span>
+          <Link href="/sales" className="text-gray-600 hover:text-gray-900 font-normal">
+            Selling
+          </Link>
+          <span className="text-gray-400 font-light">/</span>
+          <span className="font-bold text-gray-900">
+            Reports
+          </span>
         </div>
 
-        <button
-          onClick={loadData}
-          className="inline-flex items-center gap-2 px-3 py-1.5 text-xs text-slate-700 bg-white border border-slate-200 rounded-lg shadow-sm hover:bg-slate-50 transition-all font-semibold"
-        >
-          <RefreshCw className="h-3.5 w-3.5" />
-          <span>Refresh Reports</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={loadData}
+            className="p-1.5 rounded border border-gray-200 hover:bg-gray-100 text-gray-600 transition-colors"
+            title="Refresh"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+          </button>
+        </div>
       </div>
+
+      <div className="px-6 space-y-4">
 
       {/* Tabs Header */}
       <div className="flex flex-wrap border-b border-slate-200 gap-4 text-sm font-medium">
@@ -728,6 +737,7 @@ export default function ReportsHubPage() {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }

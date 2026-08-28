@@ -26,6 +26,7 @@ import {
   User,
   ShoppingBag,
   FileText,
+  Home,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { StatusBadge } from "@/components/ui/Badge";
@@ -308,26 +309,30 @@ function SalesOrdersContent() {
   });
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
-            <ShoppingBag className="h-6 w-6 text-purple-600" />
-            <span>Sales Orders</span>
-          </h1>
-          <p className="text-xs text-slate-500 mt-1">
-            Confirmed customer purchase commitments, stock allocations, delivery scheduling, and billing status.
-          </p>
+    <div className="space-y-4 text-[#1f272e] font-sans text-xs bg-white min-h-full pb-16">
+      {/* Top ERPNext Navbar & Breadcrumbs Header Bar */}
+      <div className="h-12 flex items-center justify-between gap-3 px-6 border-b border-gray-200 bg-white sticky top-0 z-20">
+        <div className="flex items-center gap-2 overflow-x-auto text-[13px]">
+          <Link href="/sales" className="text-gray-500 hover:text-gray-900 flex items-center">
+            <Home className="w-4 h-4 text-gray-500" />
+          </Link>
+          <span className="text-gray-400 font-light">/</span>
+          <Link href="/sales" className="text-gray-600 hover:text-gray-900 font-normal">
+            Selling
+          </Link>
+          <span className="text-gray-400 font-light">/</span>
+          <span className="font-bold text-gray-900">
+            Sales Order
+          </span>
         </div>
 
         <div className="flex items-center gap-2">
           <button
             onClick={loadOrders}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs text-slate-700 bg-white border border-slate-200 rounded-lg shadow-sm hover:bg-slate-50 transition-all font-semibold"
+            className="p-1.5 rounded border border-gray-200 hover:bg-gray-100 text-gray-600 transition-colors"
+            title="Refresh"
           >
-            <RefreshCw className="h-3.5 w-3.5" />
-            <span>Refresh</span>
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
           </button>
           <button
             onClick={() => {
@@ -344,13 +349,15 @@ function SalesOrdersContent() {
               }
               setIsCreateOpen(true);
             }}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-sm transition-all"
+            className="px-3.5 py-1.5 rounded bg-gray-900 hover:bg-gray-800 text-white font-medium text-xs flex items-center gap-1.5 shadow-2xs transition-colors"
           >
-            <Plus className="h-4 w-4" />
-            <span>New Sales Order</span>
+            <Plus className="w-3.5 h-3.5" />
+            <span>Add Sales Order</span>
           </button>
         </div>
       </div>
+
+      <div className="px-6 space-y-4">
 
       {actionSuccess && (
         <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs flex items-center gap-2 font-medium">
@@ -389,180 +396,82 @@ function SalesOrdersContent() {
         </div>
       </div>
 
-      {/* Main Grid: Orders List & Selected Order Detail */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Orders List (5 cols) */}
-        <div className="lg:col-span-5 space-y-3">
-          {loading ? (
-            <div className="p-8 text-center text-xs text-slate-400">Loading sales orders...</div>
-          ) : filteredOrders.length === 0 ? (
-            <div className="p-8 text-center text-xs text-slate-400">No sales orders found.</div>
-          ) : (
-            filteredOrders.map((order) => {
-              const isSelected = selectedOrder?.id === order.id;
-              return (
-                <div
-                  key={order.id}
-                  onClick={() => setSelectedOrder(order)}
-                  className={`p-4 rounded-xl border transition-all cursor-pointer space-y-3 ${
-                    isSelected
-                      ? "bg-purple-50/70 border-purple-400 shadow-sm"
-                      : "bg-white border-slate-200 hover:border-purple-200 hover:shadow-xs"
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="font-semibold text-xs text-slate-900">{order.orderNumber}</div>
-                      <div className="text-[11px] text-slate-600 font-medium">{order.customerName}</div>
-                    </div>
-                    <StatusBadge status={order.status} />
-                  </div>
-
-                  <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-100">
-                    <span className="text-slate-500 font-mono text-[11px]">{formatDate(order.transactionDate)}</span>
-                    <span className="font-bold text-slate-900 font-mono">{formatCurrency(order.grandTotal)}</span>
-                  </div>
-
-                  {/* Delivery & Billing Progress */}
-                  <div className="grid grid-cols-2 gap-2 text-[10px]">
-                    <div>
-                      <span className="text-slate-400">Delivery: </span>
-                      <span className="font-semibold text-slate-700">{order.perDelivered || 0}%</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-400">Billed: </span>
-                      <span className="font-semibold text-slate-700">{order.perBilled || 0}%</span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })
-          )}
-        </div>
-
-        {/* Selected Order 360 Detail on Right (7 cols) */}
-        {selectedOrder && (
-          <div className="lg:col-span-7 bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-5">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="font-mono text-xs font-bold text-purple-700 bg-purple-100 px-2 py-0.5 rounded">
-                    {selectedOrder.orderNumber}
-                  </span>
-                  <StatusBadge status={selectedOrder.status} />
-                </div>
-                <h2 className="text-lg font-bold text-slate-900 mt-1">{selectedOrder.customerName}</h2>
-                <div className="text-xs text-slate-500">
-                  Target Delivery: <b className="text-slate-700 font-mono">{formatDate(selectedOrder.deliveryDate)}</b>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  onClick={() => openPrintModal(selectedOrder)}
-                  className="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-semibold flex items-center gap-1.5 shadow-sm"
-                >
-                  <Printer className="h-3.5 w-3.5 text-slate-500" />
-                  <span>Print</span>
-                </button>
-
-                {selectedOrder.status === "DRAFT" && (
-                  <button
-                    onClick={() => handleSubmit(selectedOrder.id)}
-                    disabled={actionLoading}
-                    className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-sm flex items-center gap-1.5"
+      {/* Full-Width ERPNext-style Sales Orders Table */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        {loading ? (
+          <div className="p-12 text-center text-xs text-slate-400">Loading sales orders...</div>
+        ) : filteredOrders.length === 0 ? (
+          <div className="p-12 text-center text-xs text-slate-400">No sales orders found.</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-50 border-b border-slate-200 text-slate-700 font-semibold uppercase text-[10px]">
+                <tr>
+                  <th className="py-3 px-4">Order #</th>
+                  <th className="py-3 px-4">Customer Name</th>
+                  <th className="py-3 px-4">Date</th>
+                  <th className="py-3 px-4">Delivery Date</th>
+                  <th className="py-3 px-4 text-right">Grand Total</th>
+                  <th className="py-3 px-4 text-center">Delivered</th>
+                  <th className="py-3 px-4 text-center">Billed</th>
+                  <th className="py-3 px-4 text-center">Status</th>
+                  <th className="py-3 px-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 font-medium">
+                {filteredOrders.map((order) => (
+                  <tr
+                    key={order.id}
+                    className="hover:bg-purple-50/40 transition-colors group cursor-pointer"
                   >
-                    <CheckCircle2 className="h-3.5 w-3.5" />
-                    <span>Submit & Reserve</span>
-                  </button>
-                )}
-
-                {selectedOrder.status !== "CANCELLED" && selectedOrder.status !== "DRAFT" && (
-                  <>
-                    <Link
-                      href={`/sales/delivery-notes?salesOrderId=${selectedOrder.id}&customerId=${selectedOrder.customerId}&open=true`}
-                      className="px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-semibold flex items-center gap-1.5"
-                    >
-                      <Truck className="h-3.5 w-3.5 text-emerald-600" />
-                      <span>+ Delivery Note</span>
-                    </Link>
-
-                    <Link
-                      href={`/sales/invoices?salesOrderId=${selectedOrder.id}&customerId=${selectedOrder.customerId}&open=true`}
-                      className="px-3 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-xs font-semibold flex items-center gap-1.5"
-                    >
-                      <Receipt className="h-3.5 w-3.5 text-amber-600" />
-                      <span>+ Invoice</span>
-                    </Link>
-                  </>
-                )}
-
-                {selectedOrder.status !== "CANCELLED" && (
-                  <button
-                    onClick={() => handleCancel(selectedOrder.id)}
-                    disabled={actionLoading}
-                    className="px-2.5 py-1.5 rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50 text-xs font-semibold"
-                  >
-                    Cancel
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Items Table */}
-            <div className="space-y-2">
-              <div className="font-semibold text-slate-800 text-xs">Ordered Products & Quantities</div>
-              <div className="border border-slate-200 rounded-xl overflow-hidden">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-50 border-b border-slate-200 text-slate-700 font-semibold uppercase text-[10px]">
-                    <tr>
-                      <th className="py-2.5 px-3">Item</th>
-                      <th className="py-2.5 px-3 text-center">Qty</th>
-                      <th className="py-2.5 px-3 text-right">Rate</th>
-                      <th className="py-2.5 px-3 text-right">Amount</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {selectedOrder.items && selectedOrder.items.length > 0 ? (
-                      selectedOrder.items.map((i, idx) => (
-                        <tr key={idx}>
-                          <td className="py-2.5 px-3">
-                            <div className="font-semibold text-slate-800">{i.itemName}</div>
-                            <div className="font-mono text-[10px] text-slate-400">{i.itemCode}</div>
-                          </td>
-                          <td className="py-2.5 px-3 text-center font-mono font-bold">{i.qty}</td>
-                          <td className="py-2.5 px-3 text-right font-mono">₹{Number(i.rate).toLocaleString()}</td>
-                          <td className="py-2.5 px-3 text-right font-mono font-bold">₹{Number(i.amount).toLocaleString()}</td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan={4} className="py-4 text-center text-slate-400">No items listed.</td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* Financial Summary */}
-            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2 text-xs">
-              <div className="flex justify-between text-slate-600">
-                <span>Net Total:</span>
-                <span className="font-mono font-semibold">₹{Number(selectedOrder.netTotal).toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between text-slate-600">
-                <span>Taxes & Charges:</span>
-                <span className="font-mono font-semibold text-blue-600">
-                  +₹{Number(selectedOrder.totalTaxesAndCharges || (selectedOrder.grandTotal - selectedOrder.netTotal)).toLocaleString()}
-                </span>
-              </div>
-              <div className="flex justify-between text-slate-900 font-bold border-t border-slate-200 pt-2 text-sm">
-                <span>Grand Total:</span>
-                <span className="font-mono text-purple-700">₹{Number(selectedOrder.grandTotal).toLocaleString()}</span>
-              </div>
-            </div>
+                    <td className="py-3.5 px-4 font-mono font-bold text-blue-600">
+                      <Link
+                        href={`/sales/orders/${order.orderNumber}`}
+                        className="hover:underline flex items-center gap-1"
+                      >
+                        <span>{order.orderNumber}</span>
+                      </Link>
+                    </td>
+                    <td className="py-3.5 px-4 font-semibold text-slate-900">
+                      <Link href={`/sales/orders/${order.orderNumber}`} className="hover:text-blue-600">
+                        {order.customerName}
+                      </Link>
+                    </td>
+                    <td className="py-3.5 px-4 font-mono text-slate-500">
+                      {formatDate(order.transactionDate)}
+                    </td>
+                    <td className="py-3.5 px-4 font-mono text-slate-700 font-semibold">
+                      {formatDate(order.deliveryDate)}
+                    </td>
+                    <td className="py-3.5 px-4 text-right font-mono font-bold text-slate-900">
+                      {formatCurrency(order.grandTotal)}
+                    </td>
+                    <td className="py-3.5 px-4 text-center font-mono">
+                      <span className="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded font-bold text-[11px]">
+                        {order.perDelivered || 0}%
+                      </span>
+                    </td>
+                    <td className="py-3.5 px-4 text-center font-mono">
+                      <span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded font-bold text-[11px]">
+                        {order.perBilled || 0}%
+                      </span>
+                    </td>
+                    <td className="py-3.5 px-4 text-center">
+                      <StatusBadge status={order.status} />
+                    </td>
+                    <td className="py-3.5 px-4 text-right">
+                      <Link
+                        href={`/sales/orders/${order.orderNumber}`}
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-100 group-hover:bg-purple-600 text-slate-700 group-hover:text-white text-xs font-semibold transition-all shadow-2xs"
+                      >
+                        <span>View</span>
+                        <span>→</span>
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
@@ -773,6 +682,7 @@ function SalesOrdersContent() {
           {...printDoc}
         />
       )}
+      </div>
     </div>
   );
 }

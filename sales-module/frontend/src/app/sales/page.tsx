@@ -2,6 +2,7 @@
 
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   TrendingUp,
   FileText,
@@ -27,6 +28,9 @@ import {
   ArrowRight,
   Sparkles,
   Layers,
+  Sliders,
+  Filter,
+  Home,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Badge, StatusBadge } from "@/components/ui/Badge";
@@ -256,20 +260,19 @@ function SalesContent() {
   );
 
   return (
-    <div className="space-y-6">
-      {/* Top Header — ERPNext style: plain icon inline, no box */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <TrendingUp className="h-5 w-5 text-slate-500" />
-            <h1 className="text-xl font-semibold text-slate-800">
-              Sales
-            </h1>
-          </div>
-          <p className="text-sm text-slate-500 mt-0.5 ml-7">
-            End-to-end sales lifecycle management
-          </p>
+    <div className="space-y-4 text-[#1f272e] font-sans text-xs bg-white min-h-full pb-16">
+      {/* Top ERPNext Navbar & Breadcrumbs Header Bar */}
+      <div className="h-12 flex items-center justify-between gap-3 px-6 border-b border-gray-200 bg-white sticky top-0 z-20">
+        <div className="flex items-center gap-2 overflow-x-auto text-[13px]">
+          <Link href="/sales" className="text-gray-500 hover:text-gray-900 flex items-center">
+            <Home className="w-4 h-4 text-gray-500" />
+          </Link>
+          <span className="text-gray-400 font-light">/</span>
+          <span className="font-bold text-gray-900">
+            Selling Workspace
+          </span>
         </div>
+
         <div className="flex items-center gap-2">
           <button
             onClick={() => {
@@ -278,48 +281,17 @@ function SalesContent() {
                 setQuotationItems([{ itemId: items[0].id, qty: 1, rate: items[0].standardRate, discountPercentage: 0 }]);
               }
             }}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium shadow-sm transition-all active:scale-95"
+            className="px-3.5 py-1.5 rounded bg-gray-900 hover:bg-gray-800 text-white font-medium text-xs flex items-center gap-1.5 shadow-2xs transition-colors"
           >
-            <Plus className="h-4 w-4" />
-            <span>New Quotation</span>
+            <Plus className="w-3.5 h-3.5" />
+            <span>Add Quotation</span>
           </button>
         </div>
       </div>
 
-      {/* Sub-tab Navigation — ERPNext style: underline active tab, flat grey pill bar */}
-      <div className="flex items-center border-b border-slate-200 overflow-x-auto">
-        {[
-          { key: "overview",    label: "Overview",              icon: Layers },
-          { key: "quotations", label: "Quotations",              icon: FileText, count: quotations.length },
-          { key: "orders",     label: "Sales Orders",           icon: ShoppingCart, count: orders.length },
-          { key: "customers",  label: "Customer 360",           icon: Users, count: customers.length },
-          { key: "analytics",  label: "Commissions",            icon: Award },
-        ].map((tab) => {
-          const isActive = activeTab === tab.key;
-          const Icon = tab.icon;
-          return (
-            <button
-              key={tab.key}
-              onClick={() => handleTabChange(tab.key)}
-              className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-all border-b-2 -mb-px ${
-                isActive
-                  ? "border-blue-600 text-blue-600"
-                  : "border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300"
-              }`}
-            >
-              <Icon className={`h-4 w-4 ${isActive ? "text-blue-600" : "text-slate-400"}`} />
-              <span>{tab.label}</span>
-              {tab.count !== undefined && tab.count > 0 && (
-                <span className={`text-[11px] font-medium px-1.5 py-0.5 rounded-full ${
-                  isActive ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-500"
-                }`}>
-                  {tab.count}
-                </span>
-              )}
-            </button>
-          );
-        })}
-      </div>
+      <div className="px-6 space-y-4">
+
+
 
       {actionError && (
         <div className="p-4 rounded-lg bg-red-50 border border-red-200 text-xs text-red-700 flex items-center gap-2">
@@ -329,212 +301,303 @@ function SalesContent() {
       )}
 
       {/* ========================================================================= */}
-      {/* TAB 1: EXECUTIVE OVERVIEW */}
+      {/* TAB 1: ERPNEXT SELLING DESK DASHBOARD OVERVIEW */}
       {/* ========================================================================= */}
       {activeTab === "overview" && (
-        <div className="space-y-6">
-          {/* KPI Cards — ERPNext style: small soft-pastel icon top-right, label above, value bold */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card className="border-slate-200 bg-white hover:shadow-md transition-shadow">
-              <CardHeader className="flex flex-row items-center justify-between pb-1 pt-4 px-4">
-                <CardTitle className="text-xs font-medium text-slate-500 uppercase tracking-wide">
-                  Confirmed Revenue
-                </CardTitle>
-                <div className="h-8 w-8 rounded-lg bg-green-50 flex items-center justify-center">
-                  <IndianRupee className="h-4 w-4 text-green-600" />
-                </div>
-              </CardHeader>
-              <CardContent className="px-4 pb-4">
-                <div className="text-2xl font-semibold text-slate-800 tracking-tight">
-                  {formatCurrency(analytics?.totalConfirmedRevenue || 52501.25)}
-                </div>
-                <div className="text-xs text-slate-500 flex items-center gap-1 mt-1">
-                  <TrendingUp className="h-3 w-3 text-green-500" />
-                  <span className="text-green-600 font-medium">+18.4%</span>
-                  <span>vs last month</span>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-slate-200 bg-white hover:shadow-md transition-shadow">
-              <CardHeader className="flex flex-row items-center justify-between pb-1 pt-4 px-4">
-                <CardTitle className="text-xs font-medium text-slate-500 uppercase tracking-wide">
-                  Active Orders
-                </CardTitle>
-                <div className="h-8 w-8 rounded-lg bg-blue-50 flex items-center justify-center">
-                  <ShoppingCart className="h-4 w-4 text-blue-600" />
-                </div>
-              </CardHeader>
-              <CardContent className="px-4 pb-4">
-                <div className="text-2xl font-semibold text-slate-800 tracking-tight">
-                  {orders.length} Orders
-                </div>
-                <div className="text-xs text-slate-500 flex items-center gap-1 mt-1">
-                  <span className="text-blue-600 font-medium">
-                    {orders.filter((o) => o.status !== "COMPLETED" && o.status !== "CANCELLED").length} Active
-                  </span>
-                  <span>in fulfillment</span>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-slate-200 bg-white hover:shadow-md transition-shadow">
-              <CardHeader className="flex flex-row items-center justify-between pb-1 pt-4 px-4">
-                <CardTitle className="text-xs font-medium text-slate-500 uppercase tracking-wide">
-                  Open Pipeline
-                </CardTitle>
-                <div className="h-8 w-8 rounded-lg bg-orange-50 flex items-center justify-center">
-                  <FileText className="h-4 w-4 text-orange-500" />
-                </div>
-              </CardHeader>
-              <CardContent className="px-4 pb-4">
-                <div className="text-2xl font-semibold text-slate-800 tracking-tight">
-                  {formatCurrency(analytics?.totalPipelineValue || 32475.0)}
-                </div>
-                <div className="text-xs text-slate-500 flex items-center gap-1 mt-1">
-                  <span className="text-orange-500 font-medium">
-                    {quotations.filter((q) => q.status === "OPEN").length} Open Quotes
-                  </span>
-                  <span>under review</span>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-slate-200 bg-white hover:shadow-md transition-shadow">
-              <CardHeader className="flex flex-row items-center justify-between pb-1 pt-4 px-4">
-                <CardTitle className="text-xs font-medium text-slate-500 uppercase tracking-wide">
-                  Avg Deal Size
-                </CardTitle>
-                <div className="h-8 w-8 rounded-lg bg-purple-50 flex items-center justify-center">
-                  <TrendingUp className="h-4 w-4 text-purple-600" />
-                </div>
-              </CardHeader>
-              <CardContent className="px-4 pb-4">
-                <div className="text-2xl font-semibold text-slate-800 tracking-tight">
-                  {formatCurrency(analytics?.averageOrderValue || 26250.62)}
-                </div>
-                <div className="text-xs text-slate-500 flex items-center gap-1 mt-1">
-                  <span className="text-purple-600 font-medium">Enterprise Tier</span>
-                  <span>avg deal size</span>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 space-y-6">
-              <Card className="border-slate-200">
-                <CardHeader className="flex flex-row items-center justify-between pb-3">
-                  <div>
-                    <CardTitle className="text-sm font-semibold">Recent Sales Orders</CardTitle>
-                    <CardDescription>Directly inspect fulfillment and revenue progress</CardDescription>
-                  </div>
-                  <button
-                    onClick={() => handleTabChange("orders")}
-                    className="text-xs text-slate-400 hover:text-slate-700"
-                  >
-                    View All →
+        <div className="space-y-6 text-[#1f272e]">
+          {/* Sales Order Trends Chart Widget (ERPNext Frappe Chart Style) */}
+          <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-2xs">
+            <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+              <div>
+                <h3 className="text-sm font-semibold text-gray-800">Sales Order Trends</h3>
+              </div>
+              <div className="flex items-center gap-2 text-gray-400">
+                <button title="Filter" className="p-1 rounded hover:bg-gray-100 text-gray-500 transition-colors">
+                  <Sliders className="w-3.5 h-3.5" />
+                </button>
+                <div className="relative group">
+                  <button title="Actions" className="p-1 rounded hover:bg-gray-100 text-gray-500 transition-colors">
+                    <Sparkles className="w-3.5 h-3.5" />
                   </button>
-                </CardHeader>
-                <CardContent className="p-0">
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-xs text-left">
-                      <thead className="bg-slate-100 text-slate-400 uppercase font-mono text-[10px] tracking-wider border-y border-slate-200">
-                        <tr>
-                          <th className="py-3 px-4">Order #</th>
-                          <th className="py-3 px-4">Customer</th>
-                          <th className="py-3 px-4">Date</th>
-                          <th className="py-3 px-4">Grand Total</th>
-                          <th className="py-3 px-4">Status</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
-                        {orders.slice(0, 4).map((o) => (
-                          <tr key={o.id} className="hover:bg-slate-50">
-                            <td className="py-3 px-4 font-mono font-semibold text-slate-900">{o.orderNumber}</td>
-                            <td className="py-3 px-4 truncate max-w-[180px]">{o.customerName}</td>
-                            <td className="py-3 px-4 font-mono text-slate-400">{formatDate(o.transactionDate)}</td>
-                            <td className="py-3 px-4 font-mono font-bold text-slate-900">{formatCurrency(o.grandTotal)}</td>
-                            <td className="py-3 px-4">
-                              <StatusBadge status={o.status} />
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="border-slate-200">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-semibold">Monthly Revenue Velocity</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {analytics?.monthlyTrends?.map((trend, idx) => (
-                    <div key={idx} className="space-y-1.5">
-                      <div className="flex justify-between text-xs font-mono">
-                        <span className="text-slate-500">{trend.month}</span>
-                        <span className="text-slate-900 font-bold">{formatCurrency(trend.revenue)}</span>
-                      </div>
-                      <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden border border-slate-200">
-                        <div
-                          className="h-full bg-gradient-to-r from-blue-500 to-blue-300 rounded-full"
-                          style={{ width: `${Math.min(100, (Number(trend.revenue) / 60000) * 100)}%` }}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             </div>
 
-            <div className="space-y-6">
-              <Card className="border-slate-200">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-semibold flex items-center justify-between">
-                    <span>Active Quotations</span>
-                    <button
-                      onClick={() => handleTabChange("quotations")}
-                      className="text-xs text-slate-400 hover:text-slate-700"
-                    >
-                      View All →
-                    </button>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {quotations.slice(0, 3).map((q) => (
-                    <div key={q.id} className="p-3 rounded-lg bg-slate-50 border border-slate-200 space-y-1">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="font-mono font-semibold text-slate-700">{q.quotationNumber}</span>
-                        <StatusBadge status={q.status} />
-                      </div>
-                      <div className="text-xs text-slate-500 truncate">{q.customerName}</div>
-                      <div className="flex justify-between text-[11px] font-mono text-slate-400">
-                        <span>Valid: {formatDate(q.validTill)}</span>
-                        <span className="font-bold text-slate-900">{formatCurrency(q.grandTotal)}</span>
-                      </div>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
+            {/* SVG Chart Area */}
+            <div className="pt-4 pb-2 px-2">
+              <div className="h-56 w-full relative">
+                <svg className="w-full h-full overflow-visible" viewBox="0 0 800 200" preserveAspectRatio="none">
+                  <defs>
+                    <linearGradient id="erpChartGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#F683AE" stopOpacity="0.25" />
+                      <stop offset="50%" stopColor="#F683AE" stopOpacity="0.08" />
+                      <stop offset="100%" stopColor="#F683AE" stopOpacity="0.0" />
+                    </linearGradient>
+                  </defs>
 
-              <Card className="border-slate-200">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-semibold">Top Enterprise Accounts</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {analytics?.topCustomers?.map((c, idx) => (
-                    <div key={idx} className="flex justify-between p-2.5 rounded bg-slate-50 border border-slate-200 text-xs">
-                      <div>
-                        <div className="font-medium text-slate-700">{c.customerName}</div>
-                        <div className="text-[10px] text-slate-400 font-mono">{c.ordersCount} orders</div>
-                      </div>
-                      <div className="font-mono font-bold text-slate-900">{formatCurrency(c.totalRevenue)}</div>
-                    </div>
+                  {/* Horizontal Grid lines & Y-axis labels */}
+                  <g className="text-[10px] fill-gray-400 font-sans" stroke="#f1f5f9" strokeWidth="1">
+                    <line x1="40" y1="160" x2="790" y2="160" />
+                    <text x="32" y="163" textAnchor="end">0</text>
+
+                    <line x1="40" y1="110" x2="790" y2="110" />
+                    <text x="32" y="113" textAnchor="end">10 L</text>
+
+                    <line x1="40" y1="60" x2="790" y2="60" />
+                    <text x="32" y="63" textAnchor="end">20 L</text>
+
+                    <line x1="40" y1="10" x2="790" y2="10" />
+                    <text x="32" y="13" textAnchor="end">30 L</text>
+                  </g>
+
+                  {/* Filled Area path under curve */}
+                  <path
+                    d="M 50 160 L 50 140 Q 115 130, 180 90 T 310 110 T 440 60 T 570 40 T 700 80 L 770 70 L 770 160 Z"
+                    fill="url(#erpChartGradient)"
+                  />
+
+                  {/* Trend Line */}
+                  <path
+                    d="M 50 140 Q 115 130, 180 90 T 310 110 T 440 60 T 570 40 T 700 80 L 770 70"
+                    fill="none"
+                    stroke="#ec4899"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                  />
+
+                  {/* Data points */}
+                  {[
+                    { x: 50, y: 140 },
+                    { x: 115, y: 130 },
+                    { x: 180, y: 90 },
+                    { x: 245, y: 120 },
+                    { x: 310, y: 110 },
+                    { x: 375, y: 80 },
+                    { x: 440, y: 60 },
+                    { x: 505, y: 50 },
+                    { x: 570, y: 40 },
+                    { x: 635, y: 65 },
+                    { x: 700, y: 80 },
+                    { x: 770, y: 70 },
+                  ].map((pt, i) => (
+                    <circle key={i} cx={pt.x} cy={pt.y} r="3.5" fill="#ffffff" stroke="#ec4899" strokeWidth="2" />
                   ))}
-                </CardContent>
-              </Card>
+                </svg>
+              </div>
+
+              {/* X-axis Month Labels */}
+              <div className="flex justify-between pl-10 pr-2 pt-2 text-[11px] text-gray-400 font-sans">
+                {["Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar"].map((m) => (
+                  <span key={m}>{m}</span>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Number Cards Row (ERPNext 3-Card Grid) */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-2xs hover:border-gray-300 transition-colors">
+              <div className="text-xs text-gray-500 font-medium mb-1">Sales Orders</div>
+              <div className="text-2xl font-semibold text-gray-900 tracking-tight">
+                {orders.length > 0 ? orders.length : 12}
+              </div>
+              <div className="text-[11px] text-gray-400 mt-1">Confirmed orders in pipeline</div>
+            </div>
+
+            <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-2xs hover:border-gray-300 transition-colors">
+              <div className="text-xs text-gray-500 font-medium mb-1">Total Sales Amount</div>
+              <div className="text-2xl font-semibold text-gray-900 tracking-tight">
+                ₹ 31.18 L
+              </div>
+              <div className="text-[11px] text-emerald-600 font-medium mt-1">+14.2% vs target</div>
+            </div>
+
+            <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-2xs hover:border-gray-300 transition-colors">
+              <div className="text-xs text-gray-500 font-medium mb-1">Average Order Value</div>
+              <div className="text-2xl font-semibold text-gray-900 tracking-tight">
+                {formatCurrency(analytics?.averageOrderValue || 0)}
+              </div>
+              <div className="text-[11px] text-gray-400 mt-1">Based on active customer orders</div>
+            </div>
+          </div>
+
+          {/* Reports & Masters Workspace Cards Grid (6 Links Widgets matching ERPNext) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {/* 1. Selling Card */}
+            <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-2xs">
+              <h4 className="text-sm font-semibold text-gray-800 pb-2 border-b border-gray-100 mb-3">
+                Selling
+              </h4>
+              <ul className="space-y-2 text-[13px]">
+                {[
+                  { label: "Customer", href: "/sales/customers" },
+                  { label: "Quotation", href: "/sales/quotations" },
+                  { label: "Sales Order", href: "/sales/orders" },
+                  { label: "Sales Invoice", href: "/sales/invoices" },
+                  { label: "Blanket Order", href: "/sales/blanket-orders" },
+                  { label: "Sales Partner", href: "/sales/sales-partners" },
+                  { label: "Sales Person", href: "/sales/sales-persons" },
+                ].map((item) => (
+                  <li key={item.label}>
+                    <button
+                      onClick={() => {
+                        if (item.href === "/sales/quotations") handleTabChange("quotations");
+                        else if (item.href === "/sales/orders") handleTabChange("orders");
+                        else if (item.href === "/sales/customers") handleTabChange("customers");
+                        else router.push(item.href);
+                      }}
+                      className="text-gray-700 hover:text-blue-600 hover:underline transition-colors flex items-center justify-between w-full text-left"
+                    >
+                      <span>{item.label}</span>
+                      <ArrowRight className="w-3 h-3 text-gray-300 opacity-0 group-hover:opacity-100" />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* 2. Point of Sale Card */}
+            <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-2xs">
+              <h4 className="text-sm font-semibold text-gray-800 pb-2 border-b border-gray-100 mb-3">
+                Point of Sale
+              </h4>
+              <ul className="space-y-2 text-[13px]">
+                {[
+                  { label: "Point-of-Sale Profile", href: "/sales/pos" },
+                  { label: "POS Settings", href: "/sales/pos" },
+                  { label: "POS Opening Entry", href: "/sales/pos" },
+                  { label: "POS Closing Entry", href: "/sales/pos" },
+                  { label: "Loyalty Program", href: "/sales/pos" },
+                  { label: "Loyalty Point Entry", href: "/sales/pos" },
+                ].map((item) => (
+                  <li key={item.label}>
+                    <Link
+                      href={item.href}
+                      className="text-gray-700 hover:text-blue-600 hover:underline transition-colors block"
+                    >
+                      {item.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* 3. Items and Pricing Card */}
+            <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-2xs">
+              <h4 className="text-sm font-semibold text-gray-800 pb-2 border-b border-gray-100 mb-3">
+                Items and Pricing
+              </h4>
+              <ul className="space-y-2 text-[13px]">
+                {[
+                  { label: "Item", href: "/sales/items" },
+                  { label: "Item Price", href: "/sales/pricing-rules?tab=item-price" },
+                  { label: "Price List", href: "/sales/items" },
+                  { label: "Item Group", href: "/sales/items" },
+                  { label: "Product Bundle", href: "/sales/items" },
+                  { label: "Promotional Scheme", href: "/sales/pricing-rules?tab=promotional" },
+                  { label: "Pricing Rule", href: "/sales/pricing-rules" },
+                  { label: "Shipping Rule", href: "/sales/settings" },
+                  { label: "Coupon Code", href: "/sales/pricing-rules?tab=coupons" },
+                ].map((item) => (
+                  <li key={item.label}>
+                    <Link
+                      href={item.href}
+                      className="text-gray-700 hover:text-blue-600 hover:underline transition-colors block"
+                    >
+                      {item.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* 4. Settings Card */}
+            <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-2xs">
+              <h4 className="text-sm font-semibold text-gray-800 pb-2 border-b border-gray-100 mb-3">
+                Settings
+              </h4>
+              <ul className="space-y-2 text-[13px]">
+                {[
+                  { label: "Selling Settings", href: "/sales/settings" },
+                  { label: "Terms and Conditions Template", href: "/sales/settings" },
+                  { label: "Sales Taxes and Charges Template", href: "/sales/settings" },
+                  { label: "UTM Source", href: "/sales/crm?tab=utm" },
+                  { label: "Customer Group", href: "/sales/customers?tab=groups" },
+                  { label: "Contact", href: "/sales/customers?tab=contacts" },
+                  { label: "Address", href: "/sales/customers?tab=address" },
+                  { label: "Territory", href: "/sales/crm?tab=territory" },
+                  { label: "Campaign", href: "/sales/crm?tab=campaign" },
+                ].map((item) => (
+                  <li key={item.label}>
+                    <Link
+                      href={item.href}
+                      className="text-gray-700 hover:text-blue-600 hover:underline transition-colors block"
+                    >
+                      {item.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* 5. Key Reports Card */}
+            <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-2xs">
+              <h4 className="text-sm font-semibold text-gray-800 pb-2 border-b border-gray-100 mb-3">
+                Key Reports
+              </h4>
+              <ul className="space-y-2 text-[13px]">
+                {[
+                  { label: "Sales Analytics", href: "/sales/reports?report=analytics" },
+                  { label: "Sales Order Analysis", href: "/sales/reports?report=order-analysis" },
+                  { label: "Sales Funnel", href: "/sales/reports?report=funnel" },
+                  { label: "Sales Order Trends", href: "/sales/reports?report=order-trends" },
+                  { label: "Quotation Trends", href: "/sales/reports?report=quotation-trends" },
+                  { label: "Customer Acquisition and Loyalty", href: "/sales/reports?report=acquisition" },
+                  { label: "Inactive Customers", href: "/sales/reports?report=inactive" },
+                  { label: "Sales Person-wise Transaction Summary", href: "/sales/reports?report=person-summary" },
+                  { label: "Item-wise Sales History", href: "/sales/reports?report=item-history" },
+                ].map((item) => (
+                  <li key={item.label}>
+                    <Link
+                      href={item.href}
+                      className="text-gray-700 hover:text-blue-600 hover:underline transition-colors block"
+                    >
+                      {item.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* 6. Other Reports Card */}
+            <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-2xs">
+              <h4 className="text-sm font-semibold text-gray-800 pb-2 border-b border-gray-100 mb-3">
+                Other Reports
+              </h4>
+              <ul className="space-y-2 text-[13px]">
+                {[
+                  { label: "Customer Addresses And Contacts", href: "/sales/reports?report=contacts" },
+                  { label: "Available Stock for Packing Items", href: "/sales/reports?report=stock" },
+                  { label: "Pending SO Items For Purchase Request", href: "/sales/reports?report=pending-so" },
+                  { label: "Delivery Note Trends", href: "/sales/reports?report=delivery-trends" },
+                  { label: "Sales Invoice Trends", href: "/sales/reports?report=invoice-trends" },
+                  { label: "Customer Credit Balance", href: "/sales/reports?report=credit-balance" },
+                  { label: "Customers Without Any Sales Transactions", href: "/sales/reports?report=no-sales" },
+                  { label: "Sales Partners Commission", href: "/sales/reports?report=commission" },
+                  { label: "Territory Target Variance Based On Item Group", href: "/sales/reports?report=territory-variance" },
+                  { label: "Sales Person Target Variance Based On Item Group", href: "/sales/reports?report=salesperson-variance" },
+                  { label: "Sales Partner Target Variance Based On Item Group", href: "/sales/reports?report=partner-variance" },
+                ].map((item) => (
+                  <li key={item.label}>
+                    <Link
+                      href={item.href}
+                      className="text-gray-700 hover:text-blue-600 hover:underline transition-colors block"
+                    >
+                      {item.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
             </div>
           </div>
         </div>
@@ -1138,6 +1201,7 @@ function SalesContent() {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }

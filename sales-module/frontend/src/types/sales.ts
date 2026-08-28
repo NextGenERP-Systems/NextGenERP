@@ -153,9 +153,101 @@ export interface CatalogItem {
   stockUom: string;
   isStockItem: boolean;
   isSalesItem: boolean;
+  isPurchaseItem?: boolean;
   standardRate: number;
   valuationRate: number;
+  lastPurchaseRate?: number;
   maxDiscount: number;
+  brand?: string;
+  description?: string;
+  barcode?: string;
+  hasSerialNo?: boolean;
+  hasBatchNo?: boolean;
+  disabled?: boolean;
+  defaultWarehouse?: string;
+  defaultIncomeAccount?: string;
+  defaultExpenseAccount?: string;
+  createdAt?: string;
+}
+
+export interface ItemGroup {
+  id: string;
+  itemGroupName: string;
+  parentItemGroup?: string;
+  isGroup?: boolean;
+  description?: string;
+  itemCount?: number;
+  createdAt?: string;
+}
+
+export interface PriceList {
+  id: string;
+  priceListName: string;
+  currency: string;
+  buying: boolean;
+  selling: boolean;
+  enabled: boolean;
+  country?: string;
+}
+
+export interface ItemPrice {
+  id: string;
+  itemId?: string;
+  itemCode: string;
+  itemName?: string;
+  priceListId?: string;
+  priceListName: string;
+  priceListRate: number;
+  currency?: string;
+  minQty?: number;
+  validFrom?: string;
+  validUpto?: string;
+}
+
+export interface ProductBundleItem {
+  id?: string;
+  itemCode: string;
+  itemName?: string;
+  qty: number;
+  uom?: string;
+  rate?: number;
+}
+
+export interface ProductBundle {
+  id: string;
+  newItemCode: string;
+  bundleName?: string;
+  description?: string;
+  disabled?: boolean;
+  totalRate?: number;
+  items: ProductBundleItem[];
+  createdAt?: string;
+}
+
+export interface PromotionalScheme {
+  id: string;
+  name: string;
+  applyOn: string;
+  applyKeyId?: string;
+  validFrom?: string;
+  validUpto?: string;
+  description?: string;
+  disabled?: boolean;
+  minQty?: number;
+  discountPercentage?: number;
+  createdAt?: string;
+}
+
+export interface ShippingRule {
+  id: string;
+  shippingRuleName: string;
+  calculateBasedOn: 'Fixed' | 'Net Total' | 'Net Weight';
+  shippingAmount: number;
+  fromValue?: number;
+  toValue?: number;
+  costCenter?: string;
+  disabled?: boolean;
+  createdAt?: string;
 }
 
 export interface SalesTaxAndCharge {

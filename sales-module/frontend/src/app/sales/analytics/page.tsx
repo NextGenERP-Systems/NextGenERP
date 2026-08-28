@@ -10,7 +10,9 @@ import {
   Percent,
   Calendar,
   Layers,
+  Home,
 } from "lucide-react";
+import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { formatCurrency } from "@/lib/utils";
 import { getSalesAnalytics } from "@/lib/api";
@@ -36,18 +38,25 @@ export default function SalesAnalyticsPage() {
   }, []);
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
-            Sales Performance & Incentive Analytics
-          </h1>
-          <p className="text-xs text-slate-400 mt-1">
-            Sales representative commission distributions, deal conversion velocity, and historical revenue trends.
-          </p>
+    <div className="space-y-4 text-[#1f272e] font-sans text-xs bg-white min-h-full pb-16">
+      {/* Top ERPNext Navbar & Breadcrumbs Header Bar */}
+      <div className="h-12 flex items-center justify-between gap-3 px-6 border-b border-gray-200 bg-white sticky top-0 z-20">
+        <div className="flex items-center gap-2 overflow-x-auto text-[13px]">
+          <Link href="/sales" className="text-gray-500 hover:text-gray-900 flex items-center">
+            <Home className="w-4 h-4 text-gray-500" />
+          </Link>
+          <span className="text-gray-400 font-light">/</span>
+          <Link href="/sales" className="text-gray-600 hover:text-gray-900 font-normal">
+            Selling
+          </Link>
+          <span className="text-gray-400 font-light">/</span>
+          <span className="font-bold text-gray-900">
+            Sales Analytics
+          </span>
         </div>
       </div>
+
+      <div className="px-6 space-y-4">
 
       {/* Top Level Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 font-mono">
@@ -141,6 +150,7 @@ export default function SalesAnalyticsPage() {
           </div>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }

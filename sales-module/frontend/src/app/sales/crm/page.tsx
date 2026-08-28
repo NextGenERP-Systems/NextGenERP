@@ -17,7 +17,9 @@ import {
   RefreshCw,
   Clock,
   Briefcase,
+  Home,
 } from "lucide-react";
+import Link from "next/link";
 import { getLeads, getOpportunities, createLead, createOpportunity, updateOpportunityStatus, createQuotation, convertOpportunityToQuotation, convertLeadToOpportunity } from "@/lib/api";
 import { Lead, Opportunity, Customer } from "@/types/sales";
 import { useRouter } from "next/navigation";
@@ -144,36 +146,42 @@ export default function CrmPage() {
   ];
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2.5">
-            <Target className="h-6 w-6 text-blue-600" />
-            <span>CRM & Pre-Sales Pipeline</span>
-          </h1>
-          <p className="text-xs text-slate-500 mt-1">
-            Manage incoming inbound leads, deals, stage progression, and conversion to Quotations.
-          </p>
+    <div className="space-y-4 text-[#1f272e] font-sans text-xs bg-white min-h-full pb-16">
+      {/* Top ERPNext Navbar & Breadcrumbs Header Bar */}
+      <div className="h-12 flex items-center justify-between gap-3 px-6 border-b border-gray-200 bg-white sticky top-0 z-20">
+        <div className="flex items-center gap-2 overflow-x-auto text-[13px]">
+          <Link href="/sales" className="text-gray-500 hover:text-gray-900 flex items-center">
+            <Home className="w-4 h-4 text-gray-500" />
+          </Link>
+          <span className="text-gray-400 font-light">/</span>
+          <Link href="/sales" className="text-gray-600 hover:text-gray-900 font-normal">
+            Selling
+          </Link>
+          <span className="text-gray-400 font-light">/</span>
+          <span className="font-bold text-gray-900">
+            CRM & Pipeline
+          </span>
         </div>
 
         <div className="flex items-center gap-2">
           <button
             onClick={loadData}
-            className="p-2 text-slate-600 hover:text-slate-900 bg-white border border-slate-200 rounded-lg shadow-sm hover:bg-slate-50 transition-all"
+            className="p-1.5 rounded border border-gray-200 hover:bg-gray-100 text-gray-600 transition-colors"
             title="Refresh"
           >
-            <RefreshCw className="h-4 w-4" />
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
           </button>
           <button
             onClick={() => (activeTab === "opportunities" ? setIsOppModalOpen(true) : setIsLeadModalOpen(true))}
-            className="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-sm transition-all active:scale-[0.99]"
+            className="px-3.5 py-1.5 rounded bg-gray-900 hover:bg-gray-800 text-white font-medium text-xs flex items-center gap-1.5 shadow-2xs transition-colors"
           >
-            <Plus className="h-4 w-4" />
-            <span>{activeTab === "opportunities" ? "New Deal" : "New Lead"}</span>
+            <Plus className="w-3.5 h-3.5" />
+            <span>{activeTab === "opportunities" ? "Add Opportunity" : "Add Lead"}</span>
           </button>
         </div>
       </div>
+
+      <div className="px-6 space-y-4">
 
       {actionSuccess && (
         <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2 animate-in fade-in">
@@ -526,6 +534,7 @@ export default function CrmPage() {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }

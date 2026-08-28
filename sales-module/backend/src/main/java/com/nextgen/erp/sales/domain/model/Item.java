@@ -65,6 +65,32 @@ public class Item {
     @Builder.Default
     private Boolean hasBatchNo = false;
 
+    @Column(length = 100)
+    private String brand;
+
+    @Column(columnDefinition = "TEXT")
+    private String description;
+
+    @Column(length = 100)
+    private String barcode;
+
+    @Column(name = "is_purchase_item")
+    @Builder.Default
+    private Boolean isPurchaseItem = true;
+
+    @Column
+    @Builder.Default
+    private Boolean disabled = false;
+
+    @Column(name = "default_warehouse", length = 150)
+    private String defaultWarehouse;
+
+    @Column(name = "default_income_account", length = 150)
+    private String defaultIncomeAccount;
+
+    @Column(name = "default_expense_account", length = 150)
+    private String defaultExpenseAccount;
+
     @Column(name = "created_at")
     @Builder.Default
     private OffsetDateTime createdAt = OffsetDateTime.now();
