@@ -78,7 +78,7 @@ export default function HrmDashboardPage() {
         <div>
           <h1 className="text-2xl font-black tracking-tight text-slate-900 flex items-center gap-2.5">
             Human Resources Management
-            <span className="text-xs px-3 py-0.5 rounded-full bg-emerald-500/15 text-emerald-800 border border-emerald-400/50 font-bold backdrop-blur-md">
+            <span className="text-xs px-3 py-0.5 rounded-full liquid-glass text-slate-800 font-bold">
               Live Operations
             </span>
           </h1>
@@ -99,28 +99,28 @@ export default function HrmDashboardPage() {
           )}
           <Link
             href="/hrm/employees"
-            className="liquid-btn-primary flex items-center gap-2 px-5 py-2.5 text-xs shadow-md"
+            className="liquid-btn-primary flex items-center gap-2 px-5 py-2.5 text-xs shadow-xs"
           >
-            <UserPlus className="w-4 h-4 text-white" />
+            <UserPlus className="w-4 h-4 text-slate-800" />
             Add Employee
           </Link>
         </div>
       </div>
 
-      {/* KPI Metric Cards (Apple Liquid Glass Cards) */}
+      {/* KPI Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         <div className="liquid-glass-card p-6 space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Headcount</span>
-            <div className="p-2.5 rounded-2xl bg-indigo-50/80 text-indigo-700 border border-indigo-100/80 shadow-2xs">
+            <div className="p-2 rounded-xl liquid-glass text-slate-700">
               <Users className="w-4 h-4" />
             </div>
           </div>
           <div className="flex items-baseline gap-2">
             <span className="text-3xl font-black text-slate-900">{employees.length}</span>
             {employees.length > 0 && (
-              <span className="text-xs text-emerald-700 font-bold flex items-center bg-emerald-50/90 px-2 py-0.5 rounded-full border border-emerald-200/80">
-                <TrendingUp className="w-3 h-3 mr-0.5" /> +100% Live
+              <span className="text-xs text-slate-700 font-bold flex items-center liquid-glass px-2 py-0.5 rounded-full">
+                <TrendingUp className="w-3 h-3 mr-0.5" /> Live
               </span>
             )}
           </div>
@@ -132,7 +132,7 @@ export default function HrmDashboardPage() {
         <div className="liquid-glass-card p-6 space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Present Today</span>
-            <div className="p-2.5 rounded-2xl bg-emerald-50/80 text-emerald-700 border border-emerald-100/80 shadow-2xs">
+            <div className="p-2 rounded-xl liquid-glass text-slate-700">
               <CalendarCheck className="w-4 h-4" />
             </div>
           </div>
@@ -150,7 +150,7 @@ export default function HrmDashboardPage() {
         <div className="liquid-glass-card p-6 space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Monthly Payroll Cost</span>
-            <div className="p-2.5 rounded-2xl bg-slate-100/80 text-slate-700 border border-slate-200/80 shadow-2xs">
+            <div className="p-2 rounded-xl liquid-glass text-slate-700">
               <Banknote className="w-4 h-4" />
             </div>
           </div>
@@ -167,7 +167,7 @@ export default function HrmDashboardPage() {
         <div className="liquid-glass-card p-6 space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Open Vacancies</span>
-            <div className="p-2.5 rounded-2xl bg-indigo-50/80 text-indigo-700 border border-indigo-100/80 shadow-2xs">
+            <div className="p-2 rounded-xl liquid-glass text-slate-700">
               <Briefcase className="w-4 h-4" />
             </div>
           </div>
@@ -176,130 +176,135 @@ export default function HrmDashboardPage() {
             <span className="text-xs text-slate-500 font-medium">Active Postings</span>
           </div>
           <p className="text-[11px] text-slate-500 font-medium">
-            Engineering & Enterprise Sales
+            Engineering & Enterprise Roles
           </p>
         </div>
       </div>
 
-      {/* Grid: Attendance Stream & Pending Approvals */}
+      {/* Quick Launchpad & Pending Workflows */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Daily Attendance Log */}
-        <div className="lg:col-span-2 p-6 liquid-glass-card space-y-4">
+        {/* Core Submodules Quick Launchpad */}
+        <div className="lg:col-span-2 liquid-glass-card p-6 space-y-4">
           <div className="flex items-center justify-between border-b border-white/60 pb-3">
-            <div>
-              <h2 className="text-sm font-extrabold text-slate-900">Today&apos;s Shift Attendance Logs</h2>
-              <p className="text-xs text-slate-500 font-medium">Biometric & Web Check-in punches</p>
-            </div>
-            <Link
-              href="/hrm/attendance"
-              className="text-xs text-indigo-700 hover:text-indigo-900 font-bold flex items-center gap-1 transition-colors"
-            >
-              View Full Matrix <ArrowUpRight className="w-3.5 h-3.5" />
-            </Link>
+            <h2 className="text-xs font-black text-slate-800 uppercase tracking-wider">
+              HR Core Modules Launchpad
+            </h2>
+            <span className="text-xs text-slate-500 font-medium">9 active sub-modules</span>
           </div>
 
-          {attendance.length === 0 ? (
-            <div className="py-10 text-center text-xs text-slate-400 space-y-3">
-              <CalendarCheck className="w-10 h-10 text-slate-300 mx-auto" />
-              <div>
-                <p className="font-bold text-slate-700 text-sm">No attendance records yet today</p>
-                <p className="text-[11px] text-slate-400 mt-0.5">Onboard an employee or record a punch to see live shifts</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            <Link
+              href="/hrm/employees"
+              className="p-4 rounded-2xl liquid-glass hover:bg-white/60 transition-all flex items-start gap-3.5 group shadow-2xs"
+            >
+              <div className="p-3 rounded-xl liquid-glass text-slate-800">
+                <Users className="w-5 h-5" />
               </div>
-              {employees.length === 0 ? (
-                <Link
-                  href="/hrm/employees"
-                  className="liquid-btn-primary px-4 py-2 text-xs inline-flex"
-                >
-                  <UserPlus className="w-3.5 h-3.5 mr-1.5" />
-                  Create Your First Employee
-                </Link>
-              ) : (
-                <button
-                  onClick={handlePunchIn}
-                  className="liquid-btn-glass px-4 py-2 text-xs inline-flex"
-                >
-                  <Clock className="w-3.5 h-3.5 mr-1.5" />
-                  Punch-In Now
-                </button>
-              )}
-            </div>
-          ) : (
-            <div className="divide-y divide-white/40">
-              {attendance.slice(0, 5).map((record) => (
-                <div key={record.id} className="py-3 flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-3.5">
-                    <div className="w-10 h-10 rounded-2xl bg-white/80 border border-white/90 flex items-center justify-center font-bold text-slate-800 shadow-2xs">
-                      {record.employee.firstName[0]}
-                    </div>
-                    <div>
-                      <div className="font-bold text-slate-900">
-                        {record.employee.firstName} {record.employee.lastName}
-                      </div>
-                      <div className="text-[11px] text-slate-500">{record.employee.designation?.designationName}</div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-4">
-                    <span
-                      className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                        record.status === "PRESENT"
-                          ? "bg-emerald-50/90 text-emerald-800 border border-emerald-300/80"
-                          : record.status === "WORK_FROM_HOME"
-                          ? "bg-blue-50/90 text-blue-800 border border-blue-300/80"
-                          : "bg-amber-50/90 text-amber-800 border border-amber-300/80"
-                      }`}
-                    >
-                      {record.status.replace(/_/g, " ")}
-                    </span>
-                    <span className="text-slate-600 font-mono font-bold">{record.inTime || "09:00 AM"}</span>
-                  </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-bold text-xs text-slate-900">Employee 360</h3>
+                  <ArrowUpRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-800 transition-colors" />
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
+                <p className="text-[11px] text-slate-500 mt-0.5">Profiles, hierarchy, statutory info & documents</p>
+              </div>
+            </Link>
 
-        {/* Pending Leave Requests */}
-        <div className="p-6 liquid-glass-card space-y-4">
-          <div className="flex items-center justify-between border-b border-white/60 pb-3">
-            <div>
-              <h2 className="text-sm font-extrabold text-slate-900">Pending Leave Requests</h2>
-              <p className="text-xs text-slate-500 font-medium">Awaiting HR manager action</p>
-            </div>
+            <Link
+              href="/hrm/attendance"
+              className="p-4 rounded-2xl liquid-glass hover:bg-white/60 transition-all flex items-start gap-3.5 group shadow-2xs"
+            >
+              <div className="p-3 rounded-xl liquid-glass text-slate-800">
+                <CalendarCheck className="w-5 h-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-bold text-xs text-slate-900">Attendance & Shifts</h3>
+                  <ArrowUpRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-800 transition-colors" />
+                </div>
+                <p className="text-[11px] text-slate-500 mt-0.5">Punch-in logs, shifts, working hours & overtime</p>
+              </div>
+            </Link>
+
             <Link
               href="/hrm/leaves"
-              className="text-xs text-indigo-700 hover:text-indigo-900 font-bold flex items-center gap-1 transition-colors"
+              className="p-4 rounded-2xl liquid-glass hover:bg-white/60 transition-all flex items-start gap-3.5 group shadow-2xs"
             >
-              All Leaves <ArrowUpRight className="w-3.5 h-3.5" />
+              <div className="p-3 rounded-xl liquid-glass text-slate-800">
+                <CalendarDays className="w-5 h-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-bold text-xs text-slate-900">Leave Balance Engine</h3>
+                  <ArrowUpRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-800 transition-colors" />
+                </div>
+                <p className="text-[11px] text-slate-500 mt-0.5">Policy limits, PL/CL/SL requests & approval flows</p>
+              </div>
             </Link>
+
+            <Link
+              href="/hrm/payroll"
+              className="p-4 rounded-2xl liquid-glass hover:bg-white/60 transition-all flex items-start gap-3.5 group shadow-2xs"
+            >
+              <div className="p-3 rounded-xl liquid-glass text-slate-800">
+                <Banknote className="w-5 h-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-bold text-xs text-slate-900">Batch Payroll & Slips</h3>
+                  <ArrowUpRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-800 transition-colors" />
+                </div>
+                <p className="text-[11px] text-slate-500 mt-0.5">Batch execution, PF/PT/TDS & printable pay slips</p>
+              </div>
+            </Link>
+          </div>
+        </div>
+
+        {/* Pending Action Center */}
+        <div className="liquid-glass-card p-6 space-y-4">
+          <div className="flex items-center justify-between border-b border-white/60 pb-3">
+            <h2 className="text-xs font-black text-slate-800 uppercase tracking-wider">
+              Pending Actions
+            </h2>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full liquid-glass text-slate-700">
+              {leaves.filter((l) => l.status === "PENDING").length} Requests
+            </span>
           </div>
 
           <div className="space-y-3">
             {leaves.filter((l) => l.status === "PENDING").length === 0 ? (
-              <div className="py-8 text-center text-xs text-slate-400 space-y-1">
-                <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto mb-1" />
-                <p className="font-bold text-slate-800">All caught up!</p>
-                <p className="text-[11px]">No pending leave applications</p>
+              <div className="p-6 rounded-2xl liquid-glass text-center space-y-2">
+                <CheckCircle2 className="w-8 h-8 text-slate-400 mx-auto" />
+                <p className="text-xs font-bold text-slate-800">All Clear!</p>
+                <p className="text-[11px] text-slate-500">No pending leave applications or approvals.</p>
               </div>
             ) : (
               leaves
                 .filter((l) => l.status === "PENDING")
                 .map((leave) => (
-                  <div key={leave.id} className="p-4 rounded-2xl liquid-glass space-y-2.5">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-extrabold text-slate-900">
-                        {leave.employee.firstName} {leave.employee.lastName}
-                      </span>
-                      <span className="px-2.5 py-0.5 rounded-full bg-white/80 text-[10px] text-slate-700 font-bold border border-white/90 shadow-2xs">
-                        {leave.leaveType.leaveTypeCode} ({leave.totalLeaveDays}d)
+                  <div
+                    key={leave.id}
+                    className="p-3.5 rounded-2xl liquid-glass space-y-2 border border-white/70"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <div className="font-bold text-xs text-slate-900">
+                          {leave.employee?.firstName} {leave.employee?.lastName}
+                        </div>
+                        <div className="text-[11px] text-slate-500">
+                          {leave.leaveType?.leaveTypeName} • {leave.totalLeaveDays} Days
+                        </div>
+                      </div>
+                      <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-md liquid-glass text-slate-700">
+                        {leave.status}
                       </span>
                     </div>
-                    <p className="text-[11px] text-slate-600 italic">&ldquo;{leave.reason}&rdquo;</p>
-                    <div className="pt-2 flex items-center justify-between border-t border-white/40 text-[11px]">
-                      <span className="text-slate-500 font-medium">{leave.fromDate}</span>
+                    <div className="flex items-center justify-between pt-2 border-t border-white/40">
+                      <span className="text-[11px] text-slate-500 font-mono">
+                        {leave.fromDate} → {leave.toDate}
+                      </span>
                       <button
                         onClick={() => handleApproveLeave(leave.id)}
-                        className="liquid-btn-emerald px-3.5 py-1.5 text-xs shadow-xs"
+                        className="liquid-btn-primary px-3 py-1 text-[11px] font-bold shadow-2xs"
                       >
                         Approve
                       </button>

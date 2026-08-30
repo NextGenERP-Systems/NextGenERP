@@ -37,7 +37,7 @@ import {
 import { formatCurrency } from "@/lib/utils";
 import { Employee, SalarySlip, AttendanceRecord, LeaveApplication } from "@/types/hrm";
 
-const PALETTE = ["#4f46e5", "#06b6d4", "#10b981", "#f59e0b", "#ec4899", "#8b5cf6"];
+const PALETTE = ["#334155", "#475569", "#64748b", "#94a3b8", "#cbd5e1", "#e2e8f0"];
 
 export default function ReportsPage() {
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -66,10 +66,10 @@ export default function ReportsPage() {
     loadData();
   }, []);
 
-  // 1. Department Headcount Distribution (Computed 100% dynamically from live employees)
+  // 1. Department Headcount Distribution
   const deptCountMap: { [key: string]: number } = {};
   employees.forEach((emp) => {
-    const deptName = emp.department?.departmentName || "General Engineering";
+    const deptName = emp.department?.departmentName || "Engineering";
     deptCountMap[deptName] = (deptCountMap[deptName] || 0) + 1;
   });
 
@@ -79,7 +79,7 @@ export default function ReportsPage() {
     count,
   }));
 
-  // 2. Dynamic Monthly Payroll Trajectory (Computed from real salary slips)
+  // 2. Monthly Payroll Trajectory
   const payrollMonthMap: { [key: string]: { totalGross: number; totalNet: number; totalDeductions: number; count: number } } = {};
   slips.forEach((slip) => {
     const month = slip.startDate ? new Date(slip.startDate).toLocaleDateString("en-US", { month: "short", year: "numeric" }) : "Aug 2026";
@@ -100,174 +100,152 @@ export default function ReportsPage() {
     slipsCount: stats.count,
   }));
 
-  // Summary Metrics
-  const totalGrossDisbursed = slips.reduce((sum, s) => sum + (s.grossPay || 0), 0);
-  const totalNetDisbursed = slips.reduce((sum, s) => sum + (s.netPay || 0), 0);
-  const totalStatutoryDeductions = slips.reduce((sum, s) => sum + (s.totalDeductions || 0), 0);
-  const avgGrossPerEmployee = employees.length > 0 ? totalGrossDisbursed / employees.length : 0;
-  const presentCount = attendance.filter((a) => a.status === "PRESENT" || a.status === "WORK_FROM_HOME").length;
-  const attendanceRate = employees.length > 0 ? Math.round((presentCount / employees.length) * 100) : 0;
+  const totalPayrollGross = slips.reduce((acc, s) => acc + (s.grossPay || 0), 0);
+  const totalPayrollNet = slips.reduce((acc, s) => acc + (s.netPay || 0), 0);
+  const totalTaxPFDeductions = slips.reduce((acc, s) => acc + (s.totalDeductions || 0), 0);
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2.5">
-            HR Analytics & Headcount Velocity
-            <span className="text-xs px-3 py-0.5 rounded-full bg-indigo-500/15 text-indigo-800 border border-indigo-400/50 font-bold backdrop-blur-md">
-              Real-Time Dynamic
-            </span>
+          <h1 className="text-2xl font-black tracking-tight text-slate-900 flex items-center gap-2.5">
+            Real-Time HRM Reports & Analytics
           </h1>
-          <p className="text-sm text-slate-500 mt-1 font-medium">
-            Live database aggregations: Department distribution, payroll disbursements, and attendance metrics
+          <p className="text-sm text-slate-600 mt-1 font-medium">
+            Dynamic aggregations computed from active PostgreSQL database tables
           </p>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <Link
+            href="/hrm/payroll"
+            className="liquid-btn-glass flex items-center gap-2 px-5 py-2.5 text-xs shadow-xs"
+          >
+            <Banknote className="w-3.5 h-3.5 text-slate-700" />
+            Payroll Slips
+          </Link>
+          <Link
+            href="/hrm/employees"
+            className="liquid-btn-primary flex items-center gap-2 px-5 py-2.5 text-xs shadow-xs"
+          >
+            <UserPlus className="w-4 h-4 text-slate-800" />
+            Employee 360
+          </Link>
         </div>
       </div>
 
-      {/* 4 Summary Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        <div className="p-6 rounded-2xl liquid-glass-card space-y-2">
-          <div className="flex items-center justify-between text-slate-500 text-xs font-bold uppercase tracking-wider">
-            <span>Total Headcount</span>
-            <Users className="w-4 h-4 text-indigo-600" />
-          </div>
-          <div className="text-3xl font-black text-slate-900">{employees.length}</div>
-          <p className="text-[11px] text-slate-500 font-medium">
-            {employees.filter((e) => e.status === "ACTIVE").length} Active in Database
-          </p>
+      {/* Top 3 Summary Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+        <div className="p-6 rounded-3xl liquid-glass-card space-y-1">
+          <span className="text-xs text-slate-500 font-bold uppercase tracking-wider">Active Organization Headcount</span>
+          <div className="text-3xl font-black text-slate-900">{employees.length} Employees</div>
+          <span className="text-[11px] text-slate-500 font-semibold">
+            {employees.filter((e) => e.status === "ACTIVE").length} Active on Payroll
+          </span>
         </div>
 
-        <div className="p-6 rounded-2xl liquid-glass-card space-y-2">
-          <div className="flex items-center justify-between text-slate-500 text-xs font-bold uppercase tracking-wider">
-            <span>Total Gross Disbursed</span>
-            <Banknote className="w-4 h-4 text-emerald-600" />
-          </div>
-          <div className="text-2xl font-black text-slate-900 tracking-tight">
-            {formatCurrency(totalGrossDisbursed)}
-          </div>
-          <p className="text-[11px] text-slate-500 font-medium">
-            Across {slips.length} Generated Salary Slips
-          </p>
+        <div className="p-6 rounded-3xl liquid-glass-card space-y-1">
+          <span className="text-xs text-slate-500 font-bold uppercase tracking-wider">Total Disbursed Payroll</span>
+          <div className="text-3xl font-black text-slate-900">{formatCurrency(totalPayrollGross)}</div>
+          <span className="text-[11px] text-slate-500 font-semibold">
+            Net In-Hand: {formatCurrency(totalPayrollNet)}
+          </span>
         </div>
 
-        <div className="p-6 rounded-2xl liquid-glass-card space-y-2">
-          <div className="flex items-center justify-between text-slate-500 text-xs font-bold uppercase tracking-wider">
-            <span>Statutory Taxes (PF/PT/TDS)</span>
-            <TrendingUp className="w-4 h-4 text-blue-600" />
-          </div>
-          <div className="text-2xl font-black text-slate-900 tracking-tight">
-            {formatCurrency(totalStatutoryDeductions)}
-          </div>
-          <p className="text-[11px] text-slate-500 font-medium">
-            Net In-Hand: {formatCurrency(totalNetDisbursed)}
-          </p>
-        </div>
-
-        <div className="p-6 rounded-2xl liquid-glass-card space-y-2">
-          <div className="flex items-center justify-between text-slate-500 text-xs font-bold uppercase tracking-wider">
-            <span>Today&apos;s Attendance</span>
-            <CalendarCheck className="w-4 h-4 text-purple-600" />
-          </div>
-          <div className="text-3xl font-black text-slate-900">{attendance.length} Logs</div>
-          <p className="text-[11px] text-slate-500 font-medium">
-            {leaves.filter((l) => l.status === "APPROVED").length} Approved on Leave
-          </p>
+        <div className="p-6 rounded-3xl liquid-glass-card space-y-1">
+          <span className="text-xs text-slate-500 font-bold uppercase tracking-wider">Statutory Deductions (PF/PT/TDS)</span>
+          <div className="text-3xl font-black text-slate-700">{formatCurrency(totalTaxPFDeductions)}</div>
+          <span className="text-[11px] text-slate-500 font-semibold">Withheld & Remitted</span>
         </div>
       </div>
 
-      {/* Grid: Dynamic Charts */}
+      {/* Live Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Monthly Payroll Expenditure Chart */}
-        <div className="p-6 rounded-2xl liquid-glass-card space-y-4">
+        {/* Department Distribution Donut Chart */}
+        <div className="liquid-glass-card p-6 space-y-4">
           <div className="flex items-center justify-between border-b border-white/60 pb-3">
-            <div>
-              <h3 className="text-sm font-bold text-slate-900">Monthly Payroll Expenditure (INR)</h3>
-              <p className="text-xs text-slate-500 font-medium">Gross vs Net Disbursed Compensation</p>
-            </div>
-            <span className="text-xs text-slate-500 font-mono font-bold">{slips.length} Slips Total</span>
+            <h2 className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-2">
+              <PieChartIcon className="w-4 h-4 text-slate-700" />
+              Department Headcount Distribution
+            </h2>
+            <span className="text-xs text-slate-500 font-semibold">{deptChartData.length} Departments</span>
           </div>
 
-          {payrollChartData.length === 0 ? (
-            <div className="h-64 flex flex-col items-center justify-center text-center space-y-3">
-              <Banknote className="w-10 h-10 text-slate-300 mx-auto" />
-              <div>
-                <p className="text-sm font-bold text-slate-800">No Payroll Generated Yet</p>
-                <p className="text-xs text-slate-400 mt-0.5">Generate salary slips to see live financial trajectories</p>
-              </div>
-              <Link
-                href="/hrm/payroll"
-                className="liquid-btn-primary px-4 py-2 text-xs inline-flex items-center gap-1.5 shadow-md"
-              >
-                Go to Payroll Engine <ArrowUpRight className="w-3.5 h-3.5" />
-              </Link>
+          {deptChartData.length === 0 ? (
+            <div className="h-64 flex items-center justify-center text-xs text-slate-400">
+              No employees onboarded to visualize departments.
             </div>
           ) : (
-            <div className="h-64 w-full pt-4">
+            <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={payrollChartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                  <XAxis dataKey="month" stroke="#94a3b8" fontSize={11} />
-                  <YAxis stroke="#94a3b8" fontSize={11} tickFormatter={(v) => `₹${v / 1000}k`} />
+                <PieChart>
+                  <Pie
+                    data={deptChartData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={55}
+                    outerRadius={85}
+                    paddingAngle={4}
+                    dataKey="count"
+                    nameKey="fullName"
+                  >
+                    {deptChartData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={PALETTE[index % PALETTE.length]} />
+                    ))}
+                  </Pie>
                   <Tooltip
-                    contentStyle={{ backgroundColor: "#ffffff", borderColor: "#e2e8f0", borderRadius: "16px", fontSize: "12px", boxShadow: "0 10px 25px -5px rgba(0,0,0,0.1)" }}
-                    formatter={(v: any) => formatCurrency(v)}
+                    contentStyle={{
+                      backgroundColor: "rgba(255, 255, 255, 0.95)",
+                      borderRadius: "1rem",
+                      border: "1px solid rgba(255, 255, 255, 0.8)",
+                      backdropFilter: "blur(12px)",
+                      fontSize: "11px",
+                      fontWeight: 600,
+                    }}
                   />
-                  <Bar dataKey="totalGross" name="Gross Pay" fill="#4f46e5" radius={[8, 8, 0, 0]} />
-                  <Bar dataKey="totalNet" name="Net Disbursed" fill="#10b981" radius={[8, 8, 0, 0]} />
-                </BarChart>
+                  <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                </PieChart>
               </ResponsiveContainer>
             </div>
           )}
         </div>
 
-        {/* Headcount Distribution Chart */}
-        <div className="p-6 rounded-2xl liquid-glass-card space-y-4">
+        {/* Monthly Payroll Expenditure Bar Chart */}
+        <div className="liquid-glass-card p-6 space-y-4">
           <div className="flex items-center justify-between border-b border-white/60 pb-3">
-            <div>
-              <h3 className="text-sm font-bold text-slate-900">Department Headcount Distribution</h3>
-              <p className="text-xs text-slate-500 font-medium">Computed live from active employee profiles</p>
-            </div>
-            <span className="text-xs text-slate-500 font-mono font-bold">{employees.length} Members</span>
+            <h2 className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-2">
+              <BarChart3 className="w-4 h-4 text-slate-700" />
+              Monthly Payroll Expenditure
+            </h2>
+            <span className="text-xs text-slate-500 font-semibold">{payrollChartData.length} Payroll Cycles</span>
           </div>
 
-          {deptChartData.length === 0 ? (
-            <div className="h-64 flex flex-col items-center justify-center text-center space-y-3">
-              <Users className="w-10 h-10 text-slate-300 mx-auto" />
-              <div>
-                <p className="text-sm font-bold text-slate-800">No Employees Found</p>
-                <p className="text-xs text-slate-400 mt-0.5">Onboard team members to see functional departmental distribution</p>
-              </div>
-              <Link
-                href="/hrm/employees"
-                className="liquid-btn-primary px-4 py-2 text-xs inline-flex items-center gap-1.5 shadow-md"
-              >
-                Onboard Employee <ArrowUpRight className="w-3.5 h-3.5" />
-              </Link>
+          {payrollChartData.length === 0 ? (
+            <div className="h-64 flex items-center justify-center text-xs text-slate-400">
+              No salary slips generated yet. Run batch payroll to visualize monthly trends.
             </div>
           ) : (
-            <div className="h-64 w-full flex items-center justify-center pt-2">
+            <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={deptChartData}
-                    dataKey="count"
-                    nameKey="fullName"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={80}
-                    innerRadius={45}
-                    paddingAngle={4}
-                    label={({ fullName, percent }) => `${fullName.split(" ")[0]} ${(percent * 100).toFixed(0)}%`}
-                  >
-                    {deptChartData.map((_, index) => (
-                      <Cell key={`cell-${index}`} fill={PALETTE[index % PALETTE.length]} />
-                    ))}
-                  </Pie>
+                <BarChart data={payrollChartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(203, 213, 225, 0.4)" vertical={false} />
+                  <XAxis dataKey="month" stroke="#64748b" fontSize={11} tickLine={false} />
+                  <YAxis stroke="#64748b" fontSize={10} tickLine={false} tickFormatter={(v) => `₹${v / 1000}k`} />
                   <Tooltip
-                    contentStyle={{ backgroundColor: "#ffffff", borderColor: "#e2e8f0", borderRadius: "16px", fontSize: "12px", boxShadow: "0 10px 25px -5px rgba(0,0,0,0.1)" }}
+                    formatter={(value: any) => [formatCurrency(Number(value)), "Amount"]}
+                    contentStyle={{
+                      backgroundColor: "rgba(255, 255, 255, 0.95)",
+                      borderRadius: "1rem",
+                      border: "1px solid rgba(255, 255, 255, 0.8)",
+                      backdropFilter: "blur(12px)",
+                      fontSize: "11px",
+                      fontWeight: 600,
+                    }}
                   />
-                </PieChart>
+                  <Bar dataKey="totalGross" name="Gross Pay" fill="#334155" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="totalNet" name="Net Take-Home" fill="#64748b" radius={[6, 6, 0, 0]} />
+                </BarChart>
               </ResponsiveContainer>
             </div>
           )}
