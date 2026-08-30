@@ -6,6 +6,8 @@ import {
   ShoppingBag,
   Users,
   CreditCard,
+  Briefcase,
+  GitPullRequest,
   ChevronDown,
   ExternalLink,
   Check,
@@ -13,7 +15,7 @@ import {
 } from "lucide-react";
 
 interface AppSwitcherProps {
-  currentModule: "sales" | "hrm" | "accounting";
+  currentModule: "sales" | "hrm" | "accounting" | "projects" | "workflow";
 }
 
 export function AppSwitcher({ currentModule }: AppSwitcherProps) {
@@ -61,35 +63,55 @@ export function AppSwitcher({ currentModule }: AppSwitcherProps) {
       badge: "Enterprise HR",
       active: currentModule === "hrm",
     },
+    {
+      id: "projects",
+      name: "Projects & Agile",
+      description: "Sprint Planning, Gantt, Milestones & Timesheets",
+      icon: Briefcase,
+      href: currentModule === "projects" ? "/projects" : "http://localhost:3003/projects",
+      color: "bg-purple-500",
+      badge: "Delivery",
+      active: currentModule === "projects",
+    },
+    {
+      id: "workflow",
+      name: "Workflow & Approvals",
+      description: "BPMN Process Engines, Form Builders & Automations",
+      icon: GitPullRequest,
+      href: currentModule === "workflow" ? "/workflow" : "http://localhost:3002/workflow",
+      color: "bg-cyan-500",
+      badge: "Automation",
+      active: currentModule === "workflow",
+    },
   ];
 
-  const activeApp = apps.find((a) => a.active) || apps[1];
+  const activeApp = apps.find((a) => a.active) || apps[0];
   const Icon = activeApp.icon;
 
   return (
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-white/70 hover:bg-white border border-slate-200/80 shadow-xs transition-all text-left text-xs font-semibold text-slate-800 backdrop-blur-md"
+        className="liquid-btn-glass text-xs font-bold text-slate-800 gap-2 px-3 py-1.5"
       >
-        <div className={`w-5 h-5 rounded-lg ${activeApp.color} flex items-center justify-center text-white shadow-xs`}>
+        <div className={`w-5 h-5 rounded-md ${activeApp.color} flex items-center justify-center text-white shadow-xs`}>
           <Icon className="w-3 h-3" />
         </div>
         <span className="font-bold tracking-tight text-slate-900">{activeApp.name}</span>
-        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-white/80 text-indigo-700 border border-indigo-100">
+        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-white/80 text-amber-800 border border-amber-200">
           {activeApp.badge}
         </span>
         <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 rounded-2xl bg-white border border-slate-200/90 shadow-2xl p-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150 backdrop-blur-2xl">
+        <div className="absolute right-0 mt-2 w-80 rounded-2xl bg-white/90 border border-white/60 shadow-2xl p-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150 backdrop-blur-2xl">
           <div className="px-3 py-2 border-b border-slate-100 flex items-center justify-between">
             <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-500">
               <Layers className="w-3.5 h-3.5" />
               <span>NextGen ERP Modules</span>
             </div>
-            <span className="flex items-center gap-1 text-[10px] text-indigo-600 font-semibold bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100">
+            <span className="flex items-center gap-1 text-[10px] text-amber-700 font-semibold bg-amber-50 px-2 py-0.5 rounded-full border border-amber-100">
               <Sparkles className="w-2.5 h-2.5" /> Integrated Suite
             </span>
           </div>
@@ -103,7 +125,7 @@ export function AppSwitcher({ currentModule }: AppSwitcherProps) {
                   href={app.href}
                   className={`flex items-start gap-3 p-2.5 rounded-xl transition-all ${
                     app.active
-                      ? "bg-indigo-50/50 border border-indigo-100 shadow-2xs"
+                      ? "bg-amber-50/70 border border-amber-200/80 shadow-2xs"
                       : "hover:bg-slate-50/80 text-slate-700 hover:text-slate-900"
                   }`}
                   onClick={() => setIsOpen(false)}
@@ -115,7 +137,7 @@ export function AppSwitcher({ currentModule }: AppSwitcherProps) {
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-slate-900">{app.name}</span>
                       {app.active ? (
-                        <span className="flex items-center gap-1 text-[10px] font-bold text-indigo-600">
+                        <span className="flex items-center gap-1 text-[10px] font-bold text-amber-700">
                           <Check className="w-3 h-3" /> Active
                         </span>
                       ) : (
@@ -132,7 +154,7 @@ export function AppSwitcher({ currentModule }: AppSwitcherProps) {
           </div>
 
           <div className="px-3 py-2 border-t border-slate-100 bg-slate-50/60 rounded-b-xl text-[11px] text-slate-500 font-medium flex items-center justify-between">
-            <span>Unified Master & Live Sync</span>
+            <span>Unified Master & Live GL Sync</span>
             <span className="font-mono text-[10px] text-slate-400 font-bold">ERP Core v2.0</span>
           </div>
         </div>

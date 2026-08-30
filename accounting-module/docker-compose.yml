@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  accounting-db:
+    image: postgres:16-alpine
+    container_name: nextgen-accounting-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: nextgen_erp_accounting
+    ports:
+      - "5434:5432"
+    volumes:
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - ./database/seed-data.sql:/docker-entrypoint-initdb.d/02-seed-data.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d nextgen_erp_accounting"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  accounting-backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: nextgen-accounting-backend
+    ports:
+      - "8084:8084"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://accounting-db:5432/nextgen_erp_accounting
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+    depends_on:
+      accounting-db:
+        condition: service_healthy
+
+  accounting-frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: nextgen-accounting-frontend
+    ports:
+      - "3004:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8084/api/v1
+    depends_on:
+      - accounting-backend
