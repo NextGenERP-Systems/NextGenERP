@@ -73,6 +73,12 @@ public class Task {
     @Column(name = "assignee_id")
     private UUID assigneeId;
 
+    @Column(name = "assignee_name")
+    private String assigneeName;
+
+    @Column(name = "task_type")
+    private String type;
+
     @Column(nullable = false)
     private Integer weight = 1;
 

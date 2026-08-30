@@ -12,6 +12,10 @@ import {
 import { KanbanBoard } from "@/components/ui/KanbanBoard";
 import { GanttChart } from "@/components/ui/GanttChart";
 import { OnboardingWidget } from "@/components/ui/OnboardingWidget";
+import { ProjectModal } from "@/components/ui/ProjectModal";
+import { LogTimeModal } from "@/components/ui/LogTimeModal";
+import { NewTaskModal } from "@/components/ui/NewTaskModal";
+import { updateTaskStatus } from "@/lib/api";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 function DashboardContent() {
@@ -23,6 +27,49 @@ function DashboardContent() {
   const [timesheets, setTimesheets] = useState<any[]>([]);
   const [tasks, setTasks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // Modals state
+  const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
+  const [isLogTimeModalOpen, setIsLogTimeModalOpen] = useState(false);
+  const [isNewTaskModalOpen, setIsNewTaskModalOpen] = useState(false);
+  
+  // Edit & Context Menu State
+  const [projectToEdit, setProjectToEdit] = useState<any>(null);
+  const [taskToEdit, setTaskToEdit] = useState<any>(null);
+  const [menuState, setMenuState] = useState<{ x: number, y: number, project: any | null }>({ x: 0, y: 0, project: null });
+
+  useEffect(() => {
+    const closeMenu = () => setMenuState(prev => prev.project ? { x: 0, y: 0, project: null } : prev);
+    window.addEventListener('click', closeMenu);
+    return () => window.removeEventListener('click', closeMenu);
+  }, []);
+
+  const handleRowClick = (e: React.MouseEvent, proj: any) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setMenuState({ x: e.clientX, y: e.clientY, project: proj });
+  };
+
+  const handleTaskMove = async (taskId: string, newState: string) => {
+    try {
+      // Optimistic update
+      const tempStatus = newState === 'BACKLOG' ? 'TODO' : newState;
+      setTasks(prev => prev.map(t => t.id === taskId ? { ...t, kanbanState: newState, status: tempStatus } : t));
+      
+      const updatedTask = await updateTaskStatus(taskId, newState);
+      // Sync with true backend state
+      setTasks(prev => prev.map(t => t.id === taskId ? updatedTask : t));
+    } catch (err) {
+      console.error("Failed to update task status", err);
+      // Revert on error
+      loadData();
+    }
+  };
+
+  const handleTaskEdit = (task: any) => {
+    setTaskToEdit(task);
+    setIsNewTaskModalOpen(true);
+  };
 
   // Filters State
   const [filterProject, setFilterProject] = useState("");
@@ -30,9 +77,8 @@ function DashboardContent() {
   const [filterStatus, setFilterStatus] = useState("");
   const [filterType, setFilterType] = useState("");
   const [filterPriority, setFilterPriority] = useState("");
-
-  // Timeline view switch state
-  const [timelineMode, setTimelineMode] = useState<'chronological' | 'visual'>('chronological');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [timelineProjectFilter, setTimelineProjectFilter] = useState("");
 
   const loadData = async () => {
     setLoading(true);
@@ -84,7 +130,7 @@ function DashboardContent() {
     if (!groupedByProject[pName]) {
       groupedByProject[pName] = { name: pName.substring(0, 15), completed: 0, overdue: 0, total: 0 };
     }
-    const isCompleted = t.kanbanState === 'COMPLETED' || t.status === 'COMPLETED';
+    const isCompleted = t.kanbanState === 'COMPLETED';
     const isOverdue = !isCompleted && new Date(t.expectedEndDate) < new Date();
     
     if (isCompleted) groupedByProject[pName].completed += 1;
@@ -97,8 +143,55 @@ function DashboardContent() {
     chartData = [{ name: 'No Data', completed: 0, overdue: 0, total: 0 }];
   }
 
+  const filteredProjects = projects.filter(p => {
+    if (searchQuery && !p.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+    if (filterProject && p.name !== filterProject) return false;
+    if (filterActive === "Yes" && p.status !== "IN_PROGRESS") return false;
+    if (filterActive === "No" && p.status === "IN_PROGRESS") return false;
+    if (filterStatus && p.status !== filterStatus) return false;
+    return true;
+  });
+
   return (
     <>
+      <ProjectModal 
+        isOpen={isProjectModalOpen} 
+        onClose={() => { setIsProjectModalOpen(false); setProjectToEdit(null); }} 
+        onSuccess={loadData} 
+        editProject={projectToEdit}
+      />
+      <LogTimeModal 
+        isOpen={isLogTimeModalOpen}
+        onClose={() => setIsLogTimeModalOpen(false)}
+        onSuccess={loadData}
+      />
+      <NewTaskModal 
+        isOpen={isNewTaskModalOpen}
+        onClose={() => { setIsNewTaskModalOpen(false); setTaskToEdit(null); }}
+        onSuccess={loadData}
+        editTask={taskToEdit}
+      />
+      
+      {/* Custom Context Menu */}
+      {menuState.project && (
+        <div 
+          className="fixed z-50 bg-white border border-gray-200 rounded-md shadow-lg p-1 min-w-[150px] animate-in fade-in zoom-in-95 duration-100"
+          style={{ top: menuState.y, left: menuState.x }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button 
+            className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-sm"
+            onClick={() => {
+              setProjectToEdit(menuState.project);
+              setIsProjectModalOpen(true);
+              setMenuState({ x: 0, y: 0, project: null });
+            }}
+          >
+            Edit Project
+          </button>
+        </div>
+      )}
+
       <OnboardingWidget 
         hasProjects={projects.length > 0} 
         hasTasks={tasks.length > 0} 
@@ -109,7 +202,7 @@ function DashboardContent() {
       <header className="h-14 bg-white border-b border-gray-200 px-6 flex items-center justify-between sticky top-0 z-10">
         <div className="flex items-center bg-gray-100 rounded-md px-3 py-1.5 w-96 border border-transparent focus-within:border-blue-500 focus-within:bg-white transition-all">
           <Search size={16} className="text-gray-400 mr-2" />
-          <input type="text" placeholder="Search projects, tasks, or timesheets..." className="bg-transparent border-none outline-none text-sm w-full text-gray-800 placeholder-gray-400" />
+          <input type="text" placeholder="Search projects..." className="bg-transparent border-none outline-none text-sm w-full text-gray-800 placeholder-gray-400" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
         </div>
         <div className="flex items-center gap-4">
           {/* Action Header Buttons merged here for cleaner look, or keep them below */}
@@ -126,15 +219,21 @@ function DashboardContent() {
             <p className="text-sm text-gray-500 mt-1">Manage enterprise projects, tasks, and team timesheets.</p>
           </div>
           <div className="flex items-center gap-3">
-            <button onClick={() => router.push('/projects/timesheets/create')} className="flex items-center gap-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-md text-sm font-medium shadow-sm transition-all">
-              <Clock size={16} className="text-orange-500"/> Log Time
-            </button>
-            <button onClick={() => router.push('/projects/tasks/create')} className="flex items-center gap-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-md text-sm font-medium shadow-sm transition-all">
-              <CheckCircle2 size={16} className="text-green-500"/> New Task
-            </button>
-            <button onClick={() => router.push('/projects/create')} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium shadow-sm transition-all">
-              <Plus size={16} /> New Project
-            </button>
+            {activeTab === 'gantt' && (
+              <button onClick={() => setIsLogTimeModalOpen(true)} className="flex items-center gap-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-md text-sm font-medium shadow-sm transition-all">
+                <Clock size={16} className="text-orange-500"/> Log Time
+              </button>
+            )}
+            {activeTab === 'tasks' && (
+              <button onClick={() => { setTaskToEdit(null); setIsNewTaskModalOpen(true); }} className="flex items-center gap-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-md text-sm font-medium shadow-sm transition-all">
+                <CheckCircle2 size={16} className="text-green-500"/> New Task
+              </button>
+            )}
+            {activeTab === 'dashboard' && (
+              <button onClick={() => { setProjectToEdit(null); setIsProjectModalOpen(true); }} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium shadow-sm transition-all">
+                <Plus size={16} /> New Project
+              </button>
+            )}
           </div>
         </div>
 
@@ -161,9 +260,10 @@ function DashboardContent() {
                   </select>
                   <select className="border border-gray-200 rounded-md px-2.5 py-1.5 text-sm outline-none focus:ring-1 focus:ring-blue-500 bg-gray-50 text-gray-900" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
                     <option value="">Status (Any)</option>
-                    <option value="Open">Open</option>
-                    <option value="On hold">On hold</option>
-                    <option value="Completed">Completed</option>
+                    <option value="PLANNED">Planned</option>
+                    <option value="IN_PROGRESS">In Progress</option>
+                    <option value="ON_HOLD">On hold</option>
+                    <option value="COMPLETED">Completed</option>
                   </select>
                 </div>
 
@@ -247,9 +347,14 @@ function DashboardContent() {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100 text-sm">
-                          {projects.length > 0 ? (
-                            projects.map((proj) => (
-                              <tr key={proj.id} className="hover:bg-gray-50/50 transition-colors">
+                          {filteredProjects.length > 0 ? (
+                            filteredProjects.map((proj) => (
+                              <tr 
+                                key={proj.id} 
+                                className="hover:bg-gray-50/50 transition-colors cursor-pointer"
+                                onClick={(e) => handleRowClick(e, proj)}
+                                onContextMenu={(e) => handleRowClick(e, proj)}
+                              >
                                 <td className="p-3 font-medium text-gray-900">{proj.name}</td>
                                 <td className="p-3 text-gray-600">{proj.projectType || 'Internal'}</td>
                                 <td className="p-3">
@@ -286,7 +391,7 @@ function DashboardContent() {
             )}
 
             {activeTab === 'tasks' && (
-              <div className="h-[600px]"><KanbanBoard tasks={tasks} /></div>
+              <div className="h-[600px]"><KanbanBoard tasks={tasks} onTaskMove={handleTaskMove} onTaskEdit={handleTaskEdit} /></div>
             )}
 
             {activeTab === 'gantt' && (
@@ -296,49 +401,36 @@ function DashboardContent() {
             )}
 
             {activeTab === 'timeline' && (
-              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 min-h-[500px]">
-                <div className="flex justify-between items-center mb-6">
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 flex flex-col h-[550px]">
+                <div className="flex justify-between items-center mb-6 shrink-0">
                   <h3 className="font-semibold text-lg text-gray-900">Project Timeline</h3>
-                  <div className="flex bg-gray-100 p-1 rounded-md">
-                    <button 
-                      onClick={() => setTimelineMode('chronological')}
-                      className={`px-3 py-1.5 text-sm font-medium rounded-sm transition-all ${timelineMode === 'chronological' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
-                    >
-                      Activity Feed
-                    </button>
-                    <button 
-                      onClick={() => setTimelineMode('visual')}
-                      className={`px-3 py-1.5 text-sm font-medium rounded-sm transition-all ${timelineMode === 'visual' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
-                    >
-                      Visual Timeline
-                    </button>
+                  <div className="flex">
+                    <select className="border border-gray-200 rounded-md px-3 py-1.5 text-sm outline-none focus:ring-1 focus:ring-blue-500 bg-gray-50 text-gray-900" value={timelineProjectFilter} onChange={(e) => setTimelineProjectFilter(e.target.value)}>
+                      <option value="">All Projects</option>
+                      {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                    </select>
                   </div>
                 </div>
 
-                {timelineMode === 'chronological' ? (
+                <div className="overflow-y-auto flex-1 pr-4">
                   <div className="space-y-6 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-slate-300 before:to-transparent">
-                    {tasks.slice(0, 5).map((task) => (
-                      <div key={task.id} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
-                        <div className="flex items-center justify-center w-10 h-10 rounded-full border border-white bg-blue-100 text-blue-600 shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10">
-                          <CheckCircle2 size={18} />
-                        </div>
-                        <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] bg-gray-50 p-4 rounded-lg border border-gray-200 shadow-sm">
-                          <div className="flex items-center justify-between space-x-2 mb-1">
-                            <div className="font-bold text-gray-900 text-sm">Task Created</div>
-                            <time className="text-xs text-gray-500">{new Date(task.expectedStartDate || Date.now()).toLocaleDateString()}</time>
-                          </div>
-                          <div className="text-sm text-gray-600">Task <span className="font-medium text-gray-900">{task.name}</span> was added.</div>
-                        </div>
+                    {(timelineProjectFilter ? tasks.filter(t => t.projectId === timelineProjectFilter) : tasks).slice(0, 15).map((task) => (
+                    <div key={task.id} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
+                      <div className="flex items-center justify-center w-10 h-10 rounded-full border border-white bg-blue-100 text-blue-600 shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10">
+                        <CheckCircle2 size={18} />
                       </div>
+                      <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] bg-gray-50 p-4 rounded-lg border border-gray-200 shadow-sm">
+                        <div className="flex items-center justify-between space-x-2 mb-1">
+                          <div className="font-bold text-gray-900 text-sm">Task Activity</div>
+                          <time className="text-xs text-gray-500">{new Date(task.createdAt || task.expectedStartDate || Date.now()).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</time>
+                        </div>
+                        <div className="text-sm text-gray-600">Task <span className="font-medium text-gray-900">{task.name}</span> was updated.</div>
+                      </div>
+                    </div>
                     ))}
-                    {tasks.length === 0 && <p className="text-sm text-gray-500 pl-12 md:pl-0 md:text-center pt-8">No timeline activity.</p>}
+                    {(timelineProjectFilter ? tasks.filter(t => t.projectId === timelineProjectFilter) : tasks).length === 0 && <p className="text-sm text-gray-500 pl-12 md:pl-0 md:text-center pt-8">No timeline activity.</p>}
                   </div>
-                ) : (
-                  <div className="w-full">
-                    <p className="text-sm text-gray-500 mb-4">Visual representation of tasks and milestones over time.</p>
-                    <GanttChart tasks={tasks} />
-                  </div>
-                )}
+                </div>
               </div>
             )}
           </div>

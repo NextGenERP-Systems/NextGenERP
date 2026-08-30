@@ -64,6 +64,8 @@ public class TaskService {
         task.setExpectedStartDate(taskDetails.getExpectedStartDate());
         task.setExpectedEndDate(taskDetails.getExpectedEndDate());
         task.setAssigneeId(taskDetails.getAssigneeId());
+        task.setAssigneeName(taskDetails.getAssigneeName());
+        task.setType(taskDetails.getType());
         task.setWeight(taskDetails.getWeight());
         task.setIsMilestone(taskDetails.getIsMilestone());
         if (taskDetails.getKanbanState() != null) {
@@ -107,6 +109,14 @@ public class TaskService {
     @Transactional
     public Task updateTaskStatus(UUID id, TaskStatus status) {
         Task task = getTaskById(id);
+        task.setStatus(status);
+        return taskRepository.save(task);
+    }
+
+    @Transactional
+    public Task updateTaskKanbanState(UUID id, com.nextgen.erp.projects.domain.model.KanbanState kanbanState, TaskStatus status) {
+        Task task = getTaskById(id);
+        task.setKanbanState(kanbanState);
         task.setStatus(status);
         return taskRepository.save(task);
     }

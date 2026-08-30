@@ -41,7 +41,7 @@ services:
       dockerfile: Dockerfile
     container_name: nextgen-accounting-frontend
     ports:
-      - "3004:3000"
+      - "3004:3004"
     environment:
       - NEXT_PUBLIC_API_URL=http://localhost:8084/api/v1
     depends_on:

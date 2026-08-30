@@ -28,6 +28,16 @@ export async function createProject(data: any) {
   return res.json();
 }
 
+export async function updateProject(id: string, data: any) {
+  const res = await fetch(`${API_BASE}/projects/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error("Failed to update project");
+  return res.json();
+}
+
 export async function createTimesheet(data: any) {
   const res = await fetch(`${API_BASE}/timesheets`, {
     method: "POST",
@@ -45,5 +55,25 @@ export async function createTask(projectId: string, data: any) {
     body: JSON.stringify(data),
   });
   if (!res.ok) throw new Error("Failed to create task");
+  return res.json();
+}
+
+export async function updateTask(id: string, data: any) {
+  const res = await fetch(`${API_BASE}/projects/tasks/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error("Failed to update task");
+  return res.json();
+}
+
+export async function updateTaskStatus(id: string, status: string) {
+  const res = await fetch(`${API_BASE}/projects/tasks/${id}/status`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ status }),
+  });
+  if (!res.ok) throw new Error("Failed to update task status");
   return res.json();
 }

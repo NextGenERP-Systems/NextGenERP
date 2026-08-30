@@ -40,6 +40,14 @@ public class Timesheet {
         return project != null ? project.getId() : null;
     }
 
+    @com.fasterxml.jackson.annotation.JsonProperty("projectId")
+    public void setProjectId(UUID projectId) {
+        if (projectId != null) {
+            this.project = new Project();
+            this.project.setId(projectId);
+        }
+    }
+
     @Column(nullable = false)
     @Builder.Default
     private String status = "Draft"; // Draft, Submitted, Billed

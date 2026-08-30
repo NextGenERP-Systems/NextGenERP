@@ -10,6 +10,8 @@ interface Task {
   expectedStartDate: string;
   expectedEndDate: string;
   percentComplete: number;
+  kanbanState?: string;
+  status?: string;
 }
 
 export function GanttChart({ tasks }: { tasks: Task[] }) {
@@ -62,27 +64,38 @@ export function GanttChart({ tasks }: { tasks: Task[] }) {
             const leftPercent = (daysFromStart / totalDays) * 100;
             const widthPercent = (taskDuration / totalDays) * 100;
 
+            let barColor = "#3b82f6"; // Default blue
+            
+            if (task.kanbanState === 'COMPLETED') {
+              barColor = "#10b981"; // Emerald for completed
+            } else if (task.kanbanState === 'BACKLOG' || task.status === 'TODO') {
+              barColor = "#64748b"; // Slate for not started
+            } else if (task.kanbanState === 'IN_REVIEW') {
+              barColor = "#f59e0b"; // Amber for in review
+            }
+
             return (
               <div key={task.id} className="flex items-center group">
                 <div className="w-1/4 px-4 text-sm font-medium text-slate-800 truncate pr-4">
                   {task.name}
                 </div>
-                <div className="w-3/4 relative h-8 bg-slate-50 rounded-full">
+                <div className="w-3/4 relative h-8 bg-slate-50 rounded-full border border-slate-100">
                   <div 
-                    className="absolute h-6 top-1 rounded-full shadow-sm cursor-pointer hover:ring-2 hover:ring-blue-400 transition-all overflow-hidden flex items-center"
+                    className="absolute h-6 top-1 rounded-full shadow-sm cursor-pointer hover:opacity-90 transition-all flex items-center justify-between px-2 text-white overflow-hidden"
                     style={{ 
                       left: `${leftPercent}%`, 
-                      width: `${widthPercent}%`,
-                      backgroundColor: '#e2e8f0'
+                      width: `${Math.max(widthPercent, 2)}%`, // Ensure minimum width for visibility
+                      backgroundColor: barColor
                     }}
                   >
-                    <div 
-                      className="h-full bg-blue-500" 
-                      style={{ width: `${task.percentComplete || 0}%` }}
-                    />
-                    <span className="absolute left-2 text-[10px] font-bold text-white mix-blend-difference drop-shadow-md">
+                    <span className="text-[10px] font-bold whitespace-nowrap overflow-hidden">
                       {taskDuration}d
                     </span>
+                    {task.kanbanState === 'COMPLETED' && (
+                       <svg className="w-3 h-3 text-white flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                       </svg>
+                    )}
                   </div>
                 </div>
               </div>

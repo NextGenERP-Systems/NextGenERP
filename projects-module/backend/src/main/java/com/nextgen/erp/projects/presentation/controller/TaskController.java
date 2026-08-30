@@ -3,6 +3,7 @@ package com.nextgen.erp.projects.presentation.controller;
 import com.nextgen.erp.projects.application.service.TaskService;
 import com.nextgen.erp.projects.domain.model.Task;
 import com.nextgen.erp.projects.domain.model.TaskStatus;
+import com.nextgen.erp.projects.domain.model.KanbanState;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -49,8 +50,19 @@ public class TaskController {
     @PatchMapping("/tasks/{id}/status")
     @Operation(summary = "Quick update task status (e.g. for Kanban drag-and-drop)")
     public ResponseEntity<Task> updateTaskStatus(@PathVariable UUID id, @RequestBody Map<String, String> body) {
-        TaskStatus status = TaskStatus.valueOf(body.get("status"));
-        return ResponseEntity.ok(taskService.updateTaskStatus(id, status));
+        String stateStr = body.get("status");
+        KanbanState kanbanState = KanbanState.valueOf(stateStr);
+        TaskStatus status;
+        if (kanbanState == KanbanState.BACKLOG) {
+            status = TaskStatus.TODO;
+        } else if (kanbanState == KanbanState.IN_PROGRESS) {
+            status = TaskStatus.IN_PROGRESS;
+        } else if (kanbanState == KanbanState.IN_REVIEW) {
+            status = TaskStatus.IN_REVIEW;
+        } else {
+            status = TaskStatus.COMPLETED;
+        }
+        return ResponseEntity.ok(taskService.updateTaskKanbanState(id, kanbanState, status));
     }
 
     @DeleteMapping("/tasks/{id}")

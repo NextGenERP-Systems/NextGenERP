@@ -1,19 +1,25 @@
 "use client";
 
-import React, { useState } from "react";
-import { useRouter } from "next/navigation";
+import React, { useState, useEffect } from "react";
 import toast from "react-hot-toast";
-import { ArrowLeft, Save, Plus, Trash2 } from "lucide-react";
+import { X, Save, Plus, Trash2 } from "lucide-react";
 import { fetchProjects, createTimesheet } from "@/lib/api";
 
-export default function CreateTimesheetPage() {
-  const router = useRouter();
+interface LogTimeModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSuccess: () => void;
+}
+
+export function LogTimeModal({ isOpen, onClose, onSuccess }: LogTimeModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [projects, setProjects] = useState<any[]>([]);
 
-  React.useEffect(() => {
-    fetchProjects().then(setProjects).catch(console.error);
-  }, []);
+  useEffect(() => {
+    if (isOpen) {
+      fetchProjects().then(setProjects).catch(console.error);
+    }
+  }, [isOpen]);
 
   // Header State
   const [headerData, setHeaderData] = useState({
@@ -31,6 +37,8 @@ export default function CreateTimesheetPage() {
   const [timeLogs, setTimeLogs] = useState([
     { id: Date.now(), activityType: "", fromTime: "", hrs: "", project: "", isBillable: true }
   ]);
+
+  if (!isOpen) return null;
 
   const handleHeaderChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -66,7 +74,7 @@ export default function CreateTimesheetPage() {
     try {
       const payload = {
         userId: "00000000-0000-0000-0000-000000000000",
-        project: { id: headerData.project },
+        projectId: headerData.project,
         status: headerData.status,
         totalHours: timeLogs.reduce((acc, log) => acc + parseFloat(log.hrs || '0'), 0),
         timeLogs: timeLogs.map(log => {
@@ -76,15 +84,16 @@ export default function CreateTimesheetPage() {
             description: log.activityType,
             hours: parseFloat(log.hrs),
             isBillable: log.isBillable,
-            date: logDate.toISOString().split('T')[0], // format as YYYY-MM-DD
-            fromTime: logDate.toTimeString().split(' ')[0], // format as HH:MM:SS
+            date: logDate.toISOString().split('T')[0],
+            fromTime: logDate.toTimeString().split(' ')[0],
             toTime: new Date(logDate.getTime() + parseFloat(log.hrs) * 3600000).toTimeString().split(' ')[0]
           };
         })
       };
       await createTimesheet(payload);
       toast.success("Timesheet logged successfully!");
-      router.push("/projects");
+      onSuccess();
+      onClose();
     } catch (err) {
       console.error(err);
       toast.error("Failed to log timesheet");
@@ -94,32 +103,35 @@ export default function CreateTimesheetPage() {
   };
 
   return (
-    <div className="flex-1 bg-slate-50 min-h-screen overflow-y-auto p-8 font-sans">
-      <div className="max-w-6xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="bg-slate-50 rounded-2xl shadow-2xl max-w-5xl w-full max-h-[90vh] flex flex-col border border-slate-200 animate-in fade-in zoom-in-95 duration-150 overflow-hidden">
         
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <button type="button" onClick={() => router.push("/projects")} className="p-2 bg-white border border-slate-200 rounded-lg shadow-sm hover:bg-slate-100 transition-colors">
-              <ArrowLeft size={20} className="text-slate-600" />
-            </button>
-            <div>
-              <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">New Timesheet</h1>
-              <p className="text-slate-500">Log time spent on projects or tasks.</p>
-            </div>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-white">
+          <div>
+            <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">New Timesheet</h2>
+            <p className="text-slate-500 text-sm">Log time spent on projects or tasks.</p>
           </div>
-          <button 
-            onClick={handleSubmit}
-            disabled={isSubmitting}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg font-semibold shadow-sm transition-all disabled:opacity-70"
-          >
-            {isSubmitting ? <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white"></div> : <Save size={20} />}
-            Save Timesheet
-          </button>
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={handleSubmit}
+              disabled={isSubmitting}
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold shadow-sm transition-all disabled:opacity-70 text-sm"
+            >
+              {isSubmitting ? <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white"></div> : <Save size={16} />}
+              Save Timesheet
+            </button>
+            <button
+              onClick={onClose}
+              className="p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-all"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
         </div>
 
-        {/* Form Body */}
-        <div className="bg-white p-8 rounded-xl shadow-sm border border-slate-200 space-y-8">
+        {/* Scrollable Form Body */}
+        <div className="flex-1 overflow-y-auto p-6 bg-white space-y-8">
           
           {/* Top Section */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -257,7 +269,6 @@ export default function CreateTimesheetPage() {
               </table>
             </div>
           </div>
-
         </div>
       </div>
     </div>
