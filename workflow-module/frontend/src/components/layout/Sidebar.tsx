@@ -11,28 +11,34 @@ import {
   ChevronDown,
   FileCheck,
   CheckCircle2,
-  Users
+  Users,
+  Layers,
+  History
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/app/context/AuthContext";
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { currentUser, users, setCurrentUser, isLoading } = useAuth();
 
   const STANDARD_ITEMS = [
-    { title: "Home", href: "/workflows", icon: Home },
-    { title: "Dashboard", href: "/workflows?tab=overview", icon: LayoutDashboard },
-    { title: "Documents", href: "/workflows?tab=documents", icon: FileText },
-    { title: "Approvals", href: "/workflows?tab=approvals", icon: CheckCircle2 },
+    { title: "Dashboard", href: "/workflows/dashboard", icon: LayoutDashboard },
+    { title: "Documents", href: "/workflows/documents", icon: FileText },
+    { title: "Kanban Board", href: "/workflows/kanban", icon: Layers },
+    { title: "Approvals", href: "/workflows/approvals", icon: CheckCircle2 },
+    { title: "Audit Trail", href: "/workflows/audit", icon: History },
   ];
 
   const SETUP_ITEMS = [
-    { title: "Workflow States", href: "/workflows?tab=states" },
-    { title: "State Transitions", href: "/workflows?tab=transitions" },
-    { title: "Workflow Rules", href: "/workflows?tab=rules" },
-    { title: "Document Templates", href: "/workflows?tab=templates" },
-    { title: "Roles & Permissions", href: "/workflows?tab=roles" },
-    { title: "Settings", href: "/workflows?tab=settings" },
+    { title: "Workflows", href: "/workflows/definitions" },
+    { title: "Workflow States", href: "/workflows/setup/states" },
+    { title: "State Transitions", href: "/workflows/setup/transitions" },
+    { title: "Document Templates", href: "/workflows/templates" },
+    { title: "Roles & Permissions", href: "/workflows/setup/roles" },
+    { title: "Settings", href: "/workflows/setup/settings" },
   ];
+
 
   return (
     <aside className="w-56 bg-[#f8f8f8] border-r border-gray-200 flex flex-col justify-between h-screen sticky top-0 z-30 select-none text-[#1f272e]">
@@ -106,18 +112,43 @@ export function Sidebar() {
       </div>
 
       {/* User Profile Bar at bottom matching ERPNext */}
-      <div className="p-2.5 border-t border-gray-200 bg-[#f8f8f8] flex items-center gap-2.5">
-        <div className="w-7 h-7 rounded-full bg-gray-300 flex items-center justify-center text-xs font-semibold text-gray-700">
-          A
-        </div>
-        <div className="flex flex-col min-w-0">
-          <span className="text-[12px] font-medium text-gray-900 leading-tight truncate">
-            Administrator
-          </span>
-          <span className="text-[10px] text-gray-500 leading-tight truncate">
-            admin@example.com
-          </span>
-        </div>
+      <div className="p-2.5 border-t border-gray-200 bg-[#f8f8f8]">
+        {isLoading ? (
+          <div className="text-xs text-slate-500">Loading user...</div>
+        ) : currentUser ? (
+          <div className="relative group/user">
+            <div className="flex items-center gap-2.5 cursor-pointer rounded hover:bg-gray-200/50 p-1 -mx-1">
+              <div className="w-7 h-7 rounded-full bg-indigo-100 flex items-center justify-center text-xs font-semibold text-indigo-700">
+                {currentUser.username.charAt(0).toUpperCase()}
+              </div>
+              <div className="flex flex-col min-w-0 flex-1">
+                <span className="text-[12px] font-medium text-gray-900 leading-tight truncate">
+                  {currentUser.username}
+                </span>
+                <span className="text-[10px] text-gray-500 leading-tight truncate">
+                  {currentUser.roles.map(r => r.roleName).join(', ')}
+                </span>
+              </div>
+              <ChevronDown className="w-3 h-3 text-gray-400" />
+            </div>
+            
+            {/* Dropdown Menu (Hover to open) */}
+            <div className="absolute bottom-full mb-1 left-0 w-full bg-white border border-gray-200 rounded-md shadow-lg opacity-0 invisible group-hover/user:opacity-100 group-hover/user:visible transition-all">
+              <div className="p-1 text-[11px] font-medium text-gray-500 uppercase px-2 pt-2">Switch User (Mock)</div>
+              <div className="py-1">
+                {users.map(u => (
+                  <button 
+                    key={u.id}
+                    onClick={() => setCurrentUser(u)}
+                    className="w-full text-left px-3 py-1.5 text-[12px] text-gray-700 hover:bg-indigo-50 hover:text-indigo-700"
+                  >
+                    {u.username} <span className="text-[10px] text-gray-400">({u.roles[0]?.roleName})</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        ) : null}
       </div>
     </aside>
   );

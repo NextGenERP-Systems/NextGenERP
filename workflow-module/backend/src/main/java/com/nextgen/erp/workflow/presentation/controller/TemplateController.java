@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.UUID;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/v1/templates")
 @RequiredArgsConstructor
@@ -30,16 +32,20 @@ public class TemplateController {
     }
 
     @PostMapping
-    public ResponseEntity<DocumentTemplate> createTemplate(@RequestBody DocumentTemplate template) {
-        return ResponseEntity.ok(templateService.createTemplate(template));
+    public ResponseEntity<?> createTemplate(@RequestBody DocumentTemplate template) {
+        try {
+            return ResponseEntity.ok(templateService.createTemplate(template));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<DocumentTemplate> updateTemplate(@PathVariable UUID id, @RequestBody DocumentTemplate template) {
+    public ResponseEntity<?> updateTemplate(@PathVariable UUID id, @RequestBody DocumentTemplate template) {
         try {
             return ResponseEntity.ok(templateService.updateTemplate(id, template));
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
 

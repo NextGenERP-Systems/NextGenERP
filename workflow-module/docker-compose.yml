@@ -1,23 +1,5 @@
 version: '3.8'
 services:
-  db:
-    image: postgres:15-alpine
-    container_name: workflow_db
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: nextgen_erp
-    ports:
-      - "5434:5432"
-    volumes:
-      - ./database/init-schema.sql:/docker-entrypoint-initdb.d/01-init-schema.sql
-      - ./database/seed-data.sql:/docker-entrypoint-initdb.d/02-seed-data.sql
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d nextgen_erp"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
   backend:
     build:
       context: ./backend
@@ -26,17 +8,13 @@ services:
     ports:
       - "8082:8081"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/nextgen_erp
+      SPRING_DATASOURCE_URL: jdbc:postgresql://host.docker.internal:5432/workflow_db
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres
-      SPRING_JPA_HIBERNATE_DDL_AUTO: validate
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
       GOOGLE_CLOUD_PROJECT: nextgen-erp-7753216
-      GOOGLE_APPLICATION_CREDENTIALS: /root/.config/gcloud/application_default_credentials.json
-    volumes:
-      - ${APPDATA}/gcloud/application_default_credentials.json:/root/.config/gcloud/application_default_credentials.json:ro
-    depends_on:
-      db:
-        condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
   frontend:
     build:

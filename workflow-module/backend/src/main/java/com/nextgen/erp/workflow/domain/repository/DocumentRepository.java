@@ -24,4 +24,12 @@ public interface DocumentRepository extends JpaRepository<Document, UUID> {
     Page<Document> findAll(Pageable pageable);
     
     Page<Document> findByCurrentStateIdIn(List<UUID> stateIds, Pageable pageable);
+
+    @Query("SELECT DISTINCT d FROM Document d JOIN WorkflowTransition t ON d.currentStateId = t.fromStateId WHERE t.allowedRole IN :roles AND (d.assignedUsername IS NULL OR d.assignedUsername = :username)")
+    Page<Document> findPendingDocumentsForRolesAndUser(@Param("roles") List<String> roles, @Param("username") String username, Pageable pageable);
+
+    @Query("SELECT d FROM Document d WHERE " +
+           "((:stateId IS NOT NULL AND d.currentStateId = :stateId) OR LOWER(d.status) = LOWER(:stateName)) " +
+           "AND (:search IS NULL OR :search = '' OR LOWER(d.title) LIKE LOWER(CONCAT('%', :search, '%')) OR LOWER(d.documentNumber) LIKE LOWER(CONCAT('%', :search, '%')))")
+    Page<Document> findByStateOrStatusAndSearch(@Param("stateId") UUID stateId, @Param("stateName") String stateName, @Param("search") String search, Pageable pageable);
 }

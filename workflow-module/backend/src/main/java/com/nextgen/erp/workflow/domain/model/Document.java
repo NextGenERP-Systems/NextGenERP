@@ -62,6 +62,15 @@ public class Document {
     @Column(name = "owner_username", nullable = false)
     private String ownerUsername;
 
+    @Column(name = "assigned_username")
+    private String assignedUsername;
+
+    @Column(name = "pending_approvers")
+    private String pendingApprovers;
+
+    @Column(name = "state_updated_at")
+    private java.time.LocalDateTime stateUpdatedAt;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private OffsetDateTime createdAt;

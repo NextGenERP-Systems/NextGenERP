@@ -24,6 +24,13 @@ public class WorkflowController {
         return ResponseEntity.ok(workflowService.getAllWorkflows());
     }
 
+    @GetMapping("/{workflowId}")
+    public ResponseEntity<Workflow> getWorkflowById(@PathVariable UUID workflowId) {
+        return workflowService.getWorkflowById(workflowId)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     @PostMapping
     public ResponseEntity<Workflow> createWorkflow(@RequestBody Workflow workflow) {
         return ResponseEntity.ok(workflowService.createWorkflow(workflow));
@@ -51,5 +58,38 @@ public class WorkflowController {
             @PathVariable UUID workflowId,
             @RequestBody WorkflowTransition transition) {
         return ResponseEntity.ok(workflowService.createTransition(workflowId, transition));
+    }
+
+    @PatchMapping("/{workflowId}/status")
+    public ResponseEntity<Workflow> updateWorkflowStatus(
+            @PathVariable UUID workflowId,
+            @RequestParam boolean isActive) {
+        return ResponseEntity.ok(workflowService.updateWorkflowStatus(workflowId, isActive));
+    }
+
+    @DeleteMapping("/states/{stateId}")
+    public ResponseEntity<Void> deleteState(@PathVariable UUID stateId) {
+        workflowService.deleteState(stateId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/states/{stateId}")
+    public ResponseEntity<WorkflowState> updateState(
+            @PathVariable UUID stateId,
+            @RequestBody WorkflowState state) {
+        return ResponseEntity.ok(workflowService.updateState(stateId, state));
+    }
+
+    @DeleteMapping("/transitions/{transitionId}")
+    public ResponseEntity<Void> deleteTransition(@PathVariable UUID transitionId) {
+        workflowService.deleteTransition(transitionId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/transitions/{transitionId}")
+    public ResponseEntity<WorkflowTransition> updateTransition(
+            @PathVariable UUID transitionId,
+            @RequestBody WorkflowTransition transition) {
+        return ResponseEntity.ok(workflowService.updateTransition(transitionId, transition));
     }
 }

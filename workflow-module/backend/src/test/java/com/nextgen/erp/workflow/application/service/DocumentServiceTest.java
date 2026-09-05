@@ -1,7 +1,10 @@
 package com.nextgen.erp.workflow.application.service;
 
 import com.nextgen.erp.workflow.domain.model.Document;
+import com.nextgen.erp.workflow.api.dto.DocumentResponseDTO;
 import com.nextgen.erp.workflow.domain.repository.DocumentRepository;
+import com.nextgen.erp.workflow.domain.repository.WorkflowRepository;
+import com.nextgen.erp.workflow.domain.repository.DocumentTemplateRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -19,6 +22,12 @@ class DocumentServiceTest {
 
     @Mock
     private DocumentRepository documentRepository;
+    
+    @Mock
+    private WorkflowRepository workflowRepository;
+    
+    @Mock
+    private DocumentTemplateRepository templateRepository;
 
     @InjectMocks
     private DocumentService documentService;
@@ -40,7 +49,7 @@ class DocumentServiceTest {
             return savedDoc;
         });
 
-        Document saved = documentService.createDocument(doc);
+        DocumentResponseDTO saved = documentService.createDocument(doc);
 
         assertNotNull(saved.getId());
         assertTrue(saved.getDocumentNumber().startsWith("DOC-"));
@@ -55,7 +64,7 @@ class DocumentServiceTest {
         
         when(documentRepository.findById(id)).thenReturn(Optional.of(doc));
 
-        Optional<Document> result = documentService.getDocumentById(id);
+        Optional<DocumentResponseDTO> result = documentService.getDocumentById(id);
         
         assertTrue(result.isPresent());
         assertEquals(id, result.get().getId());

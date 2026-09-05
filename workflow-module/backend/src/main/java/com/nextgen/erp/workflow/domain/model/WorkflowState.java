@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.GenericGenerator;
 
+import org.hibernate.annotations.JdbcTypeCode;
 import java.util.UUID;
 
 @Entity
@@ -41,18 +42,29 @@ public class WorkflowState {
     @Column(name = "is_final_state")
     private Boolean isFinalState;
 
-    @Column(name = "update_field")
-    private String updateField;
-
-    @Column(name = "update_value")
-    private String updateValue;
+    @JdbcTypeCode(org.hibernate.type.SqlTypes.JSON)
+    @Column(name = "update_fields", columnDefinition = "jsonb")
+    private java.util.Map<String, Object> updateFields;
 
     @Column(name = "allow_edit_role")
     private String allowEditRole;
 
-    @Column(name = "send_email")
-    private Boolean sendEmail;
+    @Column(name = "send_email", nullable = false)
+    private Boolean sendEmail = false;
 
     @Column(name = "is_optional_state")
     private Boolean isOptionalState;
+
+    // SLA & Escalation
+    @Column(name = "sla_days")
+    private Integer slaDays;
+
+    @Column(name = "escalation_role")
+    private String escalationRole;
+
+    @Column(name = "requires_all_roles")
+    private Boolean requiresAllRoles = false;
+
+    @Column(name = "required_roles")
+    private String requiredRoles;
 }

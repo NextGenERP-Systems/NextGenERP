@@ -25,16 +25,19 @@ public class DocumentTemplate {
     @Column(name = "template_name", nullable = false, unique = true)
     private String name;
 
-    @Column(name = "category", nullable = false)
+    @Column(name = "document_type", nullable = false)
     private String documentType;
 
-    @Column(name = "created_by", nullable = false)
+    @Column(name = "category")
+    private String category;
+
+    @Column(name = "created_by")
     private String createdBy;
 
     @Column(name = "is_active")
     private Boolean isActive;
 
-    @Column(name = "content_html", columnDefinition = "TEXT", nullable = false)
+    @Column(name = "html_content", columnDefinition = "TEXT", nullable = false)
     private String htmlContent;
 
     @CreationTimestamp

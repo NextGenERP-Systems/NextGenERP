@@ -12,8 +12,12 @@ export interface Document {
   title: string;
   documentType: string;
   templateId?: string;
+  templateName?: string;
   workflowId?: string;
+  workflowName?: string;
   currentStateId?: string;
+  currentStateName?: string;
+  currentStateColor?: string;
   contentHtml?: string;
   gcsAttachmentUrl?: string;
   ownerUsername: string;
@@ -27,6 +31,7 @@ export interface DocumentTemplate {
   id: string;
   name: string;
   documentType: string;
+  category: string;
   htmlContent: string;
   createdAt: string;
 }
@@ -36,6 +41,7 @@ export interface Workflow {
   workflowName: string;
   documentType: string;
   isActive: boolean;
+  createdAt?: string;
 }
 
 export interface WorkflowState {
@@ -45,11 +51,14 @@ export interface WorkflowState {
   colorCode: string;
   isInitialState: boolean;
   isFinalState: boolean;
-  updateField?: string;
-  updateValue?: string;
+  updateFields?: Record<string, any>;
   allowEditRole?: string;
   sendEmail?: boolean;
   isOptionalState?: boolean;
+  slaDays?: number;
+  escalationRole?: string;
+  requiresAllRoles?: boolean;
+  requiredRoles?: string;
 }
 
 export interface WorkflowTransition {
@@ -75,378 +84,360 @@ export interface WorkflowHistory {
   createdAt: string;
 }
 
-export const API_URL = "http://localhost:8081/api/v1";
+const isServer = typeof window === 'undefined';
+export const API_URL = isServer
+  ? process.env.INTERNAL_API_URL || "http://workflow_backend:8081/api/v1"
+  : process.env.NEXT_PUBLIC_API_URL || "http://localhost:8082/api/v1";
 
-export interface PageData<T> {
-  content: T[];
-  totalPages: number;
-  totalElements: number;
-  size: number;
-  number: number;
-}
+async function apiClient<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  const url = endpoint.startsWith("http") ? endpoint : `${API_URL}${endpoint}`;
+  
+  // Setup timeout
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), 8000); // 8 second timeout
 
-export interface DocumentData {
-  id: string;
-  documentNumber: string;
-  title: string;
-  documentType: string;
-  templateId?: string;
-  workflowId?: string;
-  currentStateId?: string;
-  contentHtml?: string;
-  gcsAttachmentUrl?: string;
-  ownerUsername: string;
-  createdAt: string;
-  updatedAt: string;
-  status?: string;
-  amount?: number;
-}
+  const config: RequestInit = {
+    ...options,
+    signal: controller.signal,
+    headers: {
+      ...(options.body instanceof FormData ? {} : { "Content-Type": "application/json" }),
+      ...options.headers,
+    },
+  };
 
-export interface DocumentTemplate {
-  id: string;
-  name: string;
-  documentType: string;
-  htmlContent: string;
-  createdAt: string;
-}
-
-export interface Workflow {
-  id: string;
-  workflowName: string;
-  documentType: string;
-  isActive: boolean;
-}
-
-export interface WorkflowState {
-  id: string;
-  workflowId: string;
-  stateName: string;
-  colorCode: string;
-  isInitialState: boolean;
-  isFinalState: boolean;
-  updateField?: string;
-  updateValue?: string;
-  allowEditRole?: string;
-  sendEmail?: boolean;
-  isOptionalState?: boolean;
-}
-
-export interface WorkflowTransition {
-  id: string;
-  workflowId: string;
-  fromStateId: string;
-  toStateId: string;
-  actionName: string;
-  allowedRole: string;
-  conditionExpression?: string;
-  allowSelfApproval?: boolean;
-  sendEmailToCreator?: boolean;
-}
-
-export interface WorkflowHistoryData {
-  id: string;
-  documentId: string;
-  actionName: string;
-  fromStateId: string;
-  toStateId: string;
-  performedBy: string;
-  comments: string;
-  createdAt: string;
-}
-
-// ------------------------------------------------------------------------------
-// PERMANENT STORAGE HELPERS
-// ------------------------------------------------------------------------------
-
-function getStored<T>(key: string, fallback: T[]): T[] {
-  if (typeof window === "undefined") return fallback;
   try {
-    const item = localStorage.getItem(`NEXTGEN_WORKFLOW_${key}`);
-    return item ? JSON.parse(item) : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-function setStored<T>(key: string, data: T[]): void {
-  if (typeof window === "undefined") return;
-  try {
-    localStorage.setItem(`NEXTGEN_WORKFLOW_${key}`, JSON.stringify(data));
-  } catch (e) {
-    console.error("Storage write error", e);
+    const response = await fetch(url, config);
+    clearTimeout(id);
+    
+    if (!response.ok) {
+      let errorMessage = `HTTP Error ${response.status}: ${response.statusText}`;
+      try {
+        const errorData = await response.json();
+        if (errorData.error) errorMessage = errorData.error;
+        else if (errorData.message) errorMessage = errorData.message;
+      } catch (e) {
+        // Not JSON
+      }
+      throw new Error(errorMessage);
+    }
+    
+    // For file downloads or empty responses
+    if (response.status === 204) return {} as T;
+    
+    return await response.json();
+  } catch (error: any) {
+    clearTimeout(id);
+    if (error.name === 'AbortError') {
+      throw new Error(`Request to ${url} timed out after 8 seconds. Please check if the backend is running.`);
+    }
+    if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+      throw new Error(`Network Error: Cannot connect to the server at ${API_URL}. Is the backend running?`);
+    }
+    throw error;
   }
 }
 
 // =======================
 // DOCUMENTS
 // =======================
-export async function getDocuments(page = 0, size = 10, search = ""): Promise<Page<Document>> {
-  try {
-    let url = `${API_URL}/documents?page=${page}&size=${size}`;
-    if (search) url += `&search=${encodeURIComponent(search)}`;
-    const res = await fetch(url, { cache: "no-store" });
-    if (res.ok) {
-      const data = await res.json();
-      setStored("DOCUMENTS", data.content);
-      return data;
-    }
-  } catch (error) {}
-  
-  const docs = getStored<Document>("DOCUMENTS", []);
-  return { content: docs, totalPages: 1, totalElements: docs.length, size, number: page };
+export function getDocuments(page = 0, size = 10, search = ""): Promise<Page<Document>> {
+  let url = `/documents?page=${page}&size=${size}`;
+  if (search) url += `&search=${encodeURIComponent(search)}`;
+  return apiClient<Page<Document>>(url, { cache: "no-store" });
 }
 
-export async function getDocumentApprovals(role: string, page = 0, size = 10): Promise<Page<Document>> {
-  try {
-    const res = await fetch(`${API_URL}/documents/approvals?role=${role}&page=${page}&size=${size}`, { cache: "no-store" });
-    if (res.ok) return await res.json();
-  } catch (error) {}
-  
-  const docs = getStored<Document>("DOCUMENTS", []);
-  // Just return some mock docs for approvals if offline
-  return { content: docs, totalPages: 1, totalElements: docs.length, size, number: page };
+export function getKanbanDocuments(stateName: string, stateId?: string, page = 0, size = 10, search = ""): Promise<Page<Document>> {
+  let url = `/documents/kanban?stateName=${encodeURIComponent(stateName)}&page=${page}&size=${size}`;
+  if (stateId) url += `&stateId=${encodeURIComponent(stateId)}`;
+  if (search) url += `&search=${encodeURIComponent(search)}`;
+  return apiClient<Page<Document>>(url, { cache: "no-store" });
 }
 
-export async function getDocumentHistory(id: string): Promise<WorkflowHistory[]> {
-  try {
-    const res = await fetch(`${API_URL}/documents/${id}/history`, { cache: "no-store" });
-    if (res.ok) {
-      const data = await res.json();
-      setStored(`HISTORY_${id}`, data);
-      return data;
-    }
-  } catch (error) {}
-  return getStored<WorkflowHistory>(`HISTORY_${id}`, []);
+export function getDocumentById(id: string): Promise<Document> {
+  return apiClient<Document>(`/documents/${id}`, { cache: "no-store" });
 }
 
-export async function createDocument(doc: Partial<Document>): Promise<Document> {
-  try {
-    const res = await fetch(`${API_URL}/documents`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(doc),
-    });
-    if (res.ok) {
-      const data = await res.json();
-      const docs = getStored<Document>("DOCUMENTS", []);
-      setStored("DOCUMENTS", [data, ...docs]);
-      return data;
-    }
-  } catch (error) {}
-  
-  const newDoc: Document = {
-    id: `doc-${Date.now()}`,
-    documentNumber: `DOC-${Math.floor(1000 + Math.random() * 9000)}`,
-    title: doc.title || "Untitled Document",
-    documentType: doc.documentType || "Contract",
-    ownerUsername: doc.ownerUsername || "offline_user",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    status: "Draft",
-    amount: doc.amount,
-  };
-  const docs = getStored<Document>("DOCUMENTS", []);
-  setStored("DOCUMENTS", [newDoc, ...docs]);
-  return newDoc;
+export function getDocumentApprovals(roles: string[], username: string, page = 0, size = 10): Promise<Page<Document>> {
+  const rolesQuery = roles.map(r => `roles=${encodeURIComponent(r)}`).join('&');
+  return apiClient<Page<Document>>(`/documents/approvals?${rolesQuery}&username=${encodeURIComponent(username)}&page=${page}&size=${size}`, { cache: "no-store" });
 }
 
-export async function transitionDocument(id: string, action: string, role: string, username: string, comments?: string): Promise<Document> {
-  try {
-    const res = await fetch(`${API_URL}/documents/${id}/transition?action=${action}&role=${role}&username=${username}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ comments }),
-    });
-    if (res.ok) {
-      const data = await res.json();
-      const docs = getStored<Document>("DOCUMENTS", []);
-      setStored("DOCUMENTS", docs.map(d => d.id === id ? data : d));
-      return data;
-    }
-  } catch (error) {}
-  
-  const docs = getStored<Document>("DOCUMENTS", []);
-  const doc = docs.find(d => d.id === id);
-  if (doc) {
-    doc.status = action === "Approve" ? "Approved" : action === "Reject" ? "Rejected" : "Pending";
-    setStored("DOCUMENTS", docs);
-    return doc;
-  }
-  throw new Error("Document not found offline");
+export function getDocumentHistory(id: string): Promise<WorkflowHistory[]> {
+  return apiClient<WorkflowHistory[]>(`/documents/${id}/history`, { cache: "no-store" });
 }
 
-export async function uploadAttachment(id: string, file: File): Promise<string> {
-  try {
-    const formData = new FormData();
-    formData.append("file", file);
-    
-    const res = await fetch(`${API_URL}/documents/${id}/upload`, {
-      method: "POST",
-      body: formData,
-    });
-    if (res.ok) {
-      const data = await res.json();
-      return data.url;
-    }
-  } catch (error) {}
-  return `offline_mock_url_${Date.now()}.pdf`;
+export function getAuditLogs(page = 0, size = 15, search = ""): Promise<Page<WorkflowHistory>> {
+  let url = `/documents/audit-trail?page=${page}&size=${size}`;
+  if (search) url += `&search=${encodeURIComponent(search)}`;
+  return apiClient<Page<WorkflowHistory>>(url, { cache: "no-store" });
+}
+
+export function getUserDocuments(username: string): Promise<Document[]> {
+  return apiClient<Document[]>(`/documents/user/${username}`, { cache: "no-store" });
+}
+
+export function createDocument(doc: Partial<Document>): Promise<Document> {
+  return apiClient<Document>(`/documents`, {
+    method: "POST",
+    body: JSON.stringify(doc),
+  });
+}
+
+export function updateDocument(id: string, doc: Partial<Document>, role: string): Promise<Document> {
+  return apiClient<Document>(`/documents/${id}?role=${encodeURIComponent(role)}`, {
+    method: "PUT",
+    body: JSON.stringify(doc),
+  });
+}
+
+export function transitionDocument(id: string, action: string, role: string, username: string, comments?: string): Promise<Document> {
+  return apiClient<Document>(`/documents/${id}/transition?action=${action}&role=${role}&username=${username}`, {
+    method: "POST",
+    body: JSON.stringify({ comments }),
+  });
+}
+
+export function uploadAttachment(documentId: string, file: File): Promise<{url: string}> {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  return apiClient<{url: string}>(`/documents/${documentId}/upload`, {
+    method: "POST",
+    body: formData,
+  });
+}
+
+export function delegateDocument(documentId: string, targetUsername: string, delegatedBy: string): Promise<any> {
+  return apiClient<any>(`/documents/${documentId}/delegate?targetUsername=${encodeURIComponent(targetUsername)}&delegatedBy=${encodeURIComponent(delegatedBy)}`, {
+    method: "POST"
+  });
+}
+
+export function bulkAction(documentIds: string[], action: string, role: string, username: string, comments: string): Promise<any> {
+  return apiClient<any>(`/documents/bulk-action`, {
+    method: "POST",
+    body: JSON.stringify({
+      documentIds,
+      action,
+      role,
+      username,
+      comments
+    })
+  });
+}
+
+export function deleteDocument(id: string): Promise<void> {
+  return apiClient<void>(`/documents/${id}`, {
+    method: "DELETE",
+  });
 }
 
 // =======================
 // TEMPLATES
 // =======================
-export async function getTemplates(): Promise<DocumentTemplate[]> {
-  try {
-    const res = await fetch(`${API_URL}/templates`, { cache: "no-store" });
-    if (res.ok) {
-      const data = await res.json();
-      setStored("TEMPLATES", data);
-      return data;
-    }
-  } catch (error) {}
-  return getStored<DocumentTemplate>("TEMPLATES", []);
+export function getTemplates(): Promise<DocumentTemplate[]> {
+  return apiClient<DocumentTemplate[]>(`/templates`, { cache: "no-store" });
 }
 
-export async function createTemplate(template: Partial<DocumentTemplate>): Promise<DocumentTemplate> {
-  try {
-    const res = await fetch(`${API_URL}/templates`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(template),
-    });
-    if (res.ok) {
-      const data = await res.json();
-      const tmpls = getStored<DocumentTemplate>("TEMPLATES", []);
-      setStored("TEMPLATES", [data, ...tmpls]);
-      return data;
-    }
-  } catch (error) {}
-  const newTmpl: DocumentTemplate = {
-    id: `tmpl-${Date.now()}`,
-    name: template.name || "Offline Template",
-    documentType: template.documentType || "Contract",
-    htmlContent: template.htmlContent || "",
-    createdAt: new Date().toISOString(),
-  };
-  const tmpls = getStored<DocumentTemplate>("TEMPLATES", []);
-  setStored("TEMPLATES", [newTmpl, ...tmpls]);
-  return newTmpl;
+export function createTemplate(template: Partial<DocumentTemplate>): Promise<DocumentTemplate> {
+  return apiClient<DocumentTemplate>(`/templates`, {
+    method: "POST",
+    body: JSON.stringify(template),
+  });
+}
+
+export function updateTemplate(id: string, template: Partial<DocumentTemplate>): Promise<DocumentTemplate> {
+  return apiClient<DocumentTemplate>(`/templates/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(template),
+  });
 }
 
 // =======================
 // WORKFLOW SETUP
 // =======================
-export async function getWorkflows(): Promise<Workflow[]> {
-  try {
-    const res = await fetch(`${API_URL}/workflows`, { cache: "no-store" });
-    if (res.ok) {
-      const data = await res.json();
-      setStored("WORKFLOWS", data);
-      return data;
-    }
-  } catch (error) {}
-  return getStored<Workflow>("WORKFLOWS", []);
+export function getWorkflows(): Promise<Workflow[]> {
+  return apiClient<Workflow[]>(`/workflows`, { cache: "no-store" });
 }
 
-export async function createWorkflow(workflow: Partial<Workflow>): Promise<Workflow> {
-  try {
-    const res = await fetch(`${API_URL}/workflows`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(workflow),
-    });
-    if (res.ok) {
-      const data = await res.json();
-      const wfs = getStored<Workflow>("WORKFLOWS", []);
-      setStored("WORKFLOWS", [data, ...wfs]);
-      return data;
-    }
-  } catch (error) {}
-  const newWf: Workflow = {
-    id: `wf-${Date.now()}`,
-    workflowName: workflow.workflowName || "Offline Workflow",
-    documentType: workflow.documentType || "Contract",
-    isActive: true,
-  };
-  const wfs = getStored<Workflow>("WORKFLOWS", []);
-  setStored("WORKFLOWS", [newWf, ...wfs]);
-  return newWf;
+export function getWorkflowById(id: string): Promise<Workflow> {
+  return apiClient<Workflow>(`/workflows/${id}`, { cache: "no-store" });
 }
 
-export async function getStates(workflowId: string): Promise<WorkflowState[]> {
-  try {
-    const res = await fetch(`${API_URL}/workflows/${workflowId}/states`, { cache: "no-store" });
-    if (res.ok) {
-      const data = await res.json();
-      setStored(`STATES_${workflowId}`, data);
-      return data;
-    }
-  } catch (error) {}
-  return getStored<WorkflowState>(`STATES_${workflowId}`, []);
+export function createWorkflow(workflow: Partial<Workflow>): Promise<Workflow> {
+  return apiClient<Workflow>(`/workflows`, {
+    method: "POST",
+    body: JSON.stringify(workflow),
+  });
 }
 
-export async function createState(workflowId: string, state: Partial<WorkflowState>): Promise<WorkflowState> {
-  try {
-    const res = await fetch(`${API_URL}/workflows/${workflowId}/states`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(state),
-    });
-    if (res.ok) {
-      const data = await res.json();
-      const states = getStored<WorkflowState>(`STATES_${workflowId}`, []);
-      setStored(`STATES_${workflowId}`, [data, ...states]);
-      return data;
-    }
-  } catch (error) {}
-  const newState: WorkflowState = {
-    id: `state-${Date.now()}`,
-    workflowId,
-    stateName: state.stateName || "Offline State",
-    colorCode: state.colorCode || "#000",
-    isInitialState: state.isInitialState || false,
-    isFinalState: state.isFinalState || false,
-  };
-  const states = getStored<WorkflowState>(`STATES_${workflowId}`, []);
-  setStored(`STATES_${workflowId}`, [newState, ...states]);
-  return newState;
+export function updateWorkflowStatus(id: string, isActive: boolean): Promise<Workflow> {
+  return apiClient<Workflow>(`/workflows/${id}/status?isActive=${isActive}`, {
+    method: "PATCH",
+  });
 }
 
-export async function getTransitions(workflowId: string): Promise<WorkflowTransition[]> {
-  try {
-    const res = await fetch(`${API_URL}/workflows/${workflowId}/transitions`, { cache: "no-store" });
-    if (res.ok) {
-      const data = await res.json();
-      setStored(`TRANS_${workflowId}`, data);
-      return data;
-    }
-  } catch (error) {}
-  return getStored<WorkflowTransition>(`TRANS_${workflowId}`, []);
+export function getStates(workflowId: string): Promise<WorkflowState[]> {
+  return apiClient<WorkflowState[]>(`/workflows/${workflowId}/states`, { cache: "no-store" });
 }
 
-export async function createTransition(workflowId: string, transition: Partial<WorkflowTransition>): Promise<WorkflowTransition> {
-  try {
-    const res = await fetch(`${API_URL}/workflows/${workflowId}/transitions`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(transition),
-    });
-    if (res.ok) {
-      const data = await res.json();
-      const trans = getStored<WorkflowTransition>(`TRANS_${workflowId}`, []);
-      setStored(`TRANS_${workflowId}`, [data, ...trans]);
-      return data;
-    }
-  } catch (error) {}
-  const newTrans: WorkflowTransition = {
-    id: `trans-${Date.now()}`,
-    workflowId,
-    fromStateId: transition.fromStateId || "",
-    toStateId: transition.toStateId || "",
-    actionName: transition.actionName || "Action",
-    allowedRole: transition.allowedRole || "ADMIN",
-  };
-  const trans = getStored<WorkflowTransition>(`TRANS_${workflowId}`, []);
-  setStored(`TRANS_${workflowId}`, [newTrans, ...trans]);
-  return newTrans;
+export function createState(workflowId: string, state: Partial<WorkflowState>): Promise<WorkflowState> {
+  return apiClient<WorkflowState>(`/workflows/${workflowId}/states`, {
+    method: "POST",
+    body: JSON.stringify(state),
+  });
 }
+
+export function getTransitions(workflowId: string): Promise<WorkflowTransition[]> {
+  return apiClient<WorkflowTransition[]>(`/workflows/${workflowId}/transitions`, { cache: "no-store" });
+}
+
+export function createTransition(workflowId: string, transition: Partial<WorkflowTransition>): Promise<WorkflowTransition> {
+  return apiClient<WorkflowTransition>(`/workflows/${workflowId}/transitions`, {
+    method: "POST",
+    body: JSON.stringify(transition),
+  });
+}
+
+export function deleteState(stateId: string): Promise<void> {
+  return apiClient<void>(`/workflows/states/${stateId}`, {
+    method: "DELETE",
+  });
+}
+
+export function deleteTransition(transitionId: string): Promise<void> {
+  return apiClient<void>(`/workflows/transitions/${transitionId}`, {
+    method: "DELETE",
+  });
+}
+
+// =======================
+// MASTER STATES
+// =======================
+export interface MasterState {
+  id: string;
+  stateName: string;
+  colorCode: string;
+  description?: string;
+}
+
+export function getMasterStates(): Promise<MasterState[]> {
+  return apiClient<MasterState[]>(`/master-states`, { cache: "no-store" });
+}
+
+export function createMasterState(state: Partial<MasterState>): Promise<MasterState> {
+  return apiClient<MasterState>(`/master-states`, {
+    method: "POST",
+    body: JSON.stringify(state),
+  });
+}
+
+// Notifications API
+export interface AppNotification {
+  id: string;
+  username: string;
+  title: string;
+  message: string;
+  isRead: boolean;
+  createdAt: string;
+}
+
+export function getUserNotifications(username: string): Promise<AppNotification[]> {
+  return apiClient<AppNotification[]>(`/notifications/${username}`, { cache: "no-store" });
+}
+
+export function getUnreadNotifications(username: string): Promise<AppNotification[]> {
+  return apiClient<AppNotification[]>(`/notifications/${username}/unread`, { cache: "no-store" });
+}
+
+export function markNotificationAsRead(id: string): Promise<AppNotification> {
+  return apiClient<AppNotification>(`/notifications/${id}/read`, {
+    method: "PUT"
+  });
+}
+
+export function markAllNotificationsAsRead(username: string): Promise<void> {
+  return apiClient<void>(`/notifications/${username}/read-all`, {
+    method: "PUT"
+  });
+}
+
+// Metrics API
+export function getDocumentsByStatus(): Promise<Record<string, number>> {
+  return apiClient<Record<string, number>>(`/metrics/documents-by-status`, { cache: "no-store" });
+}
+
+export function getPendingByWorkflow(): Promise<Record<string, number>> {
+  return apiClient<Record<string, number>>(`/metrics/pending-by-workflow`, { cache: "no-store" });
+}
+
+export function getSystemSummary(): Promise<Record<string, any>> {
+  return apiClient<Record<string, any>>(`/metrics/summary`, { cache: "no-store" });
+}
+
+export interface TimeInStateMetric {
+  stateId: string;
+  stateName: string;
+  colorCode: string;
+  avgMinutes: number;
+  sampleCount: number;
+}
+
+export function getTimeInStateMetrics(): Promise<TimeInStateMetric[]> {
+  return apiClient<TimeInStateMetric[]>(`/metrics/time-in-state`, { cache: "no-store" });
+}
+
+// Settings API
+export interface WorkflowSettingsData {
+  id?: number;
+  enableEmailNotifications: boolean;
+  defaultAutoRejectionTimeoutDays: number;
+  strictMode: boolean;
+}
+
+export function getWorkflowSettings(): Promise<WorkflowSettingsData> {
+  return apiClient<WorkflowSettingsData>(`/settings`, { cache: "no-store" });
+}
+
+export function updateWorkflowSettings(settings: WorkflowSettingsData): Promise<WorkflowSettingsData> {
+  return apiClient<WorkflowSettingsData>(`/settings`, {
+    method: "POST",
+    body: JSON.stringify(settings),
+  });
+}
+
+// Users & Roles API
+export interface AppRoleData {
+  id: string;
+  roleName: string;
+}
+
+export interface AppUserData {
+  id: string;
+  username: string;
+  email?: string;
+  roles: AppRoleData[];
+}
+
+export function getAllUsers(): Promise<AppUserData[]> {
+  return apiClient<AppUserData[]>(`/users`, { cache: "no-store" });
+}
+
+export function getAllRoles(): Promise<AppRoleData[]> {
+  return apiClient<AppRoleData[]>(`/users/roles`, { cache: "no-store" });
+}
+
+export function createRole(roleName: string): Promise<AppRoleData> {
+  return apiClient<AppRoleData>(`/users/roles`, {
+    method: "POST",
+    body: JSON.stringify({ roleName }),
+  });
+}
+
+export function assignRoleToUser(userId: string, roleName: string): Promise<AppUserData> {
+  return apiClient<AppUserData>(`/users/${userId}/assign-role?roleName=${encodeURIComponent(roleName)}`, {
+    method: "POST",
+  });
+}
+
+

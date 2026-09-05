@@ -10,13 +10,12 @@ import org.hibernate.annotations.GenericGenerator;
 import java.util.UUID;
 
 @Entity
-@Table(name = "workflow_actions")
+@Table(name = "app_roles")
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class WorkflowAction {
-
+public class AppRole {
     @Id
     @GeneratedValue(generator = "UUID")
     @GenericGenerator(
@@ -26,9 +25,6 @@ public class WorkflowAction {
     @Column(updatable = false, nullable = false)
     private UUID id;
 
-    @Column(name = "action_name", nullable = false, unique = true)
-    private String actionName;
-
-    @Column(name = "description")
-    private String description;
+    @Column(name = "role_name", nullable = false, unique = true)
+    private String roleName;
 }
