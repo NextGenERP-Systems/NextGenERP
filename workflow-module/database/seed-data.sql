@@ -35,6 +35,6 @@ INSERT INTO workflow_transitions (id, workflow_id, from_state_id, to_state_id, a
 ('44444444-4444-4444-4444-444444444403', '11111111-1111-1111-1111-111111111111', '33333333-3333-3333-3333-333333333302', '33333333-3333-3333-3333-333333333304', 'Reject', 'ADMIN', NULL, false, true);
 
 -- Seed Templates
-INSERT INTO document_templates (id, template_name, document_type, category, html_content, created_by, is_active) VALUES
-('55555555-5555-5555-5555-555555555501', 'Standard NDA', 'Contract', 'Legal', '<h2>Non-Disclosure Agreement</h2><p>This is a standard NDA.</p>', 'system', true),
-('55555555-5555-5555-5555-555555555502', 'Employment Contract', 'Contract', 'HR', '<h2>Employment Contract</h2><p>Standard terms of employment.</p>', 'system', true);
+INSERT INTO document_templates (id, template_name, document_type, category, html_content, created_by, is_active, created_at, updated_at) VALUES
+('55555555-5555-5555-5555-555555555501', 'Standard NDA', 'Contract', 'Legal', '<h2>Non-Disclosure Agreement</h2><p>This is a standard NDA.</p>', 'system', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('55555555-5555-5555-5555-555555555502', 'Employment Contract', 'Contract', 'HR', '<h2>Employment Contract</h2><p>Standard terms of employment.</p>', 'system', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
