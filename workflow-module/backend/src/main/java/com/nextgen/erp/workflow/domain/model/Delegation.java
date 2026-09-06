@@ -7,18 +7,18 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
 
+import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "workflows")
+@Table(name = "delegations")
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Workflow {
+public class Delegation {
 
     @Id
     @GeneratedValue(generator = "UUID")
@@ -29,24 +29,23 @@ public class Workflow {
     @Column(updatable = false, nullable = false)
     private UUID id;
 
-    @Column(name = "workflow_name", nullable = false, unique = true)
-    private String workflowName;
+    @Column(name = "delegator_username", nullable = false)
+    private String delegatorUsername;
 
-    @Column(name = "document_type", nullable = false)
-    private String documentType;
+    @Column(name = "delegatee_username", nullable = false)
+    private String delegateeUsername;
 
-    @Column(name = "is_active")
-    private Boolean isActive;
+    @Column(name = "start_date", nullable = false)
+    private LocalDateTime startDate;
 
-    @Column(name = "version")
+    @Column(name = "end_date", nullable = false)
+    private LocalDateTime endDate;
+
+    @Column(name = "is_active", nullable = false)
     @Builder.Default
-    private Integer version = 1;
+    private Boolean isActive = true;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private OffsetDateTime createdAt;
-
-    @UpdateTimestamp
-    @Column(name = "updated_at")
-    private OffsetDateTime updatedAt;
 }

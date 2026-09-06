@@ -11,6 +11,9 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.UUID;
 
+import com.nextgen.erp.workflow.application.service.WorkflowSimulationService;
+import com.nextgen.erp.workflow.api.dto.SimulationResultDTO;
+
 @RestController
 @RequestMapping("/api/v1/workflows")
 @RequiredArgsConstructor
@@ -18,6 +21,16 @@ import java.util.UUID;
 public class WorkflowController {
 
     private final WorkflowService workflowService;
+    private final WorkflowSimulationService simulationService;
+
+    @PostMapping("/{workflowId}/simulate")
+    public ResponseEntity<SimulationResultDTO> simulateWorkflow(
+            @PathVariable UUID workflowId,
+            @RequestParam(required = false) Double amount,
+            @RequestParam(required = false) String title,
+            @RequestParam(required = false) String documentType) {
+        return ResponseEntity.ok(simulationService.simulateWorkflow(workflowId, amount, title, documentType));
+    }
 
     @GetMapping
     public ResponseEntity<List<Workflow>> getAllWorkflows() {

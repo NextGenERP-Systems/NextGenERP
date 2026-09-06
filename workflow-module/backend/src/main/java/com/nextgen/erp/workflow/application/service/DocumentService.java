@@ -15,7 +15,7 @@ import com.nextgen.erp.workflow.api.dto.DocumentResponseDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.expression.ExpressionParser;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
-import org.springframework.expression.spel.support.StandardEvaluationContext;
+import org.springframework.expression.spel.support.SimpleEvaluationContext;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -27,6 +27,11 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import lombok.extern.slf4j.Slf4j;
+
+import com.nextgen.erp.workflow.domain.repository.DelegationRepository;
+import com.nextgen.erp.workflow.domain.model.Delegation;
+
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
@@ -41,6 +46,8 @@ public class DocumentService {
     private final DocumentTemplateRepository templateRepository;
     private final AppUserRepository userRepository;
     private final NotificationService notificationService;
+    private final DelegationRepository delegationRepository;
+    private final OcrExtractionService ocrExtractionService;
 
     public DocumentResponseDTO toDto(Document doc) {
         return DocumentResponseDTO.builder()
@@ -64,6 +71,11 @@ public class DocumentService {
                 .createdAt(doc.getCreatedAt())
                 .updatedAt(doc.getUpdatedAt())
                 .version(doc.getVersion())
+                .clarificationRequestedBy(doc.getClarificationRequestedBy())
+                .clarificationReturnStateId(doc.getClarificationReturnStateId())
+                .furthestStateId(doc.getFurthestStateId())
+                .parentDocumentId(doc.getParentDocumentId())
+                .childWorkflowId(doc.getChildWorkflowId())
                 .build();
     }
 
@@ -85,7 +97,7 @@ public class DocumentService {
     @Transactional
     public DocumentResponseDTO createDocument(Document document) {
         if (document.getDocumentNumber() == null) {
-            document.setDocumentNumber("DOC-" + System.currentTimeMillis());
+            document.setDocumentNumber("DOC-" + System.currentTimeMillis() + "-" + java.util.UUID.randomUUID().toString().substring(0, 4));
         }
 
         // Auto-fill template HTML if templateId is specified and contentHtml is empty
@@ -98,9 +110,9 @@ public class DocumentService {
             });
         }
 
-        // Automatic Workflow Assignment
+        // Automatic Workflow Assignment (picking latest active workflow version)
         if (document.getDocumentType() != null) {
-            workflowRepository.findByDocumentTypeAndIsActiveTrue(document.getDocumentType())
+            workflowRepository.findFirstByDocumentTypeAndIsActiveTrueOrderByVersionDesc(document.getDocumentType())
                     .ifPresent(workflow -> {
                         document.setWorkflowId(workflow.getId());
                         
@@ -118,6 +130,14 @@ public class DocumentService {
                                 });
                     });
         }
+        // OCR Auto-Extraction if amount is missing and contentHtml is available
+        if (document.getAmount() == null && document.getContentHtml() != null && !document.getContentHtml().isBlank()) {
+            java.util.Map<String, Object> ocrData = ocrExtractionService.extractDataFromText(document.getContentHtml());
+            if (ocrData.containsKey("amount")) {
+                document.setAmount((Double) ocrData.get("amount"));
+            }
+        }
+
         document.setStateUpdatedAt(java.time.LocalDateTime.now());
 
         return toDto(documentRepository.save(document));
@@ -151,15 +171,92 @@ public class DocumentService {
         Document document = documentRepository.findById(documentId)
                 .orElseThrow(() -> new RuntimeException("Document not found"));
 
+        // Check for active Out-of-Office Delegation
+        String effectiveUser = username;
+        if (username != null && !username.isBlank()) {
+            List<Delegation> delegations = delegationRepository.findActiveDelegationsForDelegatee(username, LocalDateTime.now());
+            if (!delegations.isEmpty()) {
+                String delegator = delegations.get(0).getDelegatorUsername();
+                log.info("User {} is acting on delegated authority from {}", username, delegator);
+            }
+        }
+
         // Validate user role against DB if username is provided
         if (username != null && !username.isBlank() && !"SYSTEM".equalsIgnoreCase(username)) {
-            userRepository.findByUsername(username).ifPresent(appUser -> {
-                boolean hasRole = appUser.getRoles().stream()
-                        .anyMatch(r -> r.getRoleName().equalsIgnoreCase(userRole) || "ADMIN".equalsIgnoreCase(r.getRoleName()));
-                if (!hasRole) {
-                    throw new RuntimeException("User '" + username + "' does not possess role '" + userRole + "' required for this transition.");
+            com.nextgen.erp.workflow.domain.model.AppUser appUser = userRepository.findByUsername(username)
+                    .orElseThrow(() -> new RuntimeException("User '" + username + "' not found."));
+            boolean hasRole = appUser.getRoles().stream()
+                    .anyMatch(r -> r.getRoleName().equalsIgnoreCase(userRole) || "ADMIN".equalsIgnoreCase(r.getRoleName()));
+            if (!hasRole) {
+                throw new RuntimeException("User '" + username + "' does not possess role '" + userRole + "' required for this transition.");
+            }
+        }
+
+        // Feature D: "Request Clarification" loop handling
+        if ("request_clarification".equalsIgnoreCase(action) || "Request Clarification".equalsIgnoreCase(action)) {
+            document.setClarificationReturnStateId(document.getCurrentStateId());
+            document.setClarificationRequestedBy(username);
+            document.setAssignedUsername(document.getOwnerUsername() != null ? document.getOwnerUsername() : username);
+            document.setStatus("Clarification Requested");
+            document.setStateUpdatedAt(LocalDateTime.now());
+
+            WorkflowHistory history = WorkflowHistory.builder()
+                    .documentId(documentId)
+                    .actionName("Request Clarification")
+                    .fromStateId(document.getCurrentStateId())
+                    .toStateId(document.getCurrentStateId())
+                    .performedBy(username)
+                    .comments(comments != null && !comments.isBlank() ? comments : "Clarification requested from document owner.")
+                    .build();
+            historyRepository.save(history);
+
+            if (document.getOwnerUsername() != null) {
+                notificationService.sendNotification(document.getOwnerUsername() + "@example.com",
+                        "Clarification Requested",
+                        "Approver " + username + " requested clarification on document " + document.getDocumentNumber() + ": " + comments);
+            }
+
+            return toDto(documentRepository.save(document));
+        }
+
+        // Feature D: "Provide Clarification" response handling
+        if ("provide_clarification".equalsIgnoreCase(action) || "Provide Clarification".equalsIgnoreCase(action)) {
+            if (document.getClarificationReturnStateId() != null) {
+                UUID returnStateId = document.getClarificationReturnStateId();
+                String reviewer = document.getClarificationRequestedBy();
+
+                document.setCurrentStateId(returnStateId);
+                document.setAssignedUsername(reviewer);
+                document.setClarificationRequestedBy(null);
+                document.setClarificationReturnStateId(null);
+                document.setStateUpdatedAt(LocalDateTime.now());
+
+                stateRepository.findById(returnStateId).ifPresent(st -> {
+                    if (st.getUpdateFields() != null && st.getUpdateFields().containsKey("status")) {
+                        document.setStatus((String) st.getUpdateFields().get("status"));
+                    } else {
+                        document.setStatus(st.getStateName());
+                    }
+                });
+
+                WorkflowHistory history = WorkflowHistory.builder()
+                        .documentId(documentId)
+                        .actionName("Provide Clarification")
+                        .fromStateId(returnStateId)
+                        .toStateId(returnStateId)
+                        .performedBy(username)
+                        .comments(comments != null && !comments.isBlank() ? comments : "Clarification response provided.")
+                        .build();
+                historyRepository.save(history);
+
+                if (reviewer != null) {
+                    notificationService.sendNotification(reviewer + "@example.com",
+                            "Clarification Provided",
+                            "Owner " + username + " has provided clarification for document " + document.getDocumentNumber() + ": " + comments);
                 }
-            });
+
+                return toDto(documentRepository.save(document));
+            }
         }
 
         UUID currentStateId = document.getCurrentStateId();
@@ -182,10 +279,10 @@ public class DocumentService {
             }
         }
 
-        // Evaluate Condition using SpEL
+        // Feature E: Evaluate Condition using SpEL (SimpleEvaluationContext for security)
         if (transition.getConditionExpression() != null && !transition.getConditionExpression().trim().isEmpty()) {
             ExpressionParser parser = new SpelExpressionParser();
-            StandardEvaluationContext context = new StandardEvaluationContext();
+            SimpleEvaluationContext context = SimpleEvaluationContext.forReadOnlyDataBinding().build();
             context.setVariable("doc", document);
             context.setVariable("amount", document.getAmount());
             context.setVariable("title", document.getTitle());
@@ -206,7 +303,7 @@ public class DocumentService {
             }
         }
         
-        // Check parallel approvals logic
+        // Feature A: Check parallel approvals logic
         boolean actuallyTransition = true;
         WorkflowState currentState = null;
         if (currentStateId != null) {
@@ -232,24 +329,46 @@ public class DocumentService {
             }
         }
 
-        // Record History
-        WorkflowHistory history = WorkflowHistory.builder()
-                .documentId(documentId)
-                .actionName(actuallyTransition ? action : action + " (Partial)")
-                .fromStateId(currentStateId)
-                .toStateId(actuallyTransition ? transition.getToStateId() : currentStateId)
-                .performedBy(username)
-                .comments(comments)
-                .build();
-        historyRepository.save(history);
+        // Record History with Cryptographic Hash
+        saveHashedHistory(documentId, actuallyTransition ? action : action + " (Partial)", currentStateId, actuallyTransition ? transition.getToStateId() : currentStateId, username, comments);
 
         if (actuallyTransition) {
+            UUID nextStateId = transition.getToStateId();
+
+            // Phase 1.1: Smart Fast-Forward Rework Path Check
+            if ((transition.getIsRework() != null && transition.getIsRework()) || "rework_fast_forward".equalsIgnoreCase(action)) {
+                if (document.getFurthestStateId() != null) {
+                    log.info("Smart Fast-Forward triggered for Document {}. Fast-forwarding to state {}", document.getDocumentNumber(), document.getFurthestStateId());
+                    nextStateId = document.getFurthestStateId();
+                    document.setFurthestStateId(null);
+                }
+            } else if ("reject".equalsIgnoreCase(action) || "return".equalsIgnoreCase(action) || "request_rework".equalsIgnoreCase(action)) {
+                if (document.getFurthestStateId() == null) {
+                    document.setFurthestStateId(currentStateId);
+                }
+            }
+
             // Update Document State
-            document.setCurrentStateId(transition.getToStateId());
+            document.setCurrentStateId(nextStateId);
             document.setStateUpdatedAt(java.time.LocalDateTime.now());
             document.setAssignedUsername(null); // Reset assignment on transition
 
-            stateRepository.findById(transition.getToStateId()).ifPresent(targetState -> {
+            // Phase 1.2: Dynamic Workload Balancing (Least-Busy Assignment)
+            if (transition.getAllowedRole() != null && !"ADMIN".equalsIgnoreCase(transition.getAllowedRole())) {
+                List<com.nextgen.erp.workflow.domain.model.AppUser> candidateUsers = userRepository.findByRoles_RoleName(transition.getAllowedRole());
+                if (!candidateUsers.isEmpty()) {
+                    String leastBusyUser = candidateUsers.stream()
+                        .min(java.util.Comparator.comparingLong(u -> documentRepository.countByAssignedUsernameAndStatusNot(u.getUsername(), "Completed")))
+                        .map(com.nextgen.erp.workflow.domain.model.AppUser::getUsername)
+                        .orElse(null);
+                    if (leastBusyUser != null) {
+                        document.setAssignedUsername(leastBusyUser);
+                        log.info("Dynamic Workload Balancing assigned document {} to least-busy user {}", document.getDocumentNumber(), leastBusyUser);
+                    }
+                }
+            }
+
+            stateRepository.findById(nextStateId).ifPresent(targetState -> {
                 // Initialize pendingApprovers if target state requires multiple roles
                 if (targetState.getRequiresAllRoles() != null && targetState.getRequiresAllRoles() 
                     && targetState.getRequiredRoles() != null && !targetState.getRequiredRoles().isEmpty()) {
@@ -263,16 +382,14 @@ public class DocumentService {
                 if (targetState.getUpdateFields().containsKey("status")) {
                     document.setStatus((String) targetState.getUpdateFields().get("status"));
                 }
-                // Handle multiple fields here dynamically if needed
             }
 
-            // Emails
+            // In-app Notification
             if (targetState.getSendEmail() != null && targetState.getSendEmail()) {
                 notificationService.sendNotification("role_" + userRole + "@example.com", "Document requires attention", "Document " + document.getDocumentNumber() + " is now in state " + targetState.getStateName());
             }
         });
 
-        // Email to Creator
         if (transition.getSendEmailToCreator() != null && transition.getSendEmailToCreator()) {
              notificationService.sendNotification(document.getOwnerUsername() + "@example.com", "Document Update", "Your document " + document.getDocumentNumber() + " was transitioned via action " + action);
         }
@@ -350,5 +467,49 @@ public class DocumentService {
     public void deleteDocument(UUID id) {
         historyRepository.deleteByDocumentId(id);
         documentRepository.deleteById(id);
+    }
+
+    private WorkflowHistory saveHashedHistory(UUID documentId, String actionName, UUID fromStateId, UUID toStateId, String performedBy, String comments) {
+        String prevHash = historyRepository.findFirstByDocumentIdOrderByCreatedAtDesc(documentId)
+                .map(WorkflowHistory::getCurrentHash)
+                .orElse("GENESIS_HASH");
+
+        String currentHash = AuditHashUtil.calculateHash(documentId, actionName, performedBy, prevHash);
+
+        WorkflowHistory history = WorkflowHistory.builder()
+                .documentId(documentId)
+                .actionName(actionName)
+                .fromStateId(fromStateId)
+                .toStateId(toStateId)
+                .performedBy(performedBy)
+                .comments(comments)
+                .previousHash(prevHash)
+                .currentHash(currentHash)
+                .build();
+
+        return historyRepository.save(history);
+    }
+
+    public boolean verifyDocumentAuditChain(UUID documentId) {
+        List<WorkflowHistory> histories = historyRepository.findByDocumentIdOrderByCreatedAtDesc(documentId);
+        if (histories.isEmpty()) return true;
+
+        List<WorkflowHistory> orderedHistories = new java.util.ArrayList<>(histories);
+        java.util.Collections.reverse(orderedHistories);
+        String expectedPrevHash = "GENESIS_HASH";
+
+        for (WorkflowHistory h : orderedHistories) {
+            if (h.getPreviousHash() != null && !expectedPrevHash.equals(h.getPreviousHash())) {
+                log.error("Audit integrity broken for document {}: previousHash mismatch", documentId);
+                return false;
+            }
+            String calculated = AuditHashUtil.calculateHash(h.getDocumentId(), h.getActionName(), h.getPerformedBy(), expectedPrevHash);
+            if (h.getCurrentHash() != null && !calculated.equals(h.getCurrentHash())) {
+                log.error("Audit integrity broken for document {}: currentHash mismatch", documentId);
+                return false;
+            }
+            expectedPrevHash = h.getCurrentHash() != null ? h.getCurrentHash() : calculated;
+        }
+        return true;
     }
 }

@@ -31,9 +31,10 @@ CREATE TABLE IF NOT EXISTS workflow_state_master (
 -- 1. Workflows & States
 CREATE TABLE IF NOT EXISTS workflows (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    workflow_name VARCHAR(150) NOT NULL UNIQUE,
+    workflow_name VARCHAR(150) NOT NULL,
     document_type VARCHAR(100) NOT NULL,
     is_active BOOLEAN DEFAULT TRUE,
+    version INTEGER DEFAULT 1,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
@@ -99,6 +100,8 @@ CREATE TABLE IF NOT EXISTS documents (
     owner_username VARCHAR(100) NOT NULL,
     assigned_username VARCHAR(100),
     pending_approvers VARCHAR(500),
+    clarification_requested_by VARCHAR(100),
+    clarification_return_state_id UUID REFERENCES workflow_states(id),
     state_updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -147,10 +150,26 @@ CREATE TABLE IF NOT EXISTS workflow_settings (
     strict_mode BOOLEAN DEFAULT FALSE
 );
 
--- Indexes for performance
+-- 8. Delegations (Out-of-Office Authority)
+CREATE TABLE IF NOT EXISTS delegations (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    delegator_username VARCHAR(100) NOT NULL,
+    delegatee_username VARCHAR(100) NOT NULL,
+    start_date TIMESTAMP NOT NULL,
+    end_date TIMESTAMP NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- High-performance indexes
 CREATE INDEX idx_docs_type ON documents(document_type);
 CREATE INDEX idx_docs_state ON documents(current_state_id);
 CREATE INDEX idx_docs_owner ON documents(owner_username);
+CREATE INDEX idx_docs_status ON documents(status);
+CREATE INDEX idx_docs_assigned ON documents(assigned_username);
 CREATE INDEX idx_transitions_workflow ON workflow_transitions(workflow_id);
 CREATE INDEX idx_notifs_user ON in_app_notifications(username);
+CREATE INDEX idx_history_doc ON workflow_history(document_id);
+CREATE INDEX idx_delegations_delegatee ON delegations(delegatee_username, is_active);
+
 

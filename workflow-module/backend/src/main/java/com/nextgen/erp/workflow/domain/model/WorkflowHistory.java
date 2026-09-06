@@ -49,4 +49,10 @@ public class WorkflowHistory {
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private OffsetDateTime createdAt;
+
+    @Column(name = "previous_hash", length = 64)
+    private String previousHash;
+
+    @Column(name = "current_hash", length = 64)
+    private String currentHash;
 }

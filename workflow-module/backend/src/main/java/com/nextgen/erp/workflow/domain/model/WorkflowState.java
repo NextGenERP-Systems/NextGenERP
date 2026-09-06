@@ -67,4 +67,8 @@ public class WorkflowState {
 
     @Column(name = "required_roles")
     private String requiredRoles;
+
+    @JdbcTypeCode(org.hibernate.type.SqlTypes.JSON)
+    @Column(name = "field_permissions", columnDefinition = "jsonb")
+    private java.util.Map<String, String> fieldPermissions;
 }

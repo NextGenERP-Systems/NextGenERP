@@ -32,4 +32,12 @@ public interface DocumentRepository extends JpaRepository<Document, UUID> {
            "((:stateId IS NOT NULL AND d.currentStateId = :stateId) OR LOWER(d.status) = LOWER(:stateName)) " +
            "AND (:search IS NULL OR :search = '' OR LOWER(d.title) LIKE LOWER(CONCAT('%', :search, '%')) OR LOWER(d.documentNumber) LIKE LOWER(CONCAT('%', :search, '%')))")
     Page<Document> findByStateOrStatusAndSearch(@Param("stateId") UUID stateId, @Param("stateName") String stateName, @Param("search") String search, Pageable pageable);
+
+    long countByAssignedUsernameAndStatusNot(String assignedUsername, String status);
+
+    List<Document> findByParentDocumentId(UUID parentDocumentId);
+
+    boolean existsByCurrentStateId(UUID currentStateId);
+
+    boolean existsByWorkflowId(UUID workflowId);
 }

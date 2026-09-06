@@ -183,6 +183,7 @@ export default function DocumentDetailPage() {
           </div>
           
           <div className="flex flex-wrap gap-2 justify-end">
+            {/* Standard transitions */}
             {transitions.filter(t => currentUser?.roles.some(r => r.roleName === t.allowedRole) || currentUser?.roles.some(r => r.roleName === 'ADMIN')).map(t => (
             <button
               key={t.id}
@@ -204,6 +205,30 @@ export default function DocumentDetailPage() {
               {t.actionName}
             </button>
           ))}
+
+          {/* Feature D: Request Clarification button for approvers */}
+          {document.status !== 'Clarification Requested' && (currentUser?.roles.some(r => r.roleName !== 'USER') || currentUser?.roles.some(r => r.roleName === 'ADMIN')) && (
+            <button
+              onClick={() => setSelectedAction('request_clarification')}
+              disabled={actionLoading !== null}
+              className="px-4 py-2 rounded-lg text-sm font-medium text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 transition-colors flex items-center gap-2 shadow-sm"
+            >
+              <AlertCircle className="w-4 h-4 text-amber-600" />
+              Request Clarification
+            </button>
+          )}
+
+          {/* Feature D: Provide Clarification button for document owner */}
+          {document.status === 'Clarification Requested' && (currentUser?.username === document.ownerUsername || currentUser?.roles.some(r => r.roleName === 'ADMIN')) && (
+            <button
+              onClick={() => setSelectedAction('provide_clarification')}
+              disabled={actionLoading !== null}
+              className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 transition-colors flex items-center gap-2 shadow-sm"
+            >
+              <Send className="w-4 h-4" />
+              Provide Clarification
+            </button>
+          )}
           </div>
         </div>
       </div>

@@ -11,4 +11,6 @@ import java.util.UUID;
 public interface WorkflowRepository extends JpaRepository<Workflow, UUID> {
     Optional<Workflow> findByWorkflowName(String workflowName);
     Optional<Workflow> findByDocumentTypeAndIsActiveTrue(String documentType);
+    Optional<Workflow> findFirstByDocumentTypeAndIsActiveTrueOrderByVersionDesc(String documentType);
+    List<Workflow> findByWorkflowNameOrderByVersionDesc(String workflowName);
 }

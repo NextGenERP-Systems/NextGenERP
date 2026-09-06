@@ -15,6 +15,7 @@ import java.util.UUID;
 @Repository
 public interface WorkflowHistoryRepository extends JpaRepository<WorkflowHistory, UUID> {
     List<WorkflowHistory> findByDocumentIdOrderByCreatedAtDesc(UUID documentId);
+    java.util.Optional<WorkflowHistory> findFirstByDocumentIdOrderByCreatedAtDesc(UUID documentId);
 
     void deleteByDocumentId(UUID documentId);
 

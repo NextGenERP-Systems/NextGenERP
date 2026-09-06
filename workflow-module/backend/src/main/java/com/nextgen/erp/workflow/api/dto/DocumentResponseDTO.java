@@ -32,4 +32,9 @@ public class DocumentResponseDTO {
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
     private Integer version;
+    private String clarificationRequestedBy;
+    private UUID clarificationReturnStateId;
+    private UUID furthestStateId;
+    private UUID parentDocumentId;
+    private UUID childWorkflowId;
 }

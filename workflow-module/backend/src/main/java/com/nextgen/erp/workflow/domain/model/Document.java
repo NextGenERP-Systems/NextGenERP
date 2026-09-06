@@ -81,4 +81,19 @@ public class Document {
 
     @Column(name = "version")
     private Integer version;
+
+    @Column(name = "clarification_requested_by")
+    private String clarificationRequestedBy;
+
+    @Column(name = "clarification_return_state_id")
+    private UUID clarificationReturnStateId;
+
+    @Column(name = "furthest_state_id")
+    private UUID furthestStateId;
+
+    @Column(name = "parent_document_id")
+    private UUID parentDocumentId;
+
+    @Column(name = "child_workflow_id")
+    private UUID childWorkflowId;
 }

@@ -7,6 +7,7 @@ import com.nextgen.erp.workflow.domain.model.WorkflowHistory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -45,7 +46,7 @@ public class DocumentController {
     @GetMapping
     public ResponseEntity<Page<DocumentResponseDTO>> getAllDocuments(
             @RequestParam(required = false) String search,
-            Pageable pageable) {
+            @PageableDefault(size = 20) Pageable pageable) {
         return ResponseEntity.ok(documentService.getAllDocuments(search, pageable));
     }
 
@@ -54,7 +55,7 @@ public class DocumentController {
             @RequestParam(required = false) UUID stateId,
             @RequestParam String stateName,
             @RequestParam(required = false) String search,
-            Pageable pageable) {
+            @PageableDefault(size = 20) Pageable pageable) {
         return ResponseEntity.ok(documentService.getKanbanDocuments(stateId, stateName, search, pageable));
     }
 
@@ -123,8 +124,15 @@ public class DocumentController {
     @PostMapping("/{id}/upload")
     public ResponseEntity<?> uploadAttachment(@PathVariable UUID id, @RequestParam("file") MultipartFile file) {
         try {
-            String fileName = id.toString() + "_" + file.getOriginalFilename();
-            Path targetLocation = this.fileStorageLocation.resolve(fileName);
+            String originalName = file.getOriginalFilename() != null ? Paths.get(file.getOriginalFilename()).getFileName().toString() : "file";
+            if (originalName.contains("..")) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Invalid file path"));
+            }
+            String fileName = id.toString() + "_" + originalName;
+            Path targetLocation = this.fileStorageLocation.resolve(fileName).normalize();
+            if (!targetLocation.startsWith(this.fileStorageLocation)) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Invalid path traversal attempt"));
+            }
             Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
             
             String fileDownloadUri = "/api/v1/documents/attachments/" + fileName;
@@ -145,7 +153,11 @@ public class DocumentController {
     @GetMapping("/attachments/{fileName:.+}")
     public ResponseEntity<Resource> downloadFile(@PathVariable String fileName) {
         try {
-            Path filePath = this.fileStorageLocation.resolve(fileName).normalize();
+            String safeFileName = Paths.get(fileName).getFileName().toString();
+            Path filePath = this.fileStorageLocation.resolve(safeFileName).normalize();
+            if (!filePath.startsWith(this.fileStorageLocation)) {
+                return ResponseEntity.badRequest().build();
+            }
             Resource resource = new UrlResource(filePath.toUri());
             if (resource.exists()) {
                 return ResponseEntity.ok()

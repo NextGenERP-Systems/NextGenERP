@@ -21,10 +21,14 @@ export interface Document {
   contentHtml?: string;
   gcsAttachmentUrl?: string;
   ownerUsername: string;
+  assignedUsername?: string;
   createdAt: string;
   updatedAt: string;
   status?: string;
   amount?: number;
+  version?: number;
+  clarificationRequestedBy?: string;
+  clarificationReturnStateId?: string;
 }
 
 export interface DocumentTemplate {
@@ -40,6 +44,17 @@ export interface Workflow {
   id: string;
   workflowName: string;
   documentType: string;
+  isActive: boolean;
+  version?: number;
+  createdAt?: string;
+}
+
+export interface Delegation {
+  id: string;
+  delegatorUsername: string;
+  delegateeUsername: string;
+  startDate: string;
+  endDate: string;
   isActive: boolean;
   createdAt?: string;
 }
@@ -437,6 +452,26 @@ export function createRole(roleName: string): Promise<AppRoleData> {
 export function assignRoleToUser(userId: string, roleName: string): Promise<AppUserData> {
   return apiClient<AppUserData>(`/users/${userId}/assign-role?roleName=${encodeURIComponent(roleName)}`, {
     method: "POST",
+  });
+}
+
+// Delegations API
+export function getDelegations(username?: string): Promise<Delegation[]> {
+  let url = `/delegations`;
+  if (username) url += `?username=${encodeURIComponent(username)}`;
+  return apiClient<Delegation[]>(url, { cache: "no-store" });
+}
+
+export function createDelegation(delegation: Partial<Delegation>): Promise<Delegation> {
+  return apiClient<Delegation>(`/delegations`, {
+    method: "POST",
+    body: JSON.stringify(delegation),
+  });
+}
+
+export function cancelDelegation(id: string): Promise<void> {
+  return apiClient<void>(`/delegations/${id}`, {
+    method: "DELETE",
   });
 }
 

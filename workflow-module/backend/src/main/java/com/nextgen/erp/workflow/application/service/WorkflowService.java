@@ -5,7 +5,7 @@ import com.nextgen.erp.workflow.domain.model.WorkflowState;
 import com.nextgen.erp.workflow.domain.model.WorkflowTransition;
 import com.nextgen.erp.workflow.domain.repository.WorkflowRepository;
 import com.nextgen.erp.workflow.domain.repository.WorkflowStateRepository;
-import com.nextgen.erp.workflow.domain.repository.WorkflowTransitionRepository;
+import com.nextgen.erp.workflow.domain.repository.DocumentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -20,6 +20,7 @@ public class WorkflowService {
     private final WorkflowRepository workflowRepository;
     private final WorkflowStateRepository stateRepository;
     private final WorkflowTransitionRepository transitionRepository;
+    private final DocumentRepository documentRepository;
 
     public List<Workflow> getAllWorkflows() {
         return workflowRepository.findAll();
@@ -59,6 +60,9 @@ public class WorkflowService {
     }
 
     public void deleteState(UUID stateId) {
+        if (documentRepository.existsByCurrentStateId(stateId)) {
+            throw new RuntimeException("Cannot delete workflow state because active documents are currently in this state.");
+        }
         stateRepository.deleteById(stateId);
     }
 
