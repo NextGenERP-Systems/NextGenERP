@@ -37,6 +37,16 @@ public class Project {
         return projectType != null ? projectType.getId() : null;
     }
 
+    @com.fasterxml.jackson.annotation.JsonProperty("projectTypeId")
+    public void setProjectTypeId(UUID projectTypeId) {
+        if (projectTypeId != null) {
+            this.projectType = new ProjectType();
+            this.projectType.setId(projectTypeId);
+        } else {
+            this.projectType = null;
+        }
+    }
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "project_template_id")
     @com.fasterxml.jackson.annotation.JsonIgnore
@@ -46,6 +56,16 @@ public class Project {
     @Transient
     public UUID getProjectTemplateId() {
         return projectTemplate != null ? projectTemplate.getId() : null;
+    }
+
+    @com.fasterxml.jackson.annotation.JsonProperty("projectTemplateId")
+    public void setProjectTemplateId(UUID projectTemplateId) {
+        if (projectTemplateId != null) {
+            this.projectTemplate = new ProjectTemplate();
+            this.projectTemplate.setId(projectTemplateId);
+        } else {
+            this.projectTemplate = null;
+        }
     }
 
     @Column(name = "is_template")

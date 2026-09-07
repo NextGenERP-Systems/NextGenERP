@@ -2,12 +2,12 @@
 
 import React from "react";
 import { Badge } from "@/components/ui/Badge";
-import { MoreVertical, CheckCircle2, Clock, Circle } from "lucide-react";
+import { MoreVertical, CheckCircle2, Clock, Circle, AlertCircle, XCircle } from "lucide-react";
 
 interface Task {
   id: string;
   name: string;
-  kanbanState: 'BACKLOG' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED';
+  kanbanState: 'BACKLOG' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED' | 'OVERDUE' | 'CANCELLED';
   priority: string;
   type?: string;
   assigneeName?: string;
@@ -15,10 +15,12 @@ interface Task {
 }
 
 const COLUMNS = [
-  { id: 'BACKLOG', title: 'Backlog', icon: Circle, color: 'text-slate-400' },
-  { id: 'IN_PROGRESS', title: 'In Progress', icon: Clock, color: 'text-blue-500' },
-  { id: 'IN_REVIEW', title: 'In Review', icon: MoreVertical, color: 'text-orange-500' },
-  { id: 'COMPLETED', title: 'Completed', icon: CheckCircle2, color: 'text-green-500' }
+  { id: 'BACKLOG', title: 'Backlog', icon: Circle, color: 'text-slate-400', width: 'min-w-[280px]' },
+  { id: 'IN_PROGRESS', title: 'In Progress', icon: Clock, color: 'text-blue-500', width: 'min-w-[280px]' },
+  { id: 'IN_REVIEW', title: 'In Review', icon: MoreVertical, color: 'text-orange-500', width: 'min-w-[280px]' },
+  { id: 'COMPLETED', title: 'Completed', icon: CheckCircle2, color: 'text-green-500', width: 'min-w-[280px]' },
+  { id: 'OVERDUE', title: 'Overdue', icon: AlertCircle, color: 'text-red-500', width: 'min-w-[220px]' },
+  { id: 'CANCELLED', title: 'Cancelled', icon: XCircle, color: 'text-slate-400', width: 'min-w-[220px]' }
 ];
 
 interface KanbanBoardProps {
@@ -73,7 +75,7 @@ export function KanbanBoard({ tasks, onTaskMove, onTaskEdit }: KanbanBoardProps)
         return (
           <div 
             key={col.id} 
-            className="flex-1 min-w-[280px] bg-slate-100 rounded-xl p-4 flex flex-col h-full border border-slate-200"
+            className={`flex-1 ${col.width || 'min-w-[280px]'} bg-slate-100 rounded-xl p-4 flex flex-col h-full border border-slate-200 opacity-${col.id === 'CANCELLED' ? '80' : '100'}`}
             onDragOver={handleDragOver}
             onDrop={(e) => handleDrop(e, col.id)}
           >

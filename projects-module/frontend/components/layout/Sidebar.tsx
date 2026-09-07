@@ -25,16 +25,18 @@ export function Sidebar() {
     { title: "Kanban Board", href: "/projects?tab=tasks", icon: CheckCircle2, tab: "tasks" },
     { title: "Gantt Chart", href: "/projects?tab=gantt", icon: CalendarDays, tab: "gantt" },
     { title: "Timeline", href: "/projects?tab=timeline", icon: Clock, tab: "timeline" },
+    { title: "Timesheets", href: "/projects?tab=timesheets", icon: FileText, tab: "timesheets" },
   ];
 
   const SETUP_ITEMS = [
-    { title: "Project Templates", href: "/projects/templates" },
+    { title: "Project Types", href: "/projects/project-types" },
     { title: "Activity Types", href: "/projects/activity-types" },
-    { title: "Project Types", href: "/projects?tab=types" },
-    { title: "Task Priorities", href: "/projects?tab=priorities" },
-    { title: "Timesheets", href: "/projects?tab=timesheets" },
-    { title: "Roles & Permissions", href: "/projects?tab=roles" },
-    { title: "Settings", href: "/projects?tab=settings" },
+    { title: "Activity Costs", href: "/projects/activity-costs" },
+    { title: "Project Templates", href: "/projects/templates" },
+  ];
+
+  const TRACKING_ITEMS = [
+    { title: "Project Updates", href: "/projects/updates" },
   ];
 
   return (
@@ -86,19 +88,41 @@ export function Sidebar() {
 
           <div className="h-[1px] bg-gray-200/70 mx-1" />
 
-          {/* Setup Accordion */}
           <div>
             <div className="w-full flex items-center justify-between px-2.5 py-1 text-[13px] font-medium text-gray-700">
               <span>Setup</span>
             </div>
             <div className="pl-3 pr-1 py-1 space-y-0.5 text-[12px]">
               {SETUP_ITEMS.map((sub) => {
-                let isSubActive = false;
-                if (sub.href.includes("?tab=")) {
-                  isSubActive = currentTab === sub.href.split('tab=')[1];
-                } else {
-                  isSubActive = pathname === sub.href;
-                }
+                const isSubActive = pathname === sub.href;
+                return (
+                  <Link
+                    key={sub.title}
+                    href={sub.href}
+                    className={cn(
+                      "block px-2 py-1 rounded transition-colors truncate",
+                      isSubActive 
+                        ? "text-gray-900 bg-gray-200/90 font-medium" 
+                        : "text-gray-600 hover:text-gray-900 hover:bg-gray-200/60"
+                    )}
+                  >
+                    {sub.title}
+                  </Link>
+                )
+              })}
+            </div>
+          </div>
+
+          <div className="h-[1px] bg-gray-200/70 mx-1" />
+
+          {/* Tracking Accordion */}
+          <div>
+            <div className="w-full flex items-center justify-between px-2.5 py-1 text-[13px] font-medium text-gray-700">
+              <span>Tracking</span>
+            </div>
+            <div className="pl-3 pr-1 py-1 space-y-0.5 text-[12px]">
+              {TRACKING_ITEMS.map((sub) => {
+                const isSubActive = pathname === sub.href;
                 return (
                   <Link
                     key={sub.title}

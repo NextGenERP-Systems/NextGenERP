@@ -121,6 +121,11 @@ function DashboardContent() {
     ? Math.round(tasks.reduce((acc, t) => acc + (t.percentComplete || 0), 0) / totalTasks) 
     : 0;
 
+  const totalLoggedHours = timesheets.reduce((acc, ts) => acc + (ts.totalHours || 0), 0);
+  const totalBilledAmount = timesheets.reduce((acc, ts) => acc + (ts.totalBilledAmount || 0), 0);
+  const totalCostingAmount = timesheets.reduce((acc, ts) => acc + (ts.totalCostingAmount || 0), 0);
+  const globalGrossMargin = totalBilledAmount - totalCostingAmount;
+
   // Dynamic Chart Data based on tasks
   // For simplicity, grouping by "name" or just simple categories
   // Or we can group by Project
@@ -142,6 +147,13 @@ function DashboardContent() {
   if (chartData.length === 0) {
     chartData = [{ name: 'No Data', completed: 0, overdue: 0, total: 0 }];
   }
+
+  const financialChartData = projects.map(p => ({
+    name: p.name.substring(0, 15),
+    estimated: p.estimatedCost || 0,
+    billed: p.totalBillableAmount || 0,
+    costing: p.totalCostingAmount || 0
+  })).filter(p => p.estimated > 0 || p.billed > 0 || p.costing > 0);
 
   const filteredProjects = projects.filter(p => {
     if (searchQuery && !p.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
@@ -307,6 +319,45 @@ function DashboardContent() {
                   </Card>
                 </div>
 
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <Card className="border border-gray-200 shadow-sm bg-white">
+                    <CardContent className="p-5 flex items-center justify-between">
+                      <div>
+                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Total Logged Hrs</p>
+                        <div className="text-2xl font-bold text-indigo-600">{totalLoggedHours}</div>
+                      </div>
+                      <div className="bg-indigo-50 p-2.5 rounded-full text-indigo-600"><Clock size={20}/></div>
+                    </CardContent>
+                  </Card>
+                  <Card className="border border-gray-200 shadow-sm bg-white">
+                    <CardContent className="p-5 flex items-center justify-between">
+                      <div>
+                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Total Billed</p>
+                        <div className="text-2xl font-bold text-green-600">${totalBilledAmount.toLocaleString()}</div>
+                      </div>
+                      <div className="bg-green-50 p-2.5 rounded-full text-green-600"><BarChart3 size={20}/></div>
+                    </CardContent>
+                  </Card>
+                  <Card className="border border-gray-200 shadow-sm bg-white">
+                    <CardContent className="p-5 flex items-center justify-between">
+                      <div>
+                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Total Costing</p>
+                        <div className="text-2xl font-bold text-red-500">${totalCostingAmount.toLocaleString()}</div>
+                      </div>
+                      <div className="bg-red-50 p-2.5 rounded-full text-red-600"><BarChart3 size={20}/></div>
+                    </CardContent>
+                  </Card>
+                  <Card className="border border-gray-200 shadow-sm bg-white">
+                    <CardContent className="p-5 flex items-center justify-between">
+                      <div>
+                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Gross Margin</p>
+                        <div className={`text-2xl font-bold ${globalGrossMargin >= 0 ? 'text-green-600' : 'text-red-500'}`}>${globalGrossMargin.toLocaleString()}</div>
+                      </div>
+                      <div className="bg-gray-100 p-2.5 rounded-full text-gray-500"><BarChart3 size={20}/></div>
+                    </CardContent>
+                  </Card>
+                </div>
+
                 {/* Charts and Tables */}
                 <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
                   {/* Stacked Bar Chart */}
@@ -356,7 +407,7 @@ function DashboardContent() {
                                 onContextMenu={(e) => handleRowClick(e, proj)}
                               >
                                 <td className="p-3 font-medium text-gray-900">{proj.name}</td>
-                                <td className="p-3 text-gray-600">{proj.projectType || 'Internal'}</td>
+                                <td className="p-3 text-gray-600">{proj.department || 'Internal'}</td>
                                 <td className="p-3">
                                   <Badge className={proj.status === 'IN_PROGRESS' ? 'bg-blue-50 text-blue-700 hover:bg-blue-100' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}>
                                     {proj.status?.replace('_', ' ')}
@@ -386,6 +437,29 @@ function DashboardContent() {
                       </table>
                     </div>
                   </div>
+
+                  {/* Financials Bar Chart */}
+                  {financialChartData.length > 0 && (
+                    <div className="xl:col-span-3 bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex flex-col h-[350px] mt-2">
+                      <h3 className="font-semibold text-sm text-gray-900 mb-4">Project Financials</h3>
+                      <div className="flex-1 min-h-0 w-full relative">
+                        <div className="absolute inset-0">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={financialChartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+                              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                              <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                              <YAxis tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                              <Tooltip cursor={{ fill: '#f1f5f9' }} contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                              <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
+                              <Bar dataKey="estimated" name="Estimated Cost" fill="#94a3b8" radius={[4, 4, 0, 0]} />
+                              <Bar dataKey="billed" name="Billed Amount" fill="#16a34a" radius={[4, 4, 0, 0]} />
+                              <Bar dataKey="costing" name="Costing Amount" fill="#ef4444" radius={[4, 4, 0, 0]} />
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </>
             )}

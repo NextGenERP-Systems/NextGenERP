@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import dynamic from "next/dynamic";
-import { fetchProjects, createTask, updateTask } from "@/lib/api";
+import { fetchProjects, fetchTasks, createTask, updateTask, createDependency, fetchPredecessors } from "@/lib/api";
 import { X, Save } from "lucide-react";
 import "react-quill/dist/quill.snow.css";
 
@@ -19,6 +19,7 @@ interface NewTaskModalProps {
 export function NewTaskModal({ isOpen, onClose, onSuccess, editTask }: NewTaskModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [projects, setProjects] = useState<any[]>([]);
+  const [tasks, setTasks] = useState<any[]>([]);
 
   useEffect(() => {
     if (isOpen) {
@@ -39,8 +40,18 @@ export function NewTaskModal({ isOpen, onClose, onSuccess, editTask }: NewTaskMo
     weight: "1",
     parentTask: "",
     assigneeName: "",
-    description: ""
+    description: "",
+    isMilestone: false,
+    predecessorId: ""
   });
+
+  useEffect(() => {
+    if (formData.project) {
+      fetchTasks(formData.project).then(setTasks).catch(console.error);
+    } else {
+      setTasks([]);
+    }
+  }, [formData.project]);
 
   useEffect(() => {
     if (isOpen) {
@@ -49,6 +60,8 @@ export function NewTaskModal({ isOpen, onClose, onSuccess, editTask }: NewTaskMo
         if (editTask.kanbanState === 'IN_PROGRESS') status = "Working";
         if (editTask.kanbanState === 'IN_REVIEW') status = "Pending Review";
         if (editTask.kanbanState === 'COMPLETED') status = "Completed";
+        if (editTask.kanbanState === 'OVERDUE') status = "Overdue";
+        if (editTask.kanbanState === 'CANCELLED') status = "Cancelled";
 
         setFormData({
           subject: editTask.name || "",
@@ -61,10 +74,20 @@ export function NewTaskModal({ isOpen, onClose, onSuccess, editTask }: NewTaskMo
           status,
           priority: editTask.priority ? editTask.priority.charAt(0) + editTask.priority.slice(1).toLowerCase() : "Low",
           weight: editTask.weight ? editTask.weight.toString() : "1",
-          parentTask: "",
+          parentTask: editTask.parentTaskId || "",
           assigneeName: editTask.assigneeName || "",
-          description: editTask.description || ""
+          description: editTask.description || "",
+          isMilestone: editTask.isMilestone || false,
+          predecessorId: "" // Will be populated shortly
         });
+        
+        // Fetch predecessors
+        fetchPredecessors(editTask.id).then(deps => {
+           if (deps && deps.length > 0) {
+               setFormData(prev => ({ ...prev, predecessorId: deps[0].predecessorId }));
+           }
+        }).catch(console.error);
+        
       } else {
         setFormData({
           subject: "",
@@ -79,7 +102,9 @@ export function NewTaskModal({ isOpen, onClose, onSuccess, editTask }: NewTaskMo
           weight: "1",
           parentTask: "",
           assigneeName: "",
-          description: ""
+          description: "",
+          isMilestone: false,
+          predecessorId: ""
         });
       }
     }
@@ -108,7 +133,9 @@ export function NewTaskModal({ isOpen, onClose, onSuccess, editTask }: NewTaskMo
         'Open': 'TODO',
         'Working': 'IN_PROGRESS',
         'Pending Review': 'IN_REVIEW',
-        'Completed': 'COMPLETED'
+        'Completed': 'COMPLETED',
+        'Overdue': 'OVERDUE',
+        'Cancelled': 'CANCELLED'
       };
 
       const payload = {
@@ -119,17 +146,29 @@ export function NewTaskModal({ isOpen, onClose, onSuccess, editTask }: NewTaskMo
         priority: formData.priority.toUpperCase(),
         description: formData.description,
         isGroup: formData.isGroup,
+        isMilestone: formData.isMilestone,
         type: formData.type,
         assigneeName: formData.assigneeName,
-        weight: parseInt(formData.weight) || 1
+        weight: parseInt(formData.weight) || 1,
+        parentTask: formData.parentTask ? { id: formData.parentTask } : null
       };
       
+      let savedTask;
       if (editTask) {
-        await updateTask(editTask.id, payload);
+        savedTask = await updateTask(editTask.id, payload);
         toast.success("Task updated successfully!");
       } else {
-        await createTask(formData.project, payload);
+        savedTask = await createTask(formData.project, payload);
         toast.success("Task created successfully!");
+      }
+      
+      if (formData.predecessorId && savedTask?.id) {
+         try {
+             await createDependency({ predecessor: { id: formData.predecessorId }, successor: { id: savedTask.id } });
+         } catch (e) {
+             console.error("Failed to link dependency", e);
+             toast.error("Task saved, but failed to link dependency.");
+         }
       }
       
       onSuccess();
@@ -233,8 +272,8 @@ export function NewTaskModal({ isOpen, onClose, onSuccess, editTask }: NewTaskMo
                     <span className="text-sm font-bold text-slate-700">Is Group</span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" name="isTemplate" checked={formData.isTemplate} onChange={handleInputChange} className="w-4 h-4 text-blue-600 rounded" />
-                    <span className="text-sm font-bold text-slate-700">Is Template</span>
+                    <input type="checkbox" name="isMilestone" checked={formData.isMilestone} onChange={handleInputChange} className="w-4 h-4 text-blue-600 rounded" />
+                    <span className="text-sm font-bold text-slate-700">Is Milestone</span>
                   </label>
                 </div>
               </div>
@@ -250,6 +289,8 @@ export function NewTaskModal({ isOpen, onClose, onSuccess, editTask }: NewTaskMo
                     <option value="Working">Working</option>
                     <option value="Pending Review">Pending Review</option>
                     <option value="Completed">Completed</option>
+                    <option value="Overdue">Overdue</option>
+                    <option value="Cancelled">Cancelled</option>
                   </select>
                 </div>
                 <div className="space-y-2">
@@ -267,7 +308,21 @@ export function NewTaskModal({ isOpen, onClose, onSuccess, editTask }: NewTaskMo
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-slate-700">Parent Task</label>
-                  <input type="text" name="parentTask" value={formData.parentTask} onChange={handleInputChange} className="w-full border border-slate-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 bg-white" placeholder="Lookup Parent Task" />
+                  <select name="parentTask" value={formData.parentTask} onChange={handleInputChange} className="w-full border border-slate-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 bg-white">
+                    <option value="">Select Parent Task</option>
+                    {tasks.filter(t => t.id !== editTask?.id).map(t => (
+                      <option key={t.id} value={t.id}>{t.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-slate-700">Predecessor Task (Depends On)</label>
+                  <select name="predecessorId" value={formData.predecessorId} onChange={handleInputChange} className="w-full border border-slate-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 bg-white">
+                    <option value="">None</option>
+                    {tasks.filter(t => t.id !== editTask?.id).map(t => (
+                      <option key={t.id} value={t.id}>{t.name}</option>
+                    ))}
+                  </select>
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-slate-700">Assignee</label>

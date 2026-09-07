@@ -9,5 +9,5 @@ import java.util.UUID;
 
 @Repository
 public interface ProjectRiskRepository extends JpaRepository<ProjectRisk, UUID> {
-    List<ProjectRisk> findByProjectId(UUID projectId);
+    List<ProjectRisk> findByProject_Id(UUID projectId);
 }

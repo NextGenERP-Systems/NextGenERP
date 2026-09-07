@@ -22,7 +22,22 @@ public class ProjectUser {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "project_id", nullable = false)
+    @com.fasterxml.jackson.annotation.JsonIgnore
     private Project project;
+
+    @com.fasterxml.jackson.annotation.JsonProperty("projectId")
+    @Transient
+    public UUID getProjectId() {
+        return project != null ? project.getId() : null;
+    }
+
+    @com.fasterxml.jackson.annotation.JsonProperty("projectId")
+    public void setProjectId(UUID projectId) {
+        if (projectId != null) {
+            this.project = new Project();
+            this.project.setId(projectId);
+        }
+    }
 
     @Column(name = "user_id", nullable = false)
     private UUID userId;

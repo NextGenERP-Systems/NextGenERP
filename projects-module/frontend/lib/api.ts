@@ -18,6 +18,12 @@ export async function fetchTimesheets() {
   return res.json();
 }
 
+export async function fetchProjectTemplates() {
+  const res = await fetch(`${API_BASE}/v1/project-templates`);
+  if (!res.ok) throw new Error("Failed to fetch project templates");
+  return res.json();
+}
+
 export async function createProject(data: any) {
   const res = await fetch(`${API_BASE}/projects`, {
     method: "POST",
@@ -75,5 +81,21 @@ export async function updateTaskStatus(id: string, status: string) {
     body: JSON.stringify({ status }),
   });
   if (!res.ok) throw new Error("Failed to update task status");
+  return res.json();
+}
+
+export async function fetchPredecessors(taskId: string) {
+  const res = await fetch(`${API_BASE}/dependencies/task/${taskId}/predecessors`);
+  if (!res.ok) throw new Error("Failed to fetch predecessors");
+  return res.json();
+}
+
+export async function createDependency(data: any) {
+  const res = await fetch(`${API_BASE}/dependencies`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error("Failed to create dependency");
   return res.json();
 }

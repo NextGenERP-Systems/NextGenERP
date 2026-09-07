@@ -9,5 +9,5 @@ import java.util.List;
 
 @Repository
 public interface ProjectUpdateRepository extends JpaRepository<ProjectUpdate, UUID> {
-    List<ProjectUpdate> findByProjectId(UUID projectId);
+    List<ProjectUpdate> findByProject_IdOrderByUpdateDateDesc(UUID projectId);
 }

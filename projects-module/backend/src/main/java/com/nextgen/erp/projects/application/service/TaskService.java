@@ -45,7 +45,9 @@ public class TaskService {
         } else {
              task.setParentTask(null);
         }
-        return taskRepository.save(task);
+        Task savedTask = taskRepository.save(task);
+        projectService.updateProjectCompletion(projectId);
+        return savedTask;
     }
 
     @Transactional
@@ -68,6 +70,13 @@ public class TaskService {
         task.setType(taskDetails.getType());
         task.setWeight(taskDetails.getWeight());
         task.setIsMilestone(taskDetails.getIsMilestone());
+        task.setIsGroup(taskDetails.getIsGroup());
+        if (taskDetails.getParentTask() != null && taskDetails.getParentTask().getId() != null) {
+            Task parent = getTaskById(taskDetails.getParentTask().getId());
+            task.setParentTask(parent);
+        } else {
+            task.setParentTask(null);
+        }
         if (taskDetails.getKanbanState() != null) {
             task.setKanbanState(taskDetails.getKanbanState());
         }
@@ -77,12 +86,14 @@ public class TaskService {
         if (daysShifted != 0) {
             shiftSuccessorTasks(updated.getId(), daysShifted);
         }
+        
+        projectService.updateProjectCompletion(task.getProject().getId());
 
         return updated;
     }
 
     private void shiftSuccessorTasks(UUID predecessorId, long daysShifted) {
-        List<TaskDependency> dependencies = dependencyRepository.findByPredecessorId(predecessorId);
+        List<TaskDependency> dependencies = dependencyRepository.findByPredecessor_Id(predecessorId);
         
         for (TaskDependency dep : dependencies) {
             Task successor = dep.getSuccessor();
@@ -110,7 +121,9 @@ public class TaskService {
     public Task updateTaskStatus(UUID id, TaskStatus status) {
         Task task = getTaskById(id);
         task.setStatus(status);
-        return taskRepository.save(task);
+        Task updated = taskRepository.save(task);
+        projectService.updateProjectCompletion(task.getProject().getId());
+        return updated;
     }
 
     @Transactional
@@ -118,12 +131,16 @@ public class TaskService {
         Task task = getTaskById(id);
         task.setKanbanState(kanbanState);
         task.setStatus(status);
-        return taskRepository.save(task);
+        Task updated = taskRepository.save(task);
+        projectService.updateProjectCompletion(task.getProject().getId());
+        return updated;
     }
 
     @Transactional
     public void deleteTask(UUID id) {
         Task task = getTaskById(id);
+        UUID projectId = task.getProject().getId();
         taskRepository.delete(task);
+        projectService.updateProjectCompletion(projectId);
     }
 }

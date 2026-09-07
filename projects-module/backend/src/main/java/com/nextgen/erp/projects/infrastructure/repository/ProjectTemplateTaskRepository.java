@@ -9,5 +9,6 @@ import java.util.List;
 
 @Repository
 public interface ProjectTemplateTaskRepository extends JpaRepository<ProjectTemplateTask, UUID> {
-    List<ProjectTemplateTask> findByProjectTemplateId(UUID projectTemplateId);
+    List<ProjectTemplateTask> findByProjectTemplate_Id(UUID projectTemplateId);
+    void deleteByProjectTemplate_Id(UUID projectTemplateId);
 }

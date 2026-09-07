@@ -9,5 +9,5 @@ import java.util.List;
 
 @Repository
 public interface ProjectUserRepository extends JpaRepository<ProjectUser, UUID> {
-    List<ProjectUser> findByProjectId(UUID projectId);
+    List<ProjectUser> findByProject_Id(UUID projectId);
 }

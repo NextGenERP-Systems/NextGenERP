@@ -1,5 +1,8 @@
 package com.nextgen.erp.projects.domain.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -13,6 +16,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class TaskDependency {
 
     @Id
@@ -21,11 +25,25 @@ public class TaskDependency {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "predecessor_id", nullable = false)
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private Task predecessor;
+
+    @JsonProperty("predecessorId")
+    @Transient
+    public UUID getPredecessorId() {
+        return predecessor != null ? predecessor.getId() : null;
+    }
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "successor_id", nullable = false)
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private Task successor;
+
+    @JsonProperty("successorId")
+    @Transient
+    public UUID getSuccessorId() {
+        return successor != null ? successor.getId() : null;
+    }
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

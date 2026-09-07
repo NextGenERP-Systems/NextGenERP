@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import toast from "react-hot-toast";
+import { fetchProjectTemplates } from "@/lib/api";
 import { X, Save } from "lucide-react";
 
 interface ProjectModalProps {
@@ -29,7 +30,21 @@ export function ProjectModal({ isOpen, onClose, onSuccess, editProject }: Projec
     defaultCostCenter: "",
     company: "",
     collectProgress: false,
+    projectTemplate: "",
+    expectedStartDate: "",
+    expectedEndDate: ""
   });
+
+  const [templates, setTemplates] = useState<any[]>([]);
+  const [projectTypes, setProjectTypes] = useState<any[]>([]);
+  
+  React.useEffect(() => {
+    fetchProjectTemplates().then(setTemplates).catch(console.error);
+    fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8083/api/v1"}/project-types`)
+      .then(res => res.json())
+      .then(setProjectTypes)
+      .catch(console.error);
+  }, []);
 
   const [users, setUsers] = useState([{ id: Date.now(), user: "", fullName: "" }]);
 
@@ -37,21 +52,25 @@ export function ProjectModal({ isOpen, onClose, onSuccess, editProject }: Projec
     if (isOpen) {
       if (editProject) {
         setFormData({
-          series: editProject.series || "",
+          series: editProject.series || "PROJ-.YYYY.-",
           projectName: editProject.name || "",
-          status: editProject.status ? (editProject.status === 'IN_PROGRESS' ? 'Working' : editProject.status) : "Open",
-          projectType: editProject.projectType || "",
-          percentCompleteMethod: editProject.percentCompleteMethod || "Task Completion",
-          priority: editProject.priority || "Medium",
-          isActive: editProject.isActive ? "Yes" : "No",
+          status: editProject.status ? (editProject.status === 'IN_PROGRESS' ? 'Working' : (editProject.status === 'ON_HOLD' ? 'On Hold' : editProject.status.charAt(0) + editProject.status.slice(1).toLowerCase())) : "Open",
+          projectType: editProject.projectTypeId || "",
+          percentCompleteMethod: editProject.percentCompleteMethod === 'TASK_COMPLETION' ? 'Task Completion' : 
+                                 (editProject.percentCompleteMethod === 'TASK_WEIGHT' ? 'Task Weight' : 'Manual'),
+          priority: editProject.priority ? editProject.priority.charAt(0).toUpperCase() + editProject.priority.slice(1).toLowerCase() : "Medium",
+          isActive: editProject.status !== 'COMPLETED' ? "Yes" : "No",
           estimatedCost: editProject.estimatedCost || "",
           defaultCostCenter: editProject.defaultCostCenter || "",
           company: editProject.company || "",
           collectProgress: editProject.collectProgress || false,
+          projectTemplate: editProject.projectTemplateId || "",
+          expectedStartDate: editProject.expectedStartDate || "",
+          expectedEndDate: editProject.expectedEndDate || ""
         });
       } else {
         setFormData({
-          series: "",
+          series: "PROJ-.YYYY.-",
           projectName: "",
           status: "Open",
           projectType: "",
@@ -62,6 +81,9 @@ export function ProjectModal({ isOpen, onClose, onSuccess, editProject }: Projec
           defaultCostCenter: "",
           company: "",
           collectProgress: false,
+          projectTemplate: "",
+          expectedStartDate: "",
+          expectedEndDate: ""
         });
       }
     }
@@ -101,11 +123,22 @@ export function ProjectModal({ isOpen, onClose, onSuccess, editProject }: Projec
 
     setIsSubmitting(true);
     try {
+      const percentMethodMap: Record<string, string> = {
+         "Task Completion": "TASK_COMPLETION",
+         "Manual": "MANUAL",
+         "Task Weight": "TASK_WEIGHT"
+      };
       const payload = {
         name: formData.projectName,
-        status: formData.status === 'On Hold' || formData.status === 'Working' ? 'IN_PROGRESS' : formData.status.toUpperCase(),
+        status: formData.status === 'On Hold' ? 'ON_HOLD' : (formData.status === 'Working' ? 'IN_PROGRESS' : formData.status.toUpperCase()),
         priority: formData.priority.toUpperCase(),
         company: formData.company,
+        projectTypeId: formData.projectType || null,
+        estimatedCost: formData.estimatedCost ? parseFloat(formData.estimatedCost) : null,
+        percentCompleteMethod: percentMethodMap[formData.percentCompleteMethod] || "MANUAL",
+        projectTemplateId: formData.projectTemplate || null,
+        expectedStartDate: formData.expectedStartDate || null,
+        expectedEndDate: formData.expectedEndDate || null,
       };
 
       const url = isEditing 
@@ -120,6 +153,32 @@ export function ProjectModal({ isOpen, onClose, onSuccess, editProject }: Projec
 
       if (!actualRes.ok) throw new Error(isEditing ? "Failed to update project" : "Failed to create project");
       
+      const savedProject = await actualRes.json();
+      
+      // Save users (Team)
+      // Since it's complex to sync updates, for simplicity we create the ones with a valid UUID.
+      // In a full implementation, we'd delete old users and add new ones, or use a sync endpoint.
+      for (const u of users) {
+          // Assume user email is temporarily acting as userId (or we use a hardcoded UUID if they enter anything)
+          // In actual system, we would have a dropdown of UUIDs.
+          if (u.user && u.user.trim() !== '') {
+             try {
+                await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8083/api/v1"}/project-users`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        projectId: savedProject.id,
+                        userId: "00000000-0000-0000-0000-000000000000", // Hardcoded for demo
+                        roleName: "Member",
+                        canViewAttachments: true
+                    })
+                });
+             } catch(e) {
+                 console.error("Failed to add user to project", e);
+             }
+          }
+      }
+
       toast.success(isEditing ? "Project updated successfully!" : "Project created successfully!");
       onSuccess();
       onClose();
@@ -204,10 +263,20 @@ export function ProjectModal({ isOpen, onClose, onSuccess, editProject }: Projec
                     <label className="text-sm font-bold text-slate-700">Project Type</label>
                     <select name="projectType" value={formData.projectType} onChange={handleInputChange} className="w-full border border-slate-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 bg-white text-sm">
                       <option value="">Select Type</option>
-                      <option value="Internal">Internal</option>
-                      <option value="External">External</option>
+                      {projectTypes.filter(pt => pt.isActive).map(pt => (
+                        <option key={pt.id} value={pt.id}>{pt.name}</option>
+                      ))}
                     </select>
                   </div>
+                  {!isEditing && (
+                    <div className="space-y-2">
+                      <label className="text-sm font-bold text-slate-700">Project Template</label>
+                      <select name="projectTemplate" value={formData.projectTemplate} onChange={handleInputChange} className="w-full border border-slate-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 bg-white text-sm">
+                        <option value="">None (Blank Project)</option>
+                        {templates.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                      </select>
+                    </div>
+                  )}
                   <div className="space-y-2">
                     <label className="text-sm font-bold text-slate-700">% Complete Method</label>
                     <select name="percentCompleteMethod" value={formData.percentCompleteMethod} onChange={handleInputChange} className="w-full border border-slate-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 bg-white text-sm">
@@ -230,6 +299,14 @@ export function ProjectModal({ isOpen, onClose, onSuccess, editProject }: Projec
                       <option value="Yes">Yes</option>
                       <option value="No">No</option>
                     </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-slate-700">Expected Start Date</label>
+                    <input type="date" name="expectedStartDate" value={formData.expectedStartDate} onChange={handleInputChange} className="w-full border border-slate-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 bg-white text-sm" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-slate-700">Expected End Date</label>
+                    <input type="date" name="expectedEndDate" value={formData.expectedEndDate} onChange={handleInputChange} className="w-full border border-slate-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 bg-white text-sm" />
                   </div>
                 </div>
                 

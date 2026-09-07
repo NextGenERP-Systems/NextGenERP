@@ -8,4 +8,5 @@ import java.util.UUID;
 
 @Repository
 public interface ProjectRepository extends JpaRepository<Project, UUID> {
+    boolean existsByProjectType_Id(UUID projectTypeId);
 }

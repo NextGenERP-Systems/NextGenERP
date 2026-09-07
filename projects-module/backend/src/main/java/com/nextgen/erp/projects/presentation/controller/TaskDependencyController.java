@@ -18,12 +18,12 @@ public class TaskDependencyController {
 
     @GetMapping("/task/{taskId}/successors")
     public ResponseEntity<List<TaskDependency>> getSuccessors(@PathVariable UUID taskId) {
-        return ResponseEntity.ok(repository.findByPredecessorId(taskId));
+        return ResponseEntity.ok(repository.findByPredecessor_Id(taskId));
     }
     
     @GetMapping("/task/{taskId}/predecessors")
     public ResponseEntity<List<TaskDependency>> getPredecessors(@PathVariable UUID taskId) {
-        return ResponseEntity.ok(repository.findBySuccessorId(taskId));
+        return ResponseEntity.ok(repository.findBySuccessor_Id(taskId));
     }
 
     @PostMapping

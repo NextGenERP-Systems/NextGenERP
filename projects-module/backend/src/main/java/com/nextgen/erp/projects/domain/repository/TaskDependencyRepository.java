@@ -9,6 +9,6 @@ import java.util.UUID;
 
 @Repository
 public interface TaskDependencyRepository extends JpaRepository<TaskDependency, UUID> {
-    List<TaskDependency> findByPredecessorId(UUID predecessorId);
-    List<TaskDependency> findBySuccessorId(UUID successorId);
+    List<TaskDependency> findByPredecessor_Id(UUID predecessorId);
+    List<TaskDependency> findBySuccessor_Id(UUID successorId);
 }

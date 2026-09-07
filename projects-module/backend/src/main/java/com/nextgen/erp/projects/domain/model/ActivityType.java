@@ -28,6 +28,12 @@ public class ActivityType {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    @Column(name = "default_costing_rate", precision = 12, scale = 2)
+    private java.math.BigDecimal defaultCostingRate;
+
+    @Column(name = "default_billing_rate", precision = 12, scale = 2)
+    private java.math.BigDecimal defaultBillingRate;
+
     @Column(name = "is_active", nullable = false)
     @Builder.Default
     private Boolean isActive = true;

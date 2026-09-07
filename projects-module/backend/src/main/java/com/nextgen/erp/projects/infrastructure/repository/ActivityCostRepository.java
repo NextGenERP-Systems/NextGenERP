@@ -6,6 +6,9 @@ import org.springframework.stereotype.Repository;
 
 import java.util.UUID;
 
+import java.util.Optional;
+
 @Repository
 public interface ActivityCostRepository extends JpaRepository<ActivityCost, UUID> {
+    Optional<ActivityCost> findByEmployeeIdAndActivityType_Id(UUID employeeId, UUID activityTypeId);
 }

@@ -18,7 +18,7 @@ public class ProjectRiskController {
 
     @GetMapping("/project/{projectId}")
     public ResponseEntity<List<ProjectRisk>> getRisksByProject(@PathVariable UUID projectId) {
-        return ResponseEntity.ok(repository.findByProjectId(projectId));
+        return ResponseEntity.ok(repository.findByProject_Id(projectId));
     }
 
     @PostMapping

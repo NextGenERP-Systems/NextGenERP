@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import { X, Save, Plus, Trash2 } from "lucide-react";
-import { fetchProjects, createTimesheet } from "@/lib/api";
+import { fetchProjects, fetchTasks, createTimesheet } from "@/lib/api";
 
 interface LogTimeModalProps {
   isOpen: boolean;
@@ -14,10 +14,16 @@ interface LogTimeModalProps {
 export function LogTimeModal({ isOpen, onClose, onSuccess }: LogTimeModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [projects, setProjects] = useState<any[]>([]);
+  const [tasks, setTasks] = useState<any[]>([]);
+  const [activityTypes, setActivityTypes] = useState<any[]>([]);
 
   useEffect(() => {
     if (isOpen) {
       fetchProjects().then(setProjects).catch(console.error);
+      fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8083/api/v1"}/activity-types`)
+        .then(res => res.json())
+        .then(setActivityTypes)
+        .catch(console.error);
     }
   }, [isOpen]);
 
@@ -33,9 +39,17 @@ export function LogTimeModal({ isOpen, onClose, onSuccess }: LogTimeModalProps) 
     employee: ""
   });
 
+  useEffect(() => {
+    if (headerData.project) {
+      fetchTasks(headerData.project).then(setTasks).catch(console.error);
+    } else {
+      setTasks([]);
+    }
+  }, [headerData.project]);
+
   // Data Grid State
   const [timeLogs, setTimeLogs] = useState([
-    { id: Date.now(), activityType: "", fromTime: "", hrs: "", project: "", isBillable: true }
+    { id: Date.now(), notes: "", fromTime: "", hrs: "", task: "", activityType: "", isBillable: true }
   ]);
 
   if (!isOpen) return null;
@@ -46,7 +60,7 @@ export function LogTimeModal({ isOpen, onClose, onSuccess }: LogTimeModalProps) 
   };
 
   const addLog = () => {
-    setTimeLogs([...timeLogs, { id: Date.now(), activityType: "", fromTime: "", hrs: "", project: headerData.project, isBillable: true }]);
+    setTimeLogs([...timeLogs, { id: Date.now(), notes: "", fromTime: "", hrs: "", task: "", activityType: "", isBillable: true }]);
   };
 
   const removeLog = (id: number) => {
@@ -64,9 +78,9 @@ export function LogTimeModal({ isOpen, onClose, onSuccess }: LogTimeModalProps) 
       return;
     }
 
-    const hasEmptyLogs = timeLogs.some(log => !log.hrs || !log.activityType);
+    const hasEmptyLogs = timeLogs.some(log => !log.hrs || !log.task);
     if (hasEmptyLogs) {
-      toast.error("Please complete all fields in the timesheet data grid");
+      toast.error("Please ensure all time logs have a selected task and hours.");
       return;
     }
 
@@ -80,8 +94,9 @@ export function LogTimeModal({ isOpen, onClose, onSuccess }: LogTimeModalProps) 
         timeLogs: timeLogs.map(log => {
           const logDate = log.fromTime ? new Date(log.fromTime) : new Date();
           return {
-            activityType: null,
-            description: log.activityType,
+            taskId: log.task || null,
+            activityTypeId: log.activityType || null,
+            description: log.notes,
             hours: parseFloat(log.hrs),
             isBillable: log.isBillable,
             date: logDate.toISOString().split('T')[0],
@@ -195,10 +210,11 @@ export function LogTimeModal({ isOpen, onClose, onSuccess }: LogTimeModalProps) 
                 <thead className="bg-slate-50 border-b border-slate-200">
                   <tr>
                     <th className="p-3 text-xs font-bold text-slate-500 uppercase w-12 text-center">No.</th>
-                    <th className="p-3 text-xs font-bold text-slate-500 uppercase">Activity Type</th>
+                    <th className="p-3 text-xs font-bold text-slate-500 uppercase">Notes</th>
                     <th className="p-3 text-xs font-bold text-slate-500 uppercase">From Time</th>
                     <th className="p-3 text-xs font-bold text-slate-500 uppercase w-24">Hrs</th>
-                    <th className="p-3 text-xs font-bold text-slate-500 uppercase">Project</th>
+                    <th className="p-3 text-xs font-bold text-slate-500 uppercase min-w-[150px]">Task</th>
+                    <th className="p-3 text-xs font-bold text-slate-500 uppercase min-w-[150px]">Activity Type</th>
                     <th className="p-3 text-xs font-bold text-slate-500 uppercase w-24 text-center">Billable</th>
                     <th className="p-3 w-12"></th>
                   </tr>
@@ -210,10 +226,10 @@ export function LogTimeModal({ isOpen, onClose, onSuccess }: LogTimeModalProps) 
                       <td className="p-2">
                         <input 
                           type="text" 
-                          value={log.activityType} 
-                          onChange={(e) => updateLog(log.id, 'activityType', e.target.value)}
+                          value={log.notes} 
+                          onChange={(e) => updateLog(log.id, 'notes', e.target.value)}
                           className="w-full border border-slate-200 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 bg-white" 
-                          placeholder="e.g. Planning"
+                          placeholder="What did you work on?"
                         />
                       </td>
                       <td className="p-2">
@@ -235,13 +251,24 @@ export function LogTimeModal({ isOpen, onClose, onSuccess }: LogTimeModalProps) 
                         />
                       </td>
                       <td className="p-2">
-                        <input 
-                          type="text" 
-                          value={log.project} 
-                          onChange={(e) => updateLog(log.id, 'project', e.target.value)}
+                        <select
+                          value={log.task} 
+                          onChange={(e) => updateLog(log.id, 'task', e.target.value)}
                           className="w-full border border-slate-200 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 bg-white" 
-                          placeholder="Lookup Project"
-                        />
+                        >
+                          <option value="">Select Task</option>
+                          {tasks.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                        </select>
+                      </td>
+                      <td className="p-2">
+                        <select
+                          value={log.activityType} 
+                          onChange={(e) => updateLog(log.id, 'activityType', e.target.value)}
+                          className="w-full border border-slate-200 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 bg-white" 
+                        >
+                          <option value="">Select Activity</option>
+                          {activityTypes.filter(a => a.isActive).map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                        </select>
                       </td>
                       <td className="p-2 text-center">
                         <input 
