@@ -1,0 +1,16 @@
+version: '3.8'
+services:
+  crm-backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: nextgen_erp_crm_backend
+    ports:
+      - "8085:8085"
+    environment:
+      # Use host.docker.internal to connect to the existing db container running on the host's port 5432
+      SPRING_DATASOURCE_URL: jdbc:postgresql://host.docker.internal:5432/nextgen_erp
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
