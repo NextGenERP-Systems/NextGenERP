@@ -75,7 +75,7 @@ export interface WorkflowHistory {
   createdAt: string;
 }
 
-export const API_URL = "http://localhost:8081/api/v1";
+export const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8083/api/v1";
 
 export interface PageData<T> {
   content: T[];

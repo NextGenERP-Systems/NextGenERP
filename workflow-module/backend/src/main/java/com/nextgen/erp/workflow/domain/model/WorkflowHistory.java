@@ -40,13 +40,13 @@ public class WorkflowHistory {
     @Column(name = "to_state_id")
     private UUID toStateId;
 
-    @Column(name = "performed_by", nullable = false)
+    @Column(name = "action_by", nullable = false)
     private String performedBy; // The user who performed the action
 
     @Column(name = "comments", columnDefinition = "TEXT")
     private String comments;
 
     @CreationTimestamp
-    @Column(name = "created_at", updatable = false)
+    @Column(name = "action_at", updatable = false)
     private OffsetDateTime createdAt;
 }

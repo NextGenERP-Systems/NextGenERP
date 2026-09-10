@@ -1,0 +1,67 @@
+services:
+  # ─────────────────────────────────────────────
+  # HRM PostgreSQL Database (port 5433)
+  # ─────────────────────────────────────────────
+  hrm_db:
+    image: postgres:16-alpine
+    container_name: nextgen_hrm_db
+    restart: always
+    environment:
+      POSTGRES_DB: nextgen_erp
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+    ports:
+      - "5433:5432"
+    volumes:
+      - hrm_pgdata:/var/lib/postgresql/data
+      - ./hrm-module/database/init-schema.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+      - ./hrm-module/database/seed-data.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d nextgen_erp"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─────────────────────────────────────────────
+  # HRM Backend — Spring Boot (port 8082)
+  # Mapped to 8082 on host to avoid conflict with
+  # workflow_backend which already uses 8081.
+  # ─────────────────────────────────────────────
+  hrm_backend:
+    build:
+      context: ./hrm-module/backend
+      dockerfile: Dockerfile
+    container_name: nextgen_hrm_backend
+    restart: always
+    environment:
+      SERVER_PORT: 8083
+      SPRING_DATASOURCE_URL: jdbc:postgresql://hrm_db:5432/nextgen_erp
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-postgres}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+    ports:
+      - "8083:8083"
+    depends_on:
+      hrm_db:
+        condition: service_healthy
+
+  # ─────────────────────────────────────────────
+  # HRM Frontend — Next.js (port 3001)
+  # ─────────────────────────────────────────────
+  hrm_frontend:
+    build:
+      context: ./hrm-module/frontend
+      dockerfile: Dockerfile
+    container_name: nextgen_hrm_frontend
+    restart: always
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      BACKEND_API_URL: http://hrm_backend:8083
+    ports:
+      - "3001:3001"
+    depends_on:
+      - hrm_backend
+
+volumes:
+  hrm_pgdata:

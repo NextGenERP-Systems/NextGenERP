@@ -1,12 +1,14 @@
-FROM eclipse-temurin:21-jdk-alpine AS builder
+FROM maven:3.9.8-eclipse-temurin-21-alpine AS build
 WORKDIR /app
 COPY pom.xml .
 COPY src ./src
-RUN apk add --no-cache maven
-RUN mvn clean package -DskipTests
+RUN mvn clean package -Dmaven.test.skip=true -B
 
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
-COPY --from=builder /app/target/*.jar app.jar
-EXPOSE 8081
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+COPY --from=build /app/target/*.jar app.jar
+USER appuser
+EXPOSE 8083
 ENTRYPOINT ["java", "-jar", "app.jar"]
+

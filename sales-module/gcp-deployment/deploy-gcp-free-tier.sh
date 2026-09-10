@@ -7,10 +7,10 @@
 set -euo pipefail
 
 # ----------------- CONFIGURATION (GCP Always Free Tier Parameters) ------------
-PROJECT_ID="${GCP_PROJECT_ID:-$(gcloud config get-value project 2>/dev/null || echo "")}"
+PROJECT_ID="${GCP_PROJECT_ID:-nextgen-erp-7753216}"
 REGION="us-central1"
 ZONE="us-central1-a"
-INSTANCE_NAME="nextgen-erp-sales-vm"
+INSTANCE_NAME="${INSTANCE_NAME:-nextgen-erp-core-vm}"
 MACHINE_TYPE="e2-micro"              # GCP Always Free Tier eligible
 DISK_SIZE="30GB"                     # GCP Always Free Tier disk quota
 DISK_TYPE="pd-standard"
@@ -146,7 +146,7 @@ if ! gcloud compute instances describe "$INSTANCE_NAME" --zone="$ZONE" --project
         --project="$PROJECT_ID" \
         --zone="$ZONE" \
         --machine-type="$MACHINE_TYPE" \
-        --network-interface=network-tier=STANDARD,subnet=default \
+        --no-address \
         --maintenance-policy=MIGRATE \
         --tags=nextgen-erp-server,http-server,https-server \
         --image-family="$IMAGE_FAMILY" \
@@ -160,11 +160,11 @@ else
     echo "[*] VM instance '$INSTANCE_NAME' already exists."
 fi
 
-# 6. Retrieve Public External IP
-EXTERNAL_IP=$(gcloud compute instances describe "$INSTANCE_NAME" \
+# 6. Retrieve Internal IP
+INTERNAL_IP=$(gcloud compute instances describe "$INSTANCE_NAME" \
     --zone="$ZONE" \
     --project="$PROJECT_ID" \
-    --format='get(networkInterfaces[0].accessConfigs[0].natIP)')
+    --format='get(networkInterfaces[0].networkIP)')
 
 echo ""
 echo "======================================================================"
@@ -173,14 +173,17 @@ echo "======================================================================"
 echo "  VM Name:        $INSTANCE_NAME"
 echo "  GCP Project:    $PROJECT_ID"
 echo "  Zone / Region:  $ZONE ($REGION)"
-echo "  External IP:    $EXTERNAL_IP"
+echo "  Internal IP:    $INTERNAL_IP"
+echo "  External IP:    None (100% Free Tier - No IPv4 Surcharge)"
 echo ""
-echo "  Access URLs:"
-echo "  - Next.js UI:    http://$EXTERNAL_IP:3000  (or http://$EXTERNAL_IP/)"
-echo "  - Spring Boot:   http://$EXTERNAL_IP:8080"
-echo "  - Swagger Docs:  http://$EXTERNAL_IP:8080/swagger-ui.html"
-echo "  - PostgreSQL:    $EXTERNAL_IP:5432 (database: nextgen_erp)"
+echo "  To access Web UI & Backend locally on your machine:"
+echo "  gcloud compute ssh $INSTANCE_NAME --zone=$ZONE --project=$PROJECT_ID --tunnel-through-iap -- -L 3000:localhost:3000 -L 8080:localhost:8080"
 echo ""
-echo "  To SSH into your instance:"
-echo "  gcloud compute ssh $INSTANCE_NAME --zone=$ZONE --project=$PROJECT_ID"
+echo "  Then open in your browser:"
+echo "  - Next.js UI:    http://localhost:3000"
+echo "  - Spring Boot:   http://localhost:8080"
+echo "  - Swagger Docs:  http://localhost:8080/swagger-ui.html"
+echo ""
+echo "  To SSH directly into the instance:"
+echo "  gcloud compute ssh $INSTANCE_NAME --zone=$ZONE --project=$PROJECT_ID --tunnel-through-iap"
 echo "======================================================================"

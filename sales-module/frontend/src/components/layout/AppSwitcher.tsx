@@ -9,13 +9,15 @@ import {
   ExternalLink,
   Check,
   Sparkles,
+  GitMerge,
+  Package,
 } from "lucide-react";
 
 interface AppSwitcherProps {
-  currentModule: "sales" | "hrm";
+  currentModule?: "sales" | "hrm" | "workflow" | "stock";
 }
 
-export function AppSwitcher({ currentModule }: AppSwitcherProps) {
+export function AppSwitcher({ currentModule = "sales" }: AppSwitcherProps) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -35,17 +37,37 @@ export function AppSwitcher({ currentModule }: AppSwitcherProps) {
       name: "Sales & CRM 360",
       description: "Quotations, Sales Orders, Commissions & POS",
       icon: ShoppingBag,
-      href: currentModule === "sales" ? "/sales" : "http://localhost:3000/sales",
+      href: "/sales",
       color: "bg-emerald-500",
       badge: "Commercial",
       active: currentModule === "sales",
+    },
+    {
+      id: "workflow",
+      name: "Workflow & Doc Automation",
+      description: "State Machines, Approvals, Templates & OCR",
+      icon: GitMerge,
+      href: "/workflows",
+      color: "bg-amber-500",
+      badge: "Automation",
+      active: currentModule === "workflow",
+    },
+    {
+      id: "stock",
+      name: "Stock & Inventory 360",
+      description: "Double-Entry Ledger, Bins, FIFO/Avg & Serials",
+      icon: Package,
+      href: "http://localhost:3003/stock",
+      color: "bg-blue-600",
+      badge: "Supply Chain",
+      active: currentModule === ("stock" as any),
     },
     {
       id: "hrm",
       name: "HRM & People Ops",
       description: "Employee 360, Payroll Engine, Appraisals & Claims",
       icon: Users,
-      href: currentModule === "hrm" ? "/hrm" : "http://localhost:3001/hrm",
+      href: "http://localhost:3001/hrm",
       color: "bg-indigo-500",
       badge: "Enterprise HR",
       active: currentModule === "hrm",

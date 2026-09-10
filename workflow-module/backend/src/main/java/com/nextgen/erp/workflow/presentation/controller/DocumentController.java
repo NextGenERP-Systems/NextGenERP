@@ -30,7 +30,7 @@ import java.util.UUID;
 public class DocumentController {
 
     private final DocumentService documentService;
-    private final Path fileStorageLocation = Paths.get("attachments").toAbsolutePath().normalize();
+    private final Path fileStorageLocation = Paths.get(System.getProperty("java.io.tmpdir"), "attachments").toAbsolutePath().normalize();
 
     public DocumentController(DocumentService documentService) {
         this.documentService = documentService;

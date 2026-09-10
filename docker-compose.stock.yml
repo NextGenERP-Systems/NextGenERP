@@ -1,0 +1,21 @@
+services:
+  stock_backend:
+    build:
+      context: ./stock-module/backend
+      dockerfile: Dockerfile
+    container_name: nextgen_stock_backend
+    restart: unless-stopped
+    ports:
+      - "8084:8084"
+    environment:
+      SERVER_PORT: 8084
+      SPRING_DATASOURCE_URL: jdbc:postgresql://nextgen_erp_unified_db:5432/nextgen_erp?currentSchema=stock,public
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+    networks:
+      - nextgenerp_default
+
+networks:
+  nextgenerp_default:
+    external: true
