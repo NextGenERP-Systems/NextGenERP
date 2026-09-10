@@ -159,9 +159,9 @@ export default function RecruitmentPage() {
           </button>
           <button
             onClick={() => setShowJobModal(true)}
-            className="liquid-btn-primary flex items-center gap-2 px-5 py-2.5 text-xs shadow-md"
+            className="liquid-btn-primary flex items-center gap-2 px-5 py-2.5 text-xs shadow-xs"
           >
-            <Briefcase className="w-4 h-4 text-white" />
+            <Briefcase className="w-4 h-4 text-slate-800" />
             + Post Job Opening
           </button>
         </div>
@@ -184,9 +184,9 @@ export default function RecruitmentPage() {
             </div>
             <button
               onClick={() => setShowJobModal(true)}
-              className="liquid-btn-primary px-5 py-2 text-xs inline-flex items-center gap-1.5 shadow-md"
+              className="liquid-btn-primary px-5 py-2 text-xs inline-flex items-center gap-1.5 shadow-xs"
             >
-              <Plus className="w-3.5 h-3.5 text-white" />
+              <Plus className="w-3.5 h-3.5 text-slate-800" />
               Post Your First Job
             </button>
           </div>
@@ -203,13 +203,13 @@ export default function RecruitmentPage() {
                     <p className="text-xs text-slate-500 font-mono font-medium">{job.jobCode} • {job.department?.departmentName}</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="px-2.5 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-emerald-50/90 text-emerald-800 border border-emerald-300/80">
+                    <span className="px-2.5 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider liquid-glass text-slate-800">
                       {job.vacancies} Open Roles
                     </span>
                     <button
                       onClick={(e) => handleDeleteJob(job.id, e)}
                       title="Delete Job Opening"
-                      className="p-1 rounded text-slate-300 hover:text-rose-600 hover:bg-rose-50 transition-colors opacity-0 group-hover:opacity-100"
+                      className="p-1 rounded text-slate-400 hover:text-rose-600 hover:bg-white/60 transition-colors opacity-0 group-hover:opacity-100"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -250,7 +250,7 @@ export default function RecruitmentPage() {
               >
                 <div className="flex items-center justify-between border-b border-white/60 pb-2.5">
                   <span className="text-xs font-bold text-slate-800">{label}</span>
-                  <span className="w-5 h-5 rounded-full bg-white/80 border border-white/90 flex items-center justify-center text-[10px] font-bold text-slate-700 shadow-2xs">
+                  <span className="w-5 h-5 rounded-full liquid-glass flex items-center justify-center text-[10px] font-bold text-slate-700">
                     {stageApplicants.length}
                   </span>
                 </div>
@@ -278,7 +278,7 @@ export default function RecruitmentPage() {
                             <button
                               onClick={(e) => handleDeleteApplicant(applicant.id, e)}
                               title="Delete Candidate"
-                              className="text-slate-300 hover:text-rose-600 p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                              className="text-slate-400 hover:text-rose-600 p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
                             >
                               <Trash2 className="w-3 h-3" />
                             </button>
@@ -289,22 +289,22 @@ export default function RecruitmentPage() {
                           </div>
 
                           <div className="flex items-center justify-between pt-2 border-t border-white/40 text-[11px]">
-                            <div className="flex items-center text-amber-500 font-bold gap-0.5 text-[10px]">
-                              <Star className="w-3 h-3 fill-amber-400" />
+                            <div className="flex items-center text-slate-600 font-bold gap-0.5 text-[10px]">
+                              <Star className="w-3 h-3 fill-slate-400 text-slate-400" />
                               <span>{applicant.rating || 5}/5</span>
                             </div>
 
                             {next && (
                               <button
                                 onClick={() => handleStageChange(applicant.id, next)}
-                                className="text-[10px] text-indigo-700 hover:text-indigo-900 font-bold flex items-center gap-0.5 px-2 py-0.5 rounded-md bg-indigo-50/80 border border-indigo-100 hover:bg-indigo-100/90 transition-colors"
+                                className="text-[10px] text-slate-800 hover:text-slate-900 font-bold flex items-center gap-0.5 px-2 py-0.5 rounded-full liquid-glass"
                               >
                                 Next <ArrowRight className="w-2.5 h-2.5" />
                               </button>
                             )}
 
                             {applicant.stage === "HIRED" && (
-                              <span className="text-[10px] text-emerald-700 font-bold flex items-center gap-0.5">
+                              <span className="text-[10px] text-slate-800 font-bold flex items-center gap-0.5">
                                 <CheckCircle2 className="w-3 h-3" /> Hired
                               </span>
                             )}
@@ -322,8 +322,8 @@ export default function RecruitmentPage() {
 
       {/* Modal: Post Job Opening */}
       {showJobModal && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 space-y-5 shadow-2xl border border-slate-200">
+        <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white/95 backdrop-blur-xl rounded-3xl max-w-lg w-full p-6 space-y-5 shadow-2xl border border-white/60">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-base font-bold text-slate-900">Post New Job Opening</h3>
               <button onClick={() => setShowJobModal(false)} className="text-slate-400 hover:text-slate-700">
@@ -340,7 +340,7 @@ export default function RecruitmentPage() {
                   placeholder="e.g. Lead Platform Engineer"
                   value={newJob.jobTitle}
                   onChange={(e) => setNewJob({ ...newJob, jobTitle: e.target.value })}
-                  className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-indigo-500 font-semibold"
+                  className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-slate-500 font-semibold"
                 />
               </div>
 
@@ -350,7 +350,7 @@ export default function RecruitmentPage() {
                   <select
                     value={newJob.departmentId}
                     onChange={(e) => setNewJob({ ...newJob, departmentId: e.target.value })}
-                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-indigo-500 font-medium"
+                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-slate-500 font-medium"
                   >
                     {MOCK_DEPARTMENTS.map((d) => (
                       <option key={d.id} value={d.id}>{d.departmentName}</option>
@@ -365,7 +365,7 @@ export default function RecruitmentPage() {
                     min="1"
                     value={newJob.vacancies}
                     onChange={(e) => setNewJob({ ...newJob, vacancies: parseInt(e.target.value) || 1 })}
-                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-indigo-500 font-medium"
+                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-slate-500 font-medium"
                   />
                 </div>
               </div>
@@ -378,7 +378,7 @@ export default function RecruitmentPage() {
                     placeholder="Bengaluru / Hybrid"
                     value={newJob.location}
                     onChange={(e) => setNewJob({ ...newJob, location: e.target.value })}
-                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-indigo-500 font-medium"
+                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-slate-500 font-medium"
                   />
                 </div>
                 <div>
@@ -388,7 +388,7 @@ export default function RecruitmentPage() {
                     min="0"
                     value={newJob.minExperienceYears}
                     onChange={(e) => setNewJob({ ...newJob, minExperienceYears: parseInt(e.target.value) || 0 })}
-                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-indigo-500 font-medium"
+                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-slate-500 font-medium"
                   />
                 </div>
               </div>
@@ -400,7 +400,7 @@ export default function RecruitmentPage() {
                   placeholder="Describe technical stack, responsibilities, and qualifications..."
                   value={newJob.description}
                   onChange={(e) => setNewJob({ ...newJob, description: e.target.value })}
-                  className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-indigo-500 font-medium"
+                  className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-slate-500 font-medium"
                 />
               </div>
 
@@ -414,7 +414,7 @@ export default function RecruitmentPage() {
                 </button>
                 <button
                   type="submit"
-                  className="liquid-btn-primary px-5 py-2.5 text-xs shadow-md"
+                  className="liquid-btn-primary px-5 py-2.5 text-xs shadow-xs"
                 >
                   Post Job Opening
                 </button>
@@ -426,8 +426,8 @@ export default function RecruitmentPage() {
 
       {/* Modal: Add Candidate */}
       {showCandidateModal && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 space-y-5 shadow-2xl border border-slate-200">
+        <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white/95 backdrop-blur-xl rounded-3xl max-w-lg w-full p-6 space-y-5 shadow-2xl border border-white/60">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-base font-bold text-slate-900">Add Job Candidate</h3>
               <button onClick={() => setShowCandidateModal(false)} className="text-slate-400 hover:text-slate-700">
@@ -444,7 +444,7 @@ export default function RecruitmentPage() {
                   placeholder="e.g. Ramesh Kumar"
                   value={newCandidate.applicantName}
                   onChange={(e) => setNewCandidate({ ...newCandidate, applicantName: e.target.value })}
-                  className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-indigo-500 font-semibold"
+                  className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-slate-500 font-semibold"
                 />
               </div>
 
@@ -457,7 +457,7 @@ export default function RecruitmentPage() {
                     placeholder="candidate@gmail.com"
                     value={newCandidate.email}
                     onChange={(e) => setNewCandidate({ ...newCandidate, email: e.target.value })}
-                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-indigo-500 font-medium"
+                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-slate-500 font-medium"
                   />
                 </div>
                 <div>
@@ -467,7 +467,7 @@ export default function RecruitmentPage() {
                     placeholder="+91 98000 11222"
                     value={newCandidate.phone}
                     onChange={(e) => setNewCandidate({ ...newCandidate, phone: e.target.value })}
-                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-indigo-500 font-medium"
+                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-slate-500 font-medium"
                   />
                 </div>
               </div>
@@ -480,7 +480,7 @@ export default function RecruitmentPage() {
                     placeholder="e.g. Amazon / Freelance"
                     value={newCandidate.currentCompany}
                     onChange={(e) => setNewCandidate({ ...newCandidate, currentCompany: e.target.value })}
-                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-indigo-500 font-medium"
+                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-slate-500 font-medium"
                   />
                 </div>
                 <div>
@@ -491,7 +491,7 @@ export default function RecruitmentPage() {
                     placeholder="1800000"
                     value={newCandidate.expectedCtc}
                     onChange={(e) => setNewCandidate({ ...newCandidate, expectedCtc: parseInt(e.target.value) || 0 })}
-                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-indigo-500 font-medium"
+                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-slate-500 font-medium"
                   />
                 </div>
               </div>
@@ -502,7 +502,7 @@ export default function RecruitmentPage() {
                   <select
                     value={newCandidate.jobOpeningId}
                     onChange={(e) => setNewCandidate({ ...newCandidate, jobOpeningId: e.target.value })}
-                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-indigo-500 font-medium"
+                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-slate-500 font-medium"
                   >
                     {jobs.map((j) => (
                       <option key={j.id} value={j.id}>{j.jobTitle} ({j.jobCode})</option>
@@ -521,7 +521,7 @@ export default function RecruitmentPage() {
                 </button>
                 <button
                   type="submit"
-                  className="liquid-btn-primary px-5 py-2.5 text-xs shadow-md"
+                  className="liquid-btn-primary px-5 py-2.5 text-xs shadow-xs"
                 >
                   Add Candidate to Pipeline
                 </button>

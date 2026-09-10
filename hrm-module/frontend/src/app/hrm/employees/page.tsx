@@ -99,15 +99,15 @@ export default function EmployeesPage() {
 
         <button
           onClick={() => setShowAddModal(true)}
-          className="liquid-btn-primary flex items-center gap-2 px-5 py-2.5 text-xs self-start shadow-md"
+          className="liquid-btn-primary flex items-center gap-2 px-5 py-2.5 text-xs self-start shadow-xs"
         >
-          <UserPlus className="w-4 h-4 text-white" />
+          <UserPlus className="w-4 h-4 text-slate-800" />
           Onboard New Employee
         </button>
       </div>
 
       {/* Filters Bar */}
-      <div className="flex flex-col sm:flex-row items-center gap-3 bg-white p-3 rounded-2xl border border-slate-200 shadow-2xs">
+      <div className="flex flex-col sm:flex-row items-center gap-3 liquid-glass p-3 rounded-2xl">
         <div className="relative flex-1 w-full">
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
@@ -115,7 +115,7 @@ export default function EmployeesPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by name, code, email, designation..."
-            className="w-full pl-10 pr-4 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-medium"
+            className="w-full pl-10 pr-4 py-2 text-xs bg-white/50 border border-white/70 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-400 font-medium"
           />
         </div>
 
@@ -124,7 +124,7 @@ export default function EmployeesPage() {
           <select
             value={selectedDept}
             onChange={(e) => setSelectedDept(e.target.value)}
-            className="px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:border-indigo-500 font-medium"
+            className="px-3 py-2 text-xs bg-white/50 border border-white/70 rounded-xl text-slate-800 focus:outline-none font-medium"
           >
             <option value="ALL">All Departments</option>
             {MOCK_DEPARTMENTS.map((d) => (
@@ -139,7 +139,7 @@ export default function EmployeesPage() {
       {/* Employee Grid */}
       {filtered.length === 0 ? (
         <div className="liquid-glass-card p-12 text-center space-y-4">
-          <div className="w-16 h-16 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 mx-auto">
+          <div className="w-16 h-16 rounded-2xl liquid-glass flex items-center justify-center text-slate-700 mx-auto">
             <Users className="w-8 h-8" />
           </div>
           <div>
@@ -150,9 +150,9 @@ export default function EmployeesPage() {
           </div>
           <button
             onClick={() => setShowAddModal(true)}
-            className="liquid-btn-primary px-6 py-2.5 text-xs inline-flex items-center gap-2 shadow-md"
+            className="liquid-btn-primary px-6 py-2.5 text-xs inline-flex items-center gap-2 shadow-xs"
           >
-            <UserPlus className="w-4 h-4 text-white" />
+            <UserPlus className="w-4 h-4 text-slate-800" />
             Onboard Your Profile Now
           </button>
         </div>
@@ -166,12 +166,12 @@ export default function EmployeesPage() {
             >
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3.5">
-                  <div className="w-12 h-12 rounded-2xl bg-indigo-50/80 border border-indigo-100/80 flex items-center justify-center font-black text-sm text-indigo-700 shadow-2xs">
+                  <div className="w-12 h-12 rounded-2xl liquid-glass flex items-center justify-center font-black text-sm text-slate-800 shadow-2xs">
                     {emp.firstName[0]}
                     {emp.lastName ? emp.lastName[0] : ""}
                   </div>
                   <div>
-                    <div className="font-bold text-sm text-slate-900 group-hover:text-indigo-600 transition-colors">
+                    <div className="font-bold text-sm text-slate-900 group-hover:text-slate-700 transition-colors">
                       {emp.firstName} {emp.lastName}
                     </div>
                     <div className="text-xs text-slate-500 font-mono font-bold">{emp.employeeCode}</div>
@@ -179,56 +179,149 @@ export default function EmployeesPage() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <span
-                    className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                      emp.status === "ACTIVE"
-                        ? "bg-emerald-50/90 text-emerald-800 border border-emerald-300/80"
-                        : "bg-amber-50/90 text-amber-800 border border-amber-300/80"
-                    }`}
-                  >
+                  <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider liquid-glass text-slate-700">
                     {emp.status}
                   </span>
                   <button
                     onClick={(e) => handleDelete(emp.id, e)}
                     title="Delete Employee"
-                    className="p-1.5 rounded-lg text-slate-300 hover:text-rose-600 hover:bg-rose-50 transition-colors opacity-0 group-hover:opacity-100"
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-white/60 transition-colors opacity-0 group-hover:opacity-100"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
               </div>
 
-              <div className="space-y-2 text-xs border-t border-white/40 pt-3">
-                <div className="flex items-center gap-2 text-slate-800 font-medium">
-                  <Building className="w-3.5 h-3.5 text-slate-400" />
-                  <span>{emp.department?.departmentName || "Engineering"}</span>
-                </div>
-                <div className="text-slate-500 pl-5.5 text-[11px]">
-                  {emp.designation?.designationName || "Software Engineer"}
-                </div>
-                <div className="flex items-center gap-2 text-slate-600">
-                  <Mail className="w-3.5 h-3.5 text-slate-400" />
-                  <span className="truncate">{emp.workEmail}</span>
-                </div>
-                <div className="flex items-center gap-2 text-slate-600">
-                  <Phone className="w-3.5 h-3.5 text-slate-400" />
-                  <span>{emp.cellNumber}</span>
-                </div>
+              <div className="space-y-1.5 text-xs text-slate-600">
+                <div className="font-semibold text-slate-800">{emp.designation?.designationName}</div>
+                <div className="text-[11px] text-slate-500">{emp.department?.departmentName}</div>
               </div>
 
-              <div className="flex items-center justify-between text-[11px] text-slate-500 pt-3 border-t border-white/40">
-                <span>Joined: {emp.dateOfJoining}</span>
-                <span className="text-indigo-600 font-bold group-hover:underline flex items-center gap-1">Inspect 360 →</span>
+              <div className="pt-3 border-t border-white/60 flex items-center justify-between text-xs text-slate-500">
+                <span className="flex items-center gap-1.5 text-[11px]">
+                  <Mail className="w-3.5 h-3.5 text-slate-400" />
+                  <span className="truncate max-w-[140px]">{emp.workEmail}</span>
+                </span>
+                <span className="flex items-center gap-1.5 text-[11px]">
+                  <Phone className="w-3.5 h-3.5 text-slate-400" />
+                  <span>{emp.cellNumber}</span>
+                </span>
               </div>
             </div>
           ))}
         </div>
       )}
 
-      {/* Modal: Add Employee */}
+      {/* Drawer: Employee 360 Inspector */}
+      {selectedEmp && (
+        <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-xs z-50 flex justify-end">
+          <div className="bg-white/90 backdrop-blur-xl w-full max-w-xl h-full shadow-2xl p-8 overflow-y-auto space-y-6 border-l border-white/60">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl liquid-glass flex items-center justify-center font-bold text-slate-900 text-lg">
+                  {selectedEmp.firstName[0]}
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-slate-900">
+                    {selectedEmp.firstName} {selectedEmp.lastName}
+                  </h2>
+                  <p className="text-xs text-slate-500 font-mono">{selectedEmp.employeeCode}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handleDelete(selectedEmp.id)}
+                  className="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                  title="Delete Profile"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setSelectedEmp(null)}
+                  className="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Profile Overview */}
+            <div className="space-y-4 text-xs">
+              <h3 className="font-bold text-slate-400 uppercase tracking-wider text-[10px]">
+                Organizational Hierarchy
+              </h3>
+              <div className="grid grid-cols-2 gap-4 liquid-glass p-4 rounded-2xl">
+                <div>
+                  <span className="text-slate-400 font-medium">Department</span>
+                  <p className="font-bold text-slate-800 mt-0.5">{selectedEmp.department?.departmentName}</p>
+                </div>
+                <div>
+                  <span className="text-slate-400 font-medium">Designation</span>
+                  <p className="font-bold text-slate-800 mt-0.5">{selectedEmp.designation?.designationName}</p>
+                </div>
+                <div>
+                  <span className="text-slate-400 font-medium">Employment Type</span>
+                  <p className="font-bold text-slate-800 mt-0.5">{selectedEmp.employmentType}</p>
+                </div>
+                <div>
+                  <span className="text-slate-400 font-medium">Joining Date</span>
+                  <p className="font-bold text-slate-800 mt-0.5 font-mono">{selectedEmp.dateOfJoining}</p>
+                </div>
+              </div>
+
+              <h3 className="font-bold text-slate-400 uppercase tracking-wider text-[10px]">
+                Statutory & Banking Details
+              </h3>
+              <div className="space-y-3 liquid-glass p-4 rounded-2xl">
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500 font-medium">Income Tax PAN</span>
+                  <span className="font-mono font-bold text-slate-800">{selectedEmp.panNumber || "ABCDE1234F"}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500 font-medium">Bank Name</span>
+                  <span className="font-semibold text-slate-800">{selectedEmp.bankName || "HDFC Bank Ltd"}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500 font-medium">Account Number</span>
+                  <span className="font-mono font-bold text-slate-800">{selectedEmp.bankAccountNumber || "5010099887766"}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500 font-medium">IFSC Code</span>
+                  <span className="font-mono font-bold text-slate-800">{selectedEmp.ifscCode || "HDFC0000123"}</span>
+                </div>
+              </div>
+
+              <h3 className="font-bold text-slate-400 uppercase tracking-wider text-[10px]">
+                Contact & Communication
+              </h3>
+              <div className="space-y-3 liquid-glass p-4 rounded-2xl">
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500 font-medium">Official Work Email</span>
+                  <span className="font-medium text-slate-800">{selectedEmp.workEmail}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500 font-medium">Cell Phone</span>
+                  <span className="font-medium text-slate-800">{selectedEmp.cellNumber}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-4 border-t border-slate-200 flex justify-end">
+              <button
+                onClick={() => setSelectedEmp(null)}
+                className="liquid-btn-glass px-5 py-2.5 text-xs"
+              >
+                Close Profile
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Onboard New Employee */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 space-y-5 shadow-2xl border border-slate-200">
+        <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white/95 backdrop-blur-xl rounded-3xl max-w-lg w-full p-6 space-y-5 shadow-2xl border border-white/60">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-base font-bold text-slate-900">Onboard New Employee</h3>
               <button onClick={() => setShowAddModal(false)} className="text-slate-400 hover:text-slate-700">
@@ -243,57 +336,45 @@ export default function EmployeesPage() {
                   <input
                     required
                     type="text"
-                    placeholder="e.g. Hitanshu"
+                    placeholder="Hitanshu"
                     value={newEmp.firstName}
                     onChange={(e) => setNewEmp({ ...newEmp, firstName: e.target.value })}
-                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-indigo-500 font-semibold"
+                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-slate-500 font-semibold"
                   />
                 </div>
                 <div>
                   <label className="block text-slate-700 font-medium mb-1">Last Name</label>
                   <input
-                    required
                     type="text"
-                    placeholder="e.g. Panchal"
+                    placeholder="Panchal"
                     value={newEmp.lastName}
                     onChange={(e) => setNewEmp({ ...newEmp, lastName: e.target.value })}
-                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-indigo-500 font-semibold"
+                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-slate-500 font-semibold"
                   />
                 </div>
               </div>
 
-              <div>
-                <label className="block text-slate-700 font-medium mb-1">Work Email</label>
-                <input
-                  required
-                  type="email"
-                  placeholder="e.g. phitanshu962@gmail.com"
-                  value={newEmp.workEmail}
-                  onChange={(e) => setNewEmp({ ...newEmp, workEmail: e.target.value })}
-                  className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-indigo-500 font-medium"
-                />
-              </div>
-
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-700 font-medium mb-1">Phone Number</label>
+                  <label className="block text-slate-700 font-medium mb-1">Work Email</label>
+                  <input
+                    required
+                    type="email"
+                    placeholder="hitanshu@nextgenerp.io"
+                    value={newEmp.workEmail}
+                    onChange={(e) => setNewEmp({ ...newEmp, workEmail: e.target.value })}
+                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-slate-500 font-medium"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-700 font-medium mb-1">Mobile Phone</label>
                   <input
                     required
                     type="text"
                     placeholder="+91 93241 36973"
                     value={newEmp.cellNumber}
                     onChange={(e) => setNewEmp({ ...newEmp, cellNumber: e.target.value })}
-                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-indigo-500 font-medium"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-700 font-medium mb-1">PAN Number</label>
-                  <input
-                    type="text"
-                    value={newEmp.panNumber}
-                    onChange={(e) => setNewEmp({ ...newEmp, panNumber: e.target.value })}
-                    placeholder="ABCDE1234F"
-                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-indigo-500 font-medium"
+                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-slate-500 font-medium"
                   />
                 </div>
               </div>
@@ -304,7 +385,7 @@ export default function EmployeesPage() {
                   <select
                     value={newEmp.departmentId}
                     onChange={(e) => setNewEmp({ ...newEmp, departmentId: e.target.value })}
-                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-indigo-500 font-medium"
+                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-slate-500 font-medium"
                   >
                     {MOCK_DEPARTMENTS.map((d) => (
                       <option key={d.id} value={d.id}>{d.departmentName}</option>
@@ -316,12 +397,35 @@ export default function EmployeesPage() {
                   <select
                     value={newEmp.designationId}
                     onChange={(e) => setNewEmp({ ...newEmp, designationId: e.target.value })}
-                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-indigo-500 font-medium"
+                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-slate-500 font-medium"
                   >
                     {MOCK_DESIGNATIONS.map((d) => (
                       <option key={d.id} value={d.id}>{d.designationName}</option>
                     ))}
                   </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-700 font-medium mb-1">Income Tax PAN</label>
+                  <input
+                    type="text"
+                    placeholder="ABCDE1234F"
+                    value={newEmp.panNumber}
+                    onChange={(e) => setNewEmp({ ...newEmp, panNumber: e.target.value })}
+                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-slate-500 font-mono font-medium"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-700 font-medium mb-1">Bank Account No.</label>
+                  <input
+                    type="text"
+                    placeholder="5010099887766"
+                    value={newEmp.bankAccountNumber}
+                    onChange={(e) => setNewEmp({ ...newEmp, bankAccountNumber: e.target.value })}
+                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-slate-500 font-mono font-medium"
+                  />
                 </div>
               </div>
 
@@ -335,79 +439,12 @@ export default function EmployeesPage() {
                 </button>
                 <button
                   type="submit"
-                  className="liquid-btn-primary px-5 py-2.5 text-xs shadow-md"
+                  className="liquid-btn-primary px-5 py-2.5 text-xs shadow-xs"
                 >
-                  Complete Onboarding
+                  Create & Save Profile
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
-
-      {/* Drawer / Dialog: Employee 360 Detail View */}
-      {selectedEmp && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-xl w-full p-6 space-y-6 shadow-2xl border border-slate-200">
-            <div className="flex items-start justify-between border-b border-slate-100 pb-4">
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-lg font-black text-indigo-700">
-                  {selectedEmp.firstName[0]}{selectedEmp.lastName ? selectedEmp.lastName[0] : ""}
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-slate-900">
-                    {selectedEmp.firstName} {selectedEmp.lastName}
-                  </h3>
-                  <p className="text-xs text-slate-500 font-mono font-bold">{selectedEmp.employeeCode} • {selectedEmp.designation?.designationName}</p>
-                </div>
-              </div>
-              <button onClick={() => setSelectedEmp(null)} className="text-slate-400 hover:text-slate-700">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4 text-xs">
-              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
-                <span className="text-[10px] text-slate-400 uppercase font-semibold">Department</span>
-                <p className="text-slate-900 font-bold">{selectedEmp.department?.departmentName}</p>
-              </div>
-              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
-                <span className="text-[10px] text-slate-400 uppercase font-semibold">Employment Status</span>
-                <p className="text-emerald-700 font-bold">{selectedEmp.status} ({selectedEmp.employmentType})</p>
-              </div>
-              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
-                <span className="text-[10px] text-slate-400 uppercase font-semibold">Official Email</span>
-                <p className="text-slate-900 font-mono font-semibold">{selectedEmp.workEmail}</p>
-              </div>
-              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
-                <span className="text-[10px] text-slate-400 uppercase font-semibold">Contact Number</span>
-                <p className="text-slate-900 font-semibold">{selectedEmp.cellNumber}</p>
-              </div>
-              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
-                <span className="text-[10px] text-slate-400 uppercase font-semibold">Bank Details</span>
-                <p className="text-slate-900 font-mono font-semibold">{selectedEmp.bankName || "HDFC Bank"} • A/C: {selectedEmp.bankAccountNumber || "50100234567890"}</p>
-              </div>
-              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
-                <span className="text-[10px] text-slate-400 uppercase font-semibold">PAN & Statutory</span>
-                <p className="text-slate-900 font-mono font-semibold">PAN: {selectedEmp.panNumber || "ABCDE1234F"}</p>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between pt-2">
-              <button
-                onClick={() => handleDelete(selectedEmp.id)}
-                className="text-xs text-rose-600 hover:text-rose-800 font-semibold flex items-center gap-1.5 px-3 py-2 rounded-lg hover:bg-rose-50 transition-colors"
-              >
-                <Trash2 className="w-4 h-4" />
-                Delete Profile
-              </button>
-              <button
-                onClick={() => setSelectedEmp(null)}
-                className="liquid-btn-glass px-6 py-2.5 text-xs"
-              >
-                Close Inspector
-              </button>
-            </div>
           </div>
         </div>
       )}

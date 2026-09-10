@@ -5,7 +5,7 @@ import com.nextgen.erp.workflow.domain.model.WorkflowState;
 import com.nextgen.erp.workflow.domain.model.WorkflowTransition;
 import com.nextgen.erp.workflow.domain.repository.WorkflowRepository;
 import com.nextgen.erp.workflow.domain.repository.WorkflowStateRepository;
-import com.nextgen.erp.workflow.domain.repository.WorkflowTransitionRepository;
+import com.nextgen.erp.workflow.domain.repository.DocumentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -20,6 +20,7 @@ public class WorkflowService {
     private final WorkflowRepository workflowRepository;
     private final WorkflowStateRepository stateRepository;
     private final WorkflowTransitionRepository transitionRepository;
+    private final DocumentRepository documentRepository;
 
     public List<Workflow> getAllWorkflows() {
         return workflowRepository.findAll();
@@ -49,5 +50,50 @@ public class WorkflowService {
     public WorkflowTransition createTransition(UUID workflowId, WorkflowTransition transition) {
         transition.setWorkflowId(workflowId);
         return transitionRepository.save(transition);
+    }
+
+    public Workflow updateWorkflowStatus(UUID id, boolean isActive) {
+        return workflowRepository.findById(id).map(w -> {
+            w.setIsActive(isActive);
+            return workflowRepository.save(w);
+        }).orElseThrow(() -> new RuntimeException("Workflow not found"));
+    }
+
+    public void deleteState(UUID stateId) {
+        if (documentRepository.existsByCurrentStateId(stateId)) {
+            throw new RuntimeException("Cannot delete workflow state because active documents are currently in this state.");
+        }
+        stateRepository.deleteById(stateId);
+    }
+
+    public WorkflowState updateState(UUID stateId, WorkflowState stateDetails) {
+        return stateRepository.findById(stateId).map(state -> {
+            state.setStateName(stateDetails.getStateName());
+            state.setColorCode(stateDetails.getColorCode());
+            state.setIsInitialState(stateDetails.getIsInitialState());
+            state.setIsFinalState(stateDetails.getIsFinalState());
+            state.setUpdateFields(stateDetails.getUpdateFields());
+            state.setAllowEditRole(stateDetails.getAllowEditRole());
+            state.setIsOptionalState(stateDetails.getIsOptionalState());
+            state.setSendEmail(stateDetails.getSendEmail());
+            return stateRepository.save(state);
+        }).orElseThrow(() -> new RuntimeException("State not found"));
+    }
+
+    public void deleteTransition(UUID transitionId) {
+        transitionRepository.deleteById(transitionId);
+    }
+
+    public WorkflowTransition updateTransition(UUID transitionId, WorkflowTransition transitionDetails) {
+        return transitionRepository.findById(transitionId).map(transition -> {
+            transition.setFromStateId(transitionDetails.getFromStateId());
+            transition.setToStateId(transitionDetails.getToStateId());
+            transition.setActionName(transitionDetails.getActionName());
+            transition.setAllowedRole(transitionDetails.getAllowedRole());
+            transition.setConditionExpression(transitionDetails.getConditionExpression());
+            transition.setAllowSelfApproval(transitionDetails.getAllowSelfApproval());
+            transition.setSendEmailToCreator(transitionDetails.getSendEmailToCreator());
+            return transitionRepository.save(transition);
+        }).orElseThrow(() -> new RuntimeException("Transition not found"));
     }
 }

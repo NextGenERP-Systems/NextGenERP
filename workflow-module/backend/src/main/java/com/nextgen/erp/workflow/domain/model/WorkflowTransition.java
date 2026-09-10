@@ -49,4 +49,7 @@ public class WorkflowTransition {
 
     @Column(name = "send_email_to_creator")
     private Boolean sendEmailToCreator;
+
+    @Column(name = "is_rework")
+    private Boolean isRework;
 }

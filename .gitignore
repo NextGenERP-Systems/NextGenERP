@@ -42,3 +42,7 @@ e2e-*.js
 playwright-report/
 test-results/
 
+# Notes
+workflow-module/problems.md
+Projects.md
+projects-module-dump.sql

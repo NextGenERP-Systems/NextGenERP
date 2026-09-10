@@ -11,6 +11,9 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.UUID;
 
+import com.nextgen.erp.workflow.application.service.WorkflowSimulationService;
+import com.nextgen.erp.workflow.api.dto.SimulationResultDTO;
+
 @RestController
 @RequestMapping("/api/v1/workflows")
 @RequiredArgsConstructor
@@ -18,10 +21,27 @@ import java.util.UUID;
 public class WorkflowController {
 
     private final WorkflowService workflowService;
+    private final WorkflowSimulationService simulationService;
+
+    @PostMapping("/{workflowId}/simulate")
+    public ResponseEntity<SimulationResultDTO> simulateWorkflow(
+            @PathVariable UUID workflowId,
+            @RequestParam(required = false) Double amount,
+            @RequestParam(required = false) String title,
+            @RequestParam(required = false) String documentType) {
+        return ResponseEntity.ok(simulationService.simulateWorkflow(workflowId, amount, title, documentType));
+    }
 
     @GetMapping
     public ResponseEntity<List<Workflow>> getAllWorkflows() {
         return ResponseEntity.ok(workflowService.getAllWorkflows());
+    }
+
+    @GetMapping("/{workflowId}")
+    public ResponseEntity<Workflow> getWorkflowById(@PathVariable UUID workflowId) {
+        return workflowService.getWorkflowById(workflowId)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping
@@ -51,5 +71,38 @@ public class WorkflowController {
             @PathVariable UUID workflowId,
             @RequestBody WorkflowTransition transition) {
         return ResponseEntity.ok(workflowService.createTransition(workflowId, transition));
+    }
+
+    @PatchMapping("/{workflowId}/status")
+    public ResponseEntity<Workflow> updateWorkflowStatus(
+            @PathVariable UUID workflowId,
+            @RequestParam boolean isActive) {
+        return ResponseEntity.ok(workflowService.updateWorkflowStatus(workflowId, isActive));
+    }
+
+    @DeleteMapping("/states/{stateId}")
+    public ResponseEntity<Void> deleteState(@PathVariable UUID stateId) {
+        workflowService.deleteState(stateId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/states/{stateId}")
+    public ResponseEntity<WorkflowState> updateState(
+            @PathVariable UUID stateId,
+            @RequestBody WorkflowState state) {
+        return ResponseEntity.ok(workflowService.updateState(stateId, state));
+    }
+
+    @DeleteMapping("/transitions/{transitionId}")
+    public ResponseEntity<Void> deleteTransition(@PathVariable UUID transitionId) {
+        workflowService.deleteTransition(transitionId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/transitions/{transitionId}")
+    public ResponseEntity<WorkflowTransition> updateTransition(
+            @PathVariable UUID transitionId,
+            @RequestBody WorkflowTransition transition) {
+        return ResponseEntity.ok(workflowService.updateTransition(transitionId, transition));
     }
 }

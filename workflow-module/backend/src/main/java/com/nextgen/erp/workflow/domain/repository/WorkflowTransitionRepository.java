@@ -11,4 +11,6 @@ import java.util.UUID;
 public interface WorkflowTransitionRepository extends JpaRepository<WorkflowTransition, UUID> {
     List<WorkflowTransition> findByWorkflowId(UUID workflowId);
     List<WorkflowTransition> findByFromStateId(UUID fromStateId);
+    List<WorkflowTransition> findByAllowedRole(String allowedRole);
+    List<WorkflowTransition> findByWorkflowIdAndActionNameIgnoreCase(UUID workflowId, String actionName);
 }

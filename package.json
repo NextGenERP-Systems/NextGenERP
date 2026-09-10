@@ -1,0 +1,26 @@
+{
+  "name": "nextgen-erp-suite",
+  "version": "1.0.0",
+  "private": true,
+  "description": "NextGen ERP Enterprise Suite - Modular Monolith & Microservices Platform",
+  "scripts": {
+    "dev": "npm --prefix hrm-module/frontend run dev",
+    "dev:hrm": "npm --prefix hrm-module/frontend run dev",
+    "dev:accounting": "npm --prefix accounting-module/frontend run dev",
+    "dev:sales": "npm --prefix sales-module/frontend run dev",
+    "dev:workflow": "npm --prefix workflow-module/frontend run dev",
+    "dev:projects": "npm --prefix projects-module/frontend run dev",
+    "dev:mrp": "npm --prefix mrp-module/frontend run dev"
+  },
+  "keywords": [
+    "nextgen-erp",
+    "hrm",
+    "accounting",
+    "sales",
+    "spring-boot",
+    "nextjs",
+    "gcp"
+  ],
+  "author": "NextGen ERP Team",
+  "license": "ISC"
+}

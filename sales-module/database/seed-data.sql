@@ -159,9 +159,9 @@ INSERT INTO pricing_rules (id, title, apply_on, apply_key_id, min_qty, discount_
 ('12121212-1212-1212-1212-121212121202', 'Hardware Bulk Discount (>5 units)', 'ITEM_GROUP', 'Hardware', 5.0000, 15.00, 0.00, CURRENT_DATE - INTERVAL '30 days', CURRENT_DATE + INTERVAL '180 days', TRUE)
 ON CONFLICT DO NOTHING;
 
-INSERT INTO coupon_codes (id, coupon_name, coupon_code, discount_type, discount_value, min_order_amount, valid_upto, used_count, max_uses, is_active) VALUES
-('13131313-1313-1313-1313-131313131301', 'Q3 Launch Special 10%', 'NEXTGEN10', 'PERCENTAGE', 10.00, 5000.00, CURRENT_DATE + INTERVAL '90 days', 5, 200, TRUE),
-('13131313-1313-1313-1313-131313131302', 'Enterprise Flat INR 2,000 Off', 'FLAT2000', 'FIXED_AMOUNT', 2000.00, 20000.00, CURRENT_DATE + INTERVAL '90 days', 2, 50, TRUE)
+INSERT INTO coupon_codes (id, coupon_name, coupon_code, discount_type, discount_value, min_order_amount, valid_upto, used_count, is_active) VALUES
+('13131313-1313-1313-1313-131313131301', 'Q3 Launch Special 10%', 'NEXTGEN10', 'PERCENTAGE', 10.00, 5000.00, CURRENT_DATE + INTERVAL '90 days', 5, TRUE),
+('13131313-1313-1313-1313-131313131302', 'Enterprise Flat INR 2,000 Off', 'FLAT2000', 'FIXED_AMOUNT', 2000.00, 20000.00, CURRENT_DATE + INTERVAL '90 days', 2, TRUE)
 ON CONFLICT (coupon_code) DO NOTHING;
 
 -- 15. Sales Persons Seed (Linked with HRM Employees)

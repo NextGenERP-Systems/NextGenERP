@@ -5,6 +5,7 @@ import {
   Layers,
   ShoppingBag,
   Users,
+  CreditCard,
   ChevronDown,
   ExternalLink,
   Check,
@@ -12,7 +13,7 @@ import {
 } from "lucide-react";
 
 interface AppSwitcherProps {
-  currentModule: "sales" | "hrm";
+  currentModule: "sales" | "hrm" | "accounting";
 }
 
 export function AppSwitcher({ currentModule }: AppSwitcherProps) {
@@ -30,6 +31,16 @@ export function AppSwitcher({ currentModule }: AppSwitcherProps) {
   }, []);
 
   const apps = [
+    {
+      id: "accounting",
+      name: "Finance & Accounts",
+      description: "Chart of Accounts, General Ledger, Invoices & Statements",
+      icon: CreditCard,
+      href: currentModule === "accounting" ? "/accounts" : "http://localhost:3004/accounts",
+      color: "bg-amber-600",
+      badge: "Core Finance",
+      active: currentModule === "accounting",
+    },
     {
       id: "sales",
       name: "Sales & CRM 360",

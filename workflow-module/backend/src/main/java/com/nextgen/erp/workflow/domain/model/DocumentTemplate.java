@@ -28,7 +28,10 @@ public class DocumentTemplate {
     @Column(name = "document_type", nullable = false)
     private String documentType;
 
-    @Column(name = "created_by", nullable = false)
+    @Column(name = "category")
+    private String category;
+
+    @Column(name = "created_by")
     private String createdBy;
 
     @Column(name = "is_active")

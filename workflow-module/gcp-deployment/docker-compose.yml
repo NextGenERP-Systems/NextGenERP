@@ -1,24 +1,4 @@
 services:
-  workflow-db:
-    image: postgres:16-alpine
-    container_name: nextgen-workflow-postgres
-    restart: always
-    environment:
-      POSTGRES_DB: workflow_db
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-admin_password}
-    ports:
-      - "5432:5432"
-    volumes:
-      - workflow-pgdata:/var/lib/postgresql/data
-      - ../database/init-schema.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
-      - ../database/seed-data.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U admin -d workflow_db"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
   workflow-backend:
     build:
       context: ../backend
@@ -26,15 +6,12 @@ services:
     container_name: nextgen-workflow-backend
     restart: always
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://workflow-db:5432/workflow_db
-      SPRING_DATASOURCE_USERNAME: admin
-      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-admin_password}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://10.128.0.2:5432/workflow_db
+      SPRING_DATASOURCE_USERNAME: ${DB_USER:-postgres}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-postgres}
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
     ports:
       - "8080:8080"
-    depends_on:
-      workflow-db:
-        condition: service_healthy
 
   workflow-frontend:
     build:
@@ -62,6 +39,3 @@ services:
     depends_on:
       - workflow-frontend
       - workflow-backend
-
-volumes:
-  workflow-pgdata:

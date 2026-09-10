@@ -1,0 +1,100 @@
+# ==============================================================================
+# NextGen ERP - Consolidated Cloud VM (nextgen-erp-core-vm) Docker Compose
+# Architecture: e2-micro (1.0 GB RAM) with 4GB Swap Space
+# Modules: Sales (8080), HRM (8081), Accounting (8084), PostgreSQL (5432)
+# ==============================================================================
+
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: nextgen-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres_secure_2026}
+      POSTGRES_DB: nextgen_erp
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    deploy:
+      resources:
+        limits:
+          memory: 200m
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d nextgen_erp"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  sales-backend:
+    build:
+      context: ./sales-module/backend
+      dockerfile: Dockerfile
+    container_name: nextgen-backend
+    restart: always
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/nextgen_erp
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-postgres_secure_2026}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      JAVA_TOOL_OPTIONS: "-XX:+UseSerialGC -Xms64m -Xmx180m -XX:+TieredCompilation -XX:TieredStopAtLevel=1 -Dspring.main.lazy-initialization=true"
+    ports:
+      - "8080:8080"
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  hrm-backend:
+    build:
+      context: ./hrm-module/backend
+      dockerfile: Dockerfile
+    container_name: nextgen-hrm-backend
+    restart: always
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/nextgen_erp_hrm
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-postgres_secure_2026}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      JAVA_TOOL_OPTIONS: "-XX:+UseSerialGC -Xms64m -Xmx180m -XX:+TieredCompilation -XX:TieredStopAtLevel=1 -Dspring.main.lazy-initialization=true"
+    ports:
+      - "8081:8081"
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  accounting-backend:
+    build:
+      context: ./accounting-module/backend
+      dockerfile: Dockerfile
+    container_name: nextgen-accounting-backend
+    restart: always
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/nextgen_erp_accounting
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-postgres_secure_2026}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_SQL_INIT_MODE: never
+      JAVA_TOOL_OPTIONS: "-XX:+UseSerialGC -Xms64m -Xmx180m -XX:+TieredCompilation -XX:TieredStopAtLevel=1 -Dspring.main.lazy-initialization=true"
+    ports:
+      - "8084:8084"
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  pgdata:

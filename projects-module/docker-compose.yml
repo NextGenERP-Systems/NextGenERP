@@ -1,0 +1,29 @@
+version: '3.8'
+services:
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: nextgen_erp_projects_backend
+    ports:
+      - "8083:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://host.docker.internal:5433/projects_module_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        BACKEND_API_URL: http://backend:8080/api/:path*
+    container_name: nextgen_erp_projects_frontend
+    ports:
+      - "3003:3000"
+    environment:
+      - BACKEND_API_URL=http://backend:8080/api/:path*
+    depends_on:
+      - backend

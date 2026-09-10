@@ -62,6 +62,15 @@ public class Document {
     @Column(name = "owner_username", nullable = false)
     private String ownerUsername;
 
+    @Column(name = "assigned_username")
+    private String assignedUsername;
+
+    @Column(name = "pending_approvers")
+    private String pendingApprovers;
+
+    @Column(name = "state_updated_at")
+    private java.time.LocalDateTime stateUpdatedAt;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private OffsetDateTime createdAt;
@@ -72,4 +81,19 @@ public class Document {
 
     @Column(name = "version")
     private Integer version;
+
+    @Column(name = "clarification_requested_by")
+    private String clarificationRequestedBy;
+
+    @Column(name = "clarification_return_state_id")
+    private UUID clarificationReturnStateId;
+
+    @Column(name = "furthest_state_id")
+    private UUID furthestStateId;
+
+    @Column(name = "parent_document_id")
+    private UUID parentDocumentId;
+
+    @Column(name = "child_workflow_id")
+    private UUID childWorkflowId;
 }

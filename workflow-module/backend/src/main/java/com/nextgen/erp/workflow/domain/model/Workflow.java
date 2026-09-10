@@ -38,6 +38,10 @@ public class Workflow {
     @Column(name = "is_active")
     private Boolean isActive;
 
+    @Column(name = "version")
+    @Builder.Default
+    private Integer version = 1;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private OffsetDateTime createdAt;
