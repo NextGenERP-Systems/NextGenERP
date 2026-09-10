@@ -7,10 +7,15 @@ spring:
   application:
     name: nextgen-accounting-service
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5434/nextgen_erp_accounting}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/nextgen_erp_accounting}
     username: ${SPRING_DATASOURCE_USERNAME:postgres}
     password: ${SPRING_DATASOURCE_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 1
+      idle-timeout: 15000
+      connection-timeout: 20000
   jpa:
     hibernate:
       ddl-auto: update
@@ -21,7 +26,7 @@ spring:
     show-sql: false
   sql:
     init:
-      mode: always
+      mode: ${SPRING_SQL_INIT_MODE:always}
       schema-locations: classpath:schema.sql
       data-locations: classpath:seed-data.sql
       continue-on-error: true
