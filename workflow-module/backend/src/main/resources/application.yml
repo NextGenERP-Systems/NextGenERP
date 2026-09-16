@@ -1,14 +1,14 @@
 server:
-  port: 8081
+  port: ${PORT:8082}
 
 spring:
   application:
     name: nextgen-erp-workflow-module
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/workflow_db}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://136.112.152.181:5432/workflow_db}
     username: ${SPRING_DATASOURCE_USERNAME:postgres}
     password: ${SPRING_DATASOURCE_PASSWORD:postgres}
-    driver-class-name: org.postgresql.Driver
+    driver-class-name: ${SPRING_DATASOURCE_DRIVER_CLASS_NAME:org.postgresql.Driver}
   jpa:
     hibernate:
       ddl-auto: update
@@ -17,3 +17,4 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
     show-sql: true
+
