@@ -12,18 +12,28 @@ export default function WorkflowsPage() {
   const [loading, setLoading] = useState(true);
   const { openModal } = useModal();
 
-  useEffect(() => {
-    async function loadData() {
-      try {
-        const res = await getWorkflows();
-        setWorkflows(res);
-      } catch (err) {
-        console.error("Failed to load workflows", err);
-      } finally {
-        setLoading(false);
-      }
+  const loadData = async () => {
+    try {
+      const res = await getWorkflows();
+      setWorkflows(res);
+    } catch (err) {
+      console.error("Failed to load workflows", err);
+    } finally {
+      setLoading(false);
     }
+  };
+
+  useEffect(() => {
     loadData();
+
+    const handleCreated = () => {
+      loadData();
+    };
+
+    window.addEventListener("workflow-created", handleCreated);
+    return () => {
+      window.removeEventListener("workflow-created", handleCreated);
+    };
   }, []);
 
   return (

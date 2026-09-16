@@ -11,7 +11,9 @@ import org.hibernate.annotations.JdbcTypeCode;
 import java.util.UUID;
 
 @Entity
-@Table(name = "workflow_states")
+@Table(name = "workflow_states", indexes = {
+    @Index(name = "idx_ws_workflow_id", columnList = "workflow_id")
+})
 @Data
 @Builder
 @NoArgsConstructor

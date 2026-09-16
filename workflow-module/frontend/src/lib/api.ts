@@ -347,6 +347,12 @@ export function createMasterState(state: Partial<MasterState>): Promise<MasterSt
   });
 }
 
+export function deleteMasterState(id: string): Promise<void> {
+  return apiClient<void>(`/master-states/${id}`, {
+    method: "DELETE",
+  });
+}
+
 // Notifications API
 export interface AppNotification {
   id: string;

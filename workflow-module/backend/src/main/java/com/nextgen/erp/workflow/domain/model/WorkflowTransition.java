@@ -10,7 +10,11 @@ import org.hibernate.annotations.GenericGenerator;
 import java.util.UUID;
 
 @Entity
-@Table(name = "workflow_transitions")
+@Table(name = "workflow_transitions", indexes = {
+    @Index(name = "idx_wt_workflow_id", columnList = "workflow_id"),
+    @Index(name = "idx_wt_from_state_id", columnList = "from_state_id"),
+    @Index(name = "idx_wt_to_state_id", columnList = "to_state_id")
+})
 @Data
 @Builder
 @NoArgsConstructor

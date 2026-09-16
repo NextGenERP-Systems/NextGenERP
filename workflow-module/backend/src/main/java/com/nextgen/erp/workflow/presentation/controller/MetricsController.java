@@ -1,11 +1,13 @@
 package com.nextgen.erp.workflow.presentation.controller;
 
 import com.nextgen.erp.workflow.domain.model.Document;
+import com.nextgen.erp.workflow.domain.model.Workflow;
 import com.nextgen.erp.workflow.domain.model.WorkflowHistory;
 import com.nextgen.erp.workflow.domain.model.WorkflowState;
 import com.nextgen.erp.workflow.domain.repository.DocumentRepository;
 import com.nextgen.erp.workflow.domain.repository.WorkflowHistoryRepository;
 import com.nextgen.erp.workflow.domain.repository.WorkflowStateRepository;
+import com.nextgen.erp.workflow.domain.repository.WorkflowRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -23,22 +25,35 @@ public class MetricsController {
     private final DocumentRepository documentRepository;
     private final WorkflowHistoryRepository historyRepository;
     private final WorkflowStateRepository stateRepository;
+    private final WorkflowRepository workflowRepository;
 
     @GetMapping("/documents-by-status")
     public ResponseEntity<Map<String, Long>> getDocumentsByStatus() {
-        Map<String, Long> metrics = documentRepository.findAll().stream()
-                .filter(doc -> doc.getStatus() != null)
-                .collect(Collectors.groupingBy(Document::getStatus, Collectors.counting()));
+        Map<String, Long> metrics = new HashMap<>();
+        for (Object[] row : documentRepository.countDocumentsByStatus()) {
+            if (row[0] != null && row[1] != null) {
+                metrics.put((String) row[0], (Long) row[1]);
+            }
+        }
         return ResponseEntity.ok(metrics);
     }
     
     @GetMapping("/pending-by-workflow")
     public ResponseEntity<Map<String, Long>> getPendingByWorkflow() {
-        Map<String, Long> metrics = documentRepository.findAll().stream()
-                .filter(doc -> doc.getWorkflowId() != null && !"Approved".equalsIgnoreCase(doc.getStatus()) && !"Rejected".equalsIgnoreCase(doc.getStatus()))
-                .collect(Collectors.groupingBy(doc -> doc.getWorkflowId().toString().substring(0, 8), Collectors.counting()));
+        Map<UUID, String> workflowNames = workflowRepository.findAll().stream()
+                .collect(Collectors.toMap(Workflow::getId, Workflow::getWorkflowName, (existing, replacement) -> existing));
+        Map<String, Long> metrics = new HashMap<>();
+        for (Object[] row : documentRepository.countPendingByWorkflow()) {
+            if (row[0] != null && row[1] != null) {
+                UUID wId = (UUID) row[0];
+                Long count = (Long) row[1];
+                String name = workflowNames.getOrDefault(wId, wId.toString().substring(0, Math.min(8, wId.toString().length())));
+                metrics.put(name, metrics.getOrDefault(name, 0L) + count);
+            }
+        }
         return ResponseEntity.ok(metrics);
     }
+
 
     @GetMapping("/time-in-state")
     public ResponseEntity<List<Map<String, Object>>> getTimeInStateAnalytics() {

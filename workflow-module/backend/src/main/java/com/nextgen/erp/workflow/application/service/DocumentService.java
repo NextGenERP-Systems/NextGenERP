@@ -50,18 +50,25 @@ public class DocumentService {
     private final OcrExtractionService ocrExtractionService;
 
     public DocumentResponseDTO toDto(Document doc) {
+        WorkflowState state = doc.getCurrentStateId() != null ? stateRepository.findById(doc.getCurrentStateId()).orElse(null) : null;
+        com.nextgen.erp.workflow.domain.model.Workflow workflow = doc.getWorkflowId() != null ? workflowRepository.findById(doc.getWorkflowId()).orElse(null) : null;
+        com.nextgen.erp.workflow.domain.model.DocumentTemplate template = doc.getTemplateId() != null ? templateRepository.findById(doc.getTemplateId()).orElse(null) : null;
+        return toDto(doc, state, workflow, template);
+    }
+
+    public DocumentResponseDTO toDto(Document doc, WorkflowState state, com.nextgen.erp.workflow.domain.model.Workflow workflow, com.nextgen.erp.workflow.domain.model.DocumentTemplate template) {
         return DocumentResponseDTO.builder()
                 .id(doc.getId())
                 .documentNumber(doc.getDocumentNumber())
                 .title(doc.getTitle())
                 .documentType(doc.getDocumentType())
                 .templateId(doc.getTemplateId())
-                .templateName(doc.getTemplateId() != null ? templateRepository.findById(doc.getTemplateId()).map(t -> t.getName()).orElse(null) : null)
+                .templateName(template != null ? template.getName() : null)
                 .workflowId(doc.getWorkflowId())
-                .workflowName(doc.getWorkflowId() != null ? workflowRepository.findById(doc.getWorkflowId()).map(w -> w.getWorkflowName()).orElse(null) : null)
+                .workflowName(workflow != null ? workflow.getWorkflowName() : null)
                 .currentStateId(doc.getCurrentStateId())
-                .currentStateName(doc.getCurrentStateId() != null ? stateRepository.findById(doc.getCurrentStateId()).map(s -> s.getStateName()).orElse(null) : null)
-                .currentStateColor(doc.getCurrentStateId() != null ? stateRepository.findById(doc.getCurrentStateId()).map(s -> s.getColorCode()).orElse(null) : null)
+                .currentStateName(state != null ? state.getStateName() : null)
+                .currentStateColor(state != null ? state.getColorCode() : null)
                 .status(doc.getStatus())
                 .amount(doc.getAmount())
                 .contentHtml(doc.getContentHtml())
@@ -79,15 +86,55 @@ public class DocumentService {
                 .build();
     }
 
+    public Page<DocumentResponseDTO> mapPageToDto(Page<Document> page) {
+        if (page.isEmpty()) return Page.empty(page.getPageable());
+        
+        List<UUID> stateIds = page.getContent().stream().map(Document::getCurrentStateId).filter(java.util.Objects::nonNull).distinct().toList();
+        List<UUID> workflowIds = page.getContent().stream().map(Document::getWorkflowId).filter(java.util.Objects::nonNull).distinct().toList();
+        List<UUID> templateIds = page.getContent().stream().map(Document::getTemplateId).filter(java.util.Objects::nonNull).distinct().toList();
+
+        java.util.Map<UUID, WorkflowState> stateMap = stateIds.isEmpty() ? java.util.Collections.emptyMap() :
+                stateRepository.findAllById(stateIds).stream().collect(Collectors.toMap(WorkflowState::getId, s -> s));
+        java.util.Map<UUID, com.nextgen.erp.workflow.domain.model.Workflow> workflowMap = workflowIds.isEmpty() ? java.util.Collections.emptyMap() :
+                workflowRepository.findAllById(workflowIds).stream().collect(Collectors.toMap(w -> w.getId(), w -> w));
+        java.util.Map<UUID, com.nextgen.erp.workflow.domain.model.DocumentTemplate> templateMap = templateIds.isEmpty() ? java.util.Collections.emptyMap() :
+                templateRepository.findAllById(templateIds).stream().collect(Collectors.toMap(t -> t.getId(), t -> t));
+
+        return page.map(doc -> toDto(doc, 
+                doc.getCurrentStateId() != null ? stateMap.get(doc.getCurrentStateId()) : null,
+                doc.getWorkflowId() != null ? workflowMap.get(doc.getWorkflowId()) : null,
+                doc.getTemplateId() != null ? templateMap.get(doc.getTemplateId()) : null));
+    }
+
+    public List<DocumentResponseDTO> mapListToDto(List<Document> list) {
+        if (list.isEmpty()) return java.util.Collections.emptyList();
+
+        List<UUID> stateIds = list.stream().map(Document::getCurrentStateId).filter(java.util.Objects::nonNull).distinct().toList();
+        List<UUID> workflowIds = list.stream().map(Document::getWorkflowId).filter(java.util.Objects::nonNull).distinct().toList();
+        List<UUID> templateIds = list.stream().map(Document::getTemplateId).filter(java.util.Objects::nonNull).distinct().toList();
+
+        java.util.Map<UUID, WorkflowState> stateMap = stateIds.isEmpty() ? java.util.Collections.emptyMap() :
+                stateRepository.findAllById(stateIds).stream().collect(Collectors.toMap(WorkflowState::getId, s -> s));
+        java.util.Map<UUID, com.nextgen.erp.workflow.domain.model.Workflow> workflowMap = workflowIds.isEmpty() ? java.util.Collections.emptyMap() :
+                workflowRepository.findAllById(workflowIds).stream().collect(Collectors.toMap(w -> w.getId(), w -> w));
+        java.util.Map<UUID, com.nextgen.erp.workflow.domain.model.DocumentTemplate> templateMap = templateIds.isEmpty() ? java.util.Collections.emptyMap() :
+                templateRepository.findAllById(templateIds).stream().collect(Collectors.toMap(t -> t.getId(), t -> t));
+
+        return list.stream().map(doc -> toDto(doc,
+                doc.getCurrentStateId() != null ? stateMap.get(doc.getCurrentStateId()) : null,
+                doc.getWorkflowId() != null ? workflowMap.get(doc.getWorkflowId()) : null,
+                doc.getTemplateId() != null ? templateMap.get(doc.getTemplateId()) : null)).toList();
+    }
+
     public Page<DocumentResponseDTO> getAllDocuments(String searchQuery, Pageable pageable) {
         if (searchQuery != null && !searchQuery.isBlank()) {
-            return documentRepository.searchDocuments(searchQuery, pageable).map(this::toDto);
+            return mapPageToDto(documentRepository.searchDocuments(searchQuery, pageable));
         }
-        return documentRepository.findAll(pageable).map(this::toDto);
+        return mapPageToDto(documentRepository.findAll(pageable));
     }
 
     public Page<DocumentResponseDTO> getKanbanDocuments(UUID stateId, String stateName, String search, Pageable pageable) {
-        return documentRepository.findByStateOrStatusAndSearch(stateId, stateName, search, pageable).map(this::toDto);
+        return mapPageToDto(documentRepository.findByStateOrStatusAndSearch(stateId, stateName, search, pageable));
     }
 
     public Optional<DocumentResponseDTO> getDocumentById(UUID id) {
@@ -405,11 +452,11 @@ public class DocumentService {
                 .distinct()
                 .toList();
 
-        return documentRepository.findByCurrentStateIdIn(statesWaitingForRole, pageable).map(this::toDto);
+        return mapPageToDto(documentRepository.findByCurrentStateIdIn(statesWaitingForRole, pageable));
     }
 
     public List<DocumentResponseDTO> getDocumentsByUser(String username) {
-        return documentRepository.findByOwnerUsername(username).stream().map(this::toDto).toList();
+        return mapListToDto(documentRepository.findByOwnerUsername(username));
     }
 
     public List<WorkflowHistory> getDocumentHistory(UUID documentId) {
@@ -425,7 +472,7 @@ public class DocumentService {
             return Page.empty(pageable);
         }
         Page<Document> documents = documentRepository.findPendingDocumentsForRolesAndUser(roles, username, pageable);
-        return documents.map(this::toDto);
+        return mapPageToDto(documents);
     }
 
     @Transactional

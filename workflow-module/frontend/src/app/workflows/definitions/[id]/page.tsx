@@ -15,6 +15,7 @@ import {
   WorkflowState,
   WorkflowTransition,
   getMasterStates,
+  createMasterState,
   MasterState
 } from "@/lib/api";
 import { 
@@ -90,8 +91,22 @@ export default function WorkflowBuilderPage() {
     e.preventDefault();
     setIsSubmittingState(true);
     try {
+      // Check if custom state needs to be added to Master States
+      const existsInMaster = masterStates.some(m => m.stateName.toLowerCase() === newStateName.trim().toLowerCase());
+      if (!existsInMaster && newStateName.trim()) {
+        try {
+          await createMasterState({
+            stateName: newStateName.trim(),
+            colorCode: newStateColor,
+            description: `Auto-created from workflow ${workflow?.workflowName || ''}`
+          });
+        } catch (mErr) {
+          console.warn("Could not auto-add to Master States:", mErr);
+        }
+      }
+
       await createState(id, {
-        stateName: newStateName,
+        stateName: newStateName.trim(),
         colorCode: newStateColor,
         isInitialState,
         isFinalState,

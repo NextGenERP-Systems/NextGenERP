@@ -3,7 +3,6 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Toaster } from 'sonner';
-import { OnboardingWidget } from "@/components/OnboardingWidget";
 import { ModalProvider } from "@/components/ModalContext";
 import { AuthProvider } from "@/app/context/AuthContext";
 
@@ -36,7 +35,6 @@ export default function RootLayout({
               </div>
             </div>
             <Toaster position="bottom-right" richColors />
-            <OnboardingWidget />
           </ModalProvider>
         </AuthProvider>
       </body>
