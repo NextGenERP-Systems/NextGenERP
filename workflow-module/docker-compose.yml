@@ -10,7 +10,7 @@ services:
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://host.docker.internal:5432/workflow_db
       SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres_secure_2026
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
       GOOGLE_CLOUD_PROJECT: nextgen-erp-7753216
     extra_hosts:
