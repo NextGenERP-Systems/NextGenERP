@@ -76,7 +76,7 @@ export default function RolesAndPermissionsPage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-            <Users className="w-6 h-6 text-indigo-600" />
+            <Users className="w-6 h-6 text-blue-600" />
             Roles & Permissions
           </h1>
           <p className="text-sm text-slate-500">Manage user roles and assign workflow approval permissions.</p>
@@ -93,7 +93,7 @@ export default function RolesAndPermissionsPage() {
 
           <button 
             onClick={() => setIsAssignModalOpen(true)}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm transition-colors flex items-center gap-2"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm transition-colors flex items-center gap-2"
           >
             <UserCheck className="w-4 h-4" />
             Assign Role to User
@@ -108,7 +108,7 @@ export default function RolesAndPermissionsPage() {
           {/* Roles List Card */}
           <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-4 shadow-2xs">
             <h2 className="text-base font-semibold text-slate-900 flex items-center gap-2">
-              <Shield className="w-5 h-5 text-indigo-600" />
+              <Shield className="w-5 h-5 text-blue-600" />
               Defined Roles ({roles.length})
             </h2>
 
@@ -145,7 +145,7 @@ export default function RolesAndPermissionsPage() {
                 {users.map(u => (
                   <tr key={u.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-6 py-4 font-medium text-slate-900 flex items-center gap-2">
-                      <div className="w-7 h-7 rounded-full bg-indigo-100 text-indigo-700 font-bold text-xs flex items-center justify-center">
+                      <div className="w-7 h-7 rounded-full bg-blue-100 text-blue-700 font-bold text-xs flex items-center justify-center">
                         {u.username.charAt(0).toUpperCase()}
                       </div>
                       {u.username}
@@ -154,8 +154,8 @@ export default function RolesAndPermissionsPage() {
                       <div className="flex flex-wrap gap-1.5">
                         {u.roles && u.roles.length > 0 ? (
                           u.roles.map(r => (
-                            <span key={r.id} className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100">
-                              <Check className="w-3 h-3 text-indigo-500" />
+                            <span key={r.id} className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-100">
+                              <Check className="w-3 h-3 text-blue-500" />
                               {r.roleName}
                             </span>
                           ))
@@ -186,7 +186,7 @@ export default function RolesAndPermissionsPage() {
                   value={newRoleName}
                   onChange={e => setNewRoleName(e.target.value)}
                   placeholder="e.g. AUDITOR, COMPLIANCE_OFFICER"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm uppercase focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm uppercase focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                 />
               </div>
 
@@ -201,7 +201,7 @@ export default function RolesAndPermissionsPage() {
                 <button 
                   type="submit" 
                   disabled={isSubmitting}
-                  className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg disabled:opacity-50"
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg disabled:opacity-50"
                 >
                   Save Role
                 </button>
@@ -223,7 +223,7 @@ export default function RolesAndPermissionsPage() {
                   required 
                   value={selectedUserId} 
                   onChange={e => setSelectedUserId(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                 >
                   <option value="">Select User...</option>
                   {users.map(u => (
@@ -238,7 +238,7 @@ export default function RolesAndPermissionsPage() {
                   required 
                   value={selectedRoleName} 
                   onChange={e => setSelectedRoleName(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                 >
                   <option value="">Select Role...</option>
                   {roles.map(r => (
@@ -258,7 +258,7 @@ export default function RolesAndPermissionsPage() {
                 <button 
                   type="submit" 
                   disabled={isSubmitting}
-                  className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg disabled:opacity-50"
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg disabled:opacity-50"
                 >
                   Assign Role
                 </button>

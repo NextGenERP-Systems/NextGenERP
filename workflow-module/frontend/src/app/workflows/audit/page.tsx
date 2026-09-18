@@ -56,7 +56,7 @@ export default function AuditTrailPage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-            <History className="w-6 h-6 text-indigo-600" />
+            <History className="w-6 h-6 text-blue-600" />
             Workflow Audit Trail
           </h1>
           <p className="text-sm text-slate-500">Immutable ledger of all document transitions, user actions, and workflow updates.</p>
@@ -73,7 +73,7 @@ export default function AuditTrailPage() {
                 setSearchQuery(e.target.value);
                 setPage(0);
               }}
-              className="pl-9 pr-4 py-1.5 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 w-64"
+              className="pl-9 pr-4 py-1.5 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 w-64"
             />
           </div>
 
@@ -121,7 +121,7 @@ export default function AuditTrailPage() {
                     <td className="py-3.5 px-4">
                       <Link
                         href={`/workflows/documents/${log.documentId}`}
-                        className="font-mono text-xs text-indigo-600 hover:text-indigo-800 font-medium hover:underline flex items-center gap-1"
+                        className="font-mono text-xs text-blue-600 hover:text-blue-800 font-medium hover:underline flex items-center gap-1"
                       >
                         <FileText className="w-3.5 h-3.5" />
                         {log.documentId.substring(0, 8)}...
@@ -136,7 +136,7 @@ export default function AuditTrailPage() {
                     </td>
 
                     <td className="py-3.5 px-4">
-                      <span className="inline-block px-2.5 py-1 text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200/80 rounded-md">
+                      <span className="inline-block px-2.5 py-1 text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200/80 rounded-md">
                         {log.actionName}
                       </span>
                     </td>

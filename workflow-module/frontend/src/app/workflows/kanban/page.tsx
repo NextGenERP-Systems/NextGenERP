@@ -15,6 +15,8 @@ import { useAuth } from "@/app/context/AuthContext";
 import { Layers, Clock, User, ArrowRight, Search, ChevronDown, RefreshCw, AlertCircle, X } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
+import { formatCurrency } from "@/lib/utils";
+
 
 interface ColumnState {
   stateName: string;
@@ -314,7 +316,7 @@ export default function DocumentKanbanPage() {
 
                           {doc.amount != null && (
                             <span className="font-semibold text-slate-800 bg-slate-100 px-2 py-0.5 rounded">
-                              ${doc.amount.toLocaleString()}
+                              {formatCurrency(doc.amount)}
                             </span>
                           )}
                         </div>

@@ -21,28 +21,118 @@ public class DatabaseSeeder implements CommandLineRunner {
     private final WorkflowTransitionRepository transitionRepository;
     private final WorkflowStateMasterRepository masterRepository;
     private final DocumentRepository documentRepository;
+    private final AppRoleRepository roleRepository;
+    private final AppUserRepository userRepository;
+    private final DocumentTemplateRepository documentTemplateRepository;
 
     @Override
     public void run(String... args) throws Exception {
+        seedRolesAndUsers();
         seedMasterStates();
+        seedDocumentTemplates();
         seedWorkflowsAndDocuments();
     }
 
+    private void seedRolesAndUsers() {
+        List<String> defaultRoles = List.of("ADMIN", "MANAGER", "EMPLOYEE", "HR_MANAGER", "FINANCE");
+        for (String roleName : defaultRoles) {
+            if (roleRepository.findByRoleNameIgnoreCase(roleName).isEmpty()) {
+                roleRepository.save(AppRole.builder().roleName(roleName).build());
+                log.info("Seeded Role: {}", roleName);
+            }
+        }
+
+        AppRole adminRole = roleRepository.findByRoleNameIgnoreCase("ADMIN").orElse(null);
+        AppRole managerRole = roleRepository.findByRoleNameIgnoreCase("MANAGER").orElse(null);
+        AppRole employeeRole = roleRepository.findByRoleNameIgnoreCase("EMPLOYEE").orElse(null);
+        AppRole hrRole = roleRepository.findByRoleNameIgnoreCase("HR_MANAGER").orElse(null);
+        AppRole financeRole = roleRepository.findByRoleNameIgnoreCase("FINANCE").orElse(null);
+
+        seedUser("admin_user", java.util.Set.of(adminRole, managerRole));
+        seedUser("employee_user", java.util.Set.of(employeeRole));
+        seedUser("hr_user", java.util.Set.of(hrRole, employeeRole));
+        seedUser("finance_user", java.util.Set.of(financeRole, managerRole));
+    }
+
+    private void seedUser(String username, java.util.Set<AppRole> roles) {
+        if (userRepository.findByUsername(username).isEmpty()) {
+            java.util.Set<AppRole> validRoles = roles.stream()
+                    .filter(java.util.Objects::nonNull)
+                    .collect(java.util.stream.Collectors.toSet());
+            userRepository.save(AppUser.builder()
+                    .username(username)
+                    .roles(validRoles)
+                    .build());
+            log.info("Seeded User: {}", username);
+        }
+    }
+
     private void seedMasterStates() {
-        List<String> defaultStates = List.of(
-            "Draft", "Pending Approval", "Approved", "Rejected", 
-            "Manager Review", "HR Review", "Finance Approval", 
-            "Audit Verification", "Payment Processing", "Paid", "Flagged"
+        java.util.Map<String, String> stateColors = java.util.Map.ofEntries(
+            java.util.Map.entry("Draft", "#94a3b8"),
+            java.util.Map.entry("Pending Approval", "#f59e0b"),
+            java.util.Map.entry("Approved", "#10b981"),
+            java.util.Map.entry("Rejected", "#ef4444"),
+            java.util.Map.entry("Manager Review", "#3b82f6"),
+            java.util.Map.entry("HR Review", "#8b5cf6"),
+            java.util.Map.entry("Finance Approval", "#6366f1"),
+            java.util.Map.entry("Audit Verification", "#06b6d4"),
+            java.util.Map.entry("Payment Processing", "#d97706"),
+            java.util.Map.entry("Paid", "#059669"),
+            java.util.Map.entry("Flagged", "#dc2626")
         );
 
-        for (String stateName : defaultStates) {
-            if (masterRepository.findByStateNameIgnoreCase(stateName).isEmpty()) {
+        for (var entry : stateColors.entrySet()) {
+            String stateName = entry.getKey();
+            String color = entry.getValue();
+            var existing = masterRepository.findByStateNameIgnoreCase(stateName);
+            if (existing.isEmpty()) {
                 masterRepository.save(WorkflowStateMaster.builder()
                         .stateName(stateName)
+                        .colorCode(color)
                         .description("System seeded state: " + stateName)
                         .build());
                 log.info("Seeded Master State: {}", stateName);
+            } else {
+                WorkflowStateMaster m = existing.get();
+                if (m.getColorCode() == null || m.getColorCode().isEmpty()) {
+                    m.setColorCode(color);
+                    masterRepository.save(m);
+                }
             }
+        }
+    }
+
+    private void seedDocumentTemplates() {
+        if (documentTemplateRepository.count() == 0) {
+            documentTemplateRepository.save(DocumentTemplate.builder()
+                    .name("Standard Purchase Order Template")
+                    .documentType("PurchaseOrder")
+                    .category("Procurement")
+                    .createdBy("admin_user")
+                    .isActive(true)
+                    .htmlContent("<h2>Purchase Order Details</h2><p>Items, quantities, and vendor information.</p>")
+                    .build());
+
+            documentTemplateRepository.save(DocumentTemplate.builder()
+                    .name("Employee Leave Application Template")
+                    .documentType("LeaveRequest")
+                    .category("Human Resources")
+                    .createdBy("hr_user")
+                    .isActive(true)
+                    .htmlContent("<h2>Leave Application</h2><p>Dates, leave type, and manager approval section.</p>")
+                    .build());
+
+            documentTemplateRepository.save(DocumentTemplate.builder()
+                    .name("Travel & Expense Claim Template")
+                    .documentType("ExpenseClaim")
+                    .category("Finance")
+                    .createdBy("finance_user")
+                    .isActive(true)
+                    .htmlContent("<h2>Expense Report</h2><p>Itemized travel expenses and receipt attachments.</p>")
+                    .build());
+
+            log.info("Seeded Document Templates.");
         }
     }
 

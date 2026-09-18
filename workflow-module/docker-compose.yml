@@ -20,8 +20,17 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      target: dev
     container_name: workflow_frontend
     ports:
       - "3002:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+    environment:
+      - WATCHPACK_POLLING=true
+      - NEXT_PUBLIC_API_URL=http://localhost:8082/api/v1
+      - INTERNAL_API_URL=http://workflow_backend:8082/api/v1
     depends_on:
       - backend

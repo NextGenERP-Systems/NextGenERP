@@ -173,7 +173,7 @@ export default function StateTransitionsPage() {
                       <span className="font-semibold text-slate-800">{getStateName(tr.fromStateId)}</span>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-100">
                         {tr.actionName}
                         <ArrowRight className="w-3 h-3" />
                       </span>

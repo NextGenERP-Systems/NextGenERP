@@ -437,11 +437,11 @@ export default function WorkflowBuilderPage() {
                     </select>
                   </div>
                   <div className="flex items-center gap-2">
-                    <input type="checkbox" id="optionalState" checked={isOptionalState} onChange={e => setIsOptionalState(e.target.checked)} className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
+                    <input type="checkbox" id="optionalState" checked={isOptionalState} onChange={e => setIsOptionalState(e.target.checked)} className="rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
                     <label htmlFor="optionalState" className="text-sm text-slate-700">Is Optional State?</label>
                   </div>
                   <div className="flex items-center gap-2">
-                    <input type="checkbox" id="sendEmail" checked={newSendEmail} onChange={e => setNewSendEmail(e.target.checked)} className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
+                    <input type="checkbox" id="sendEmail" checked={newSendEmail} onChange={e => setNewSendEmail(e.target.checked)} className="rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
                     <label htmlFor="sendEmail" className="text-sm text-slate-700">Send Email Alert on State Entry?</label>
                   </div>
                   <div className="pt-2 border-t border-slate-200">
@@ -457,7 +457,7 @@ export default function WorkflowBuilderPage() {
                   </div>
                   <div className="pt-2 border-t border-slate-200">
                     <div className="flex items-center gap-2 mb-2">
-                      <input type="checkbox" id="requiresAllRoles" checked={newRequiresAllRoles} onChange={e => setNewRequiresAllRoles(e.target.checked)} className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
+                      <input type="checkbox" id="requiresAllRoles" checked={newRequiresAllRoles} onChange={e => setNewRequiresAllRoles(e.target.checked)} className="rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
                       <label htmlFor="requiresAllRoles" className="text-sm text-slate-700 font-medium">Requires Parallel Approvals?</label>
                     </div>
                     {newRequiresAllRoles && (
@@ -550,7 +550,7 @@ export default function WorkflowBuilderPage() {
                       <label htmlFor="selfApprove" className="text-sm text-slate-700">Allow Self Approval?</label>
                     </div>
                     <div className="flex items-center gap-2">
-                      <input type="checkbox" id="sendEmailCreator" checked={newSendEmailToCreator} onChange={e => setNewSendEmailToCreator(e.target.checked)} className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
+                      <input type="checkbox" id="sendEmailCreator" checked={newSendEmailToCreator} onChange={e => setNewSendEmailToCreator(e.target.checked)} className="rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
                       <label htmlFor="sendEmailCreator" className="text-sm text-slate-700">Notify Creator on Action?</label>
                     </div>
                     <button type="submit" disabled={isSubmittingTrans || !newTransFrom || !newTransTo} className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg text-sm font-medium shadow flex justify-center items-center gap-2 transition-colors disabled:opacity-50">

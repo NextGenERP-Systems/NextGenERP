@@ -121,9 +121,9 @@ export default function ApprovalsPage() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => setShowDelegationModal(true)}
-            className="px-4 py-2 rounded-xl text-xs font-semibold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 transition-colors flex items-center gap-2 shadow-sm"
+            className="px-4 py-2 rounded-xl text-xs font-semibold bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 transition-colors flex items-center gap-2 shadow-sm"
           >
-            <UserCheck className="w-4 h-4 text-indigo-600" />
+            <UserCheck className="w-4 h-4 text-blue-600" />
             Out-of-Office Delegation
           </button>
           
@@ -139,12 +139,12 @@ export default function ApprovalsPage() {
 
       {/* Active Delegation Banner */}
       {delegations.length > 0 && (
-        <div className="bg-indigo-50/80 border border-indigo-200 rounded-2xl p-4 flex items-center justify-between shadow-sm">
+        <div className="bg-blue-50/80 border border-blue-200 rounded-2xl p-4 flex items-center justify-between shadow-sm">
           <div className="flex items-center gap-3">
-            <UserCheck className="w-5 h-5 text-indigo-600" />
+            <UserCheck className="w-5 h-5 text-blue-600" />
             <div>
-              <h4 className="text-sm font-semibold text-indigo-900">Active Delegation Enabled</h4>
-              <p className="text-xs text-indigo-700">
+              <h4 className="text-sm font-semibold text-blue-900">Active Delegation Enabled</h4>
+              <p className="text-xs text-blue-700">
                 Your approval authority is currently delegated to <strong>@{delegations[0].delegateeUsername}</strong> until {formatDate(delegations[0].endDate)}.
               </p>
             </div>
@@ -165,7 +165,7 @@ export default function ApprovalsPage() {
             <div className="p-6">
               <div className="flex justify-between items-center mb-4 border-b border-slate-100 pb-3">
                 <h3 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
-                  <UserCheck className="w-5 h-5 text-indigo-600" />
+                  <UserCheck className="w-5 h-5 text-blue-600" />
                   Out-of-Office Delegation
                 </h3>
                 <button onClick={() => setShowDelegationModal(false)} className="text-slate-400 hover:text-slate-600">
@@ -182,7 +182,7 @@ export default function ApprovalsPage() {
                     placeholder="e.g. john_doe"
                     value={delegateeUser}
                     onChange={e => setDelegateeUser(e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                   />
                 </div>
 
@@ -191,7 +191,7 @@ export default function ApprovalsPage() {
                   <select
                     value={delegationDays}
                     onChange={e => setDelegationDays(Number(e.target.value))}
-                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                   >
                     <option value={3}>3 Days</option>
                     <option value={7}>7 Days (1 Week)</option>
@@ -211,7 +211,7 @@ export default function ApprovalsPage() {
                   <button
                     type="submit"
                     disabled={isSubmittingDelegation}
-                    className="px-4 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm flex items-center gap-1.5"
+                    className="px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm flex items-center gap-1.5"
                   >
                     {isSubmittingDelegation ? <Clock className="w-4 h-4 animate-spin" /> : "Delegate Authority"}
                   </button>
@@ -303,7 +303,7 @@ export default function ApprovalsPage() {
                                 }
                               }
                             }}
-                            className="text-slate-500 hover:text-indigo-600 font-medium text-sm transition-colors"
+                            className="text-slate-500 hover:text-blue-600 font-medium text-sm transition-colors"
                           >
                             Delegate
                           </button>
