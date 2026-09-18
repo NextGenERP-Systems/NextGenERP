@@ -307,5 +307,171 @@ export const api = {
     mockWorkOrders = [];
     mockJobCards = [];
     return 'Local MRP Sandbox reset successfully!';
+  },
+
+  async calculateMrpWizard(bomNo: string, plannedQty: number): Promise<any> {
+    try {
+      const res = await fetch(`${BASE_URL}/wizard/calculate?bomNo=${encodeURIComponent(bomNo)}&plannedQty=${plannedQty}`);
+      if (res.ok) return await res.json();
+    } catch (e) {
+      console.warn('Backend unavailable, performing local dynamic MRP calculation');
+    }
+
+    const mockStockLedger: Record<string, number> = {
+      'RAW-CF-SHEET': 50,
+      'RAW-TITANIUM-BOLT': 100,
+      'RAW-BLDC-MOTOR': 30,
+      'RAW-ESC-60A': 15,
+      'RAW-BATTERY-PACK': 5,
+      'RAW-FLIGHT-CTRL': 8,
+      'DRONE-FRAME-SUB': 10,
+      'DRONE-PROP-SUB': 5
+    };
+
+    const targetBom = mockBoms.find(b => b.bomNo === bomNo);
+    const items = targetBom ? targetBom.items : [];
+    
+    const requirements = items.map(i => {
+      const required_total_qty = i.qty * plannedQty;
+      const actual_in_stock = mockStockLedger[i.itemCode] ?? 0;
+      const shortage_qty = Math.max(0, required_total_qty - actual_in_stock);
+      
+      let action_recommended = 'STOCK_AVAILABLE';
+      if (shortage_qty > 0) {
+        action_recommended = i.subBomNo ? 'SPAWN_WORK_ORDER' : 'PURCHASE_ORDER';
+      }
+
+      return {
+        item_code: i.itemCode,
+        item_name: i.itemName,
+        total_exploded_qty: i.qty,
+        required_total_qty,
+        actual_in_stock,
+        mock_in_stock: actual_in_stock,
+        shortage_qty,
+        action_recommended,
+        sub_bom_no: i.subBomNo
+      };
+    });
+
+    return {
+      bomNo,
+      plannedQty,
+      totalExplodedItems: requirements.length,
+      requirements
+    };
+  },
+
+  async getQualityInspections(): Promise<any[]> {
+    try {
+      const res = await fetch(`${BASE_URL}/quality/inspections`);
+      if (res.ok) return await res.json();
+    } catch (e) {
+      console.warn('Backend unavailable, returning mock inspections');
+    }
+    return [
+      {
+        inspectionId: 'QI-2026-001',
+        workOrderId: 'WO-2026-0001',
+        inspectionType: 'In-Process',
+        inspectedBy: 'Marcus Vance (EMP-103)',
+        inspectedQty: 2,
+        status: 'PASSED',
+        remarks: 'Units 1 and 2 passed wind tunnel hover test cleanly.',
+        readings: [
+          { parameterName: 'Hover Stability Drift (cm)', readingValue: 2.1, status: 'PASSED' },
+          { parameterName: 'Battery Voltage Full Load (V)', readingValue: 49.8, status: 'PASSED' }
+        ]
+      }
+    ];
+  },
+
+  async submitQualityInspection(inspectionData: any): Promise<any> {
+    try {
+      const res = await fetch(`${BASE_URL}/quality/inspections`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(inspectionData)
+      });
+      if (res.ok) return await res.json();
+    } catch (e) {
+      console.warn('Backend unavailable, mocking submission');
+    }
+    return {
+      ...inspectionData,
+      inspectionId: inspectionData.inspectionId || `QI-2026-00${Math.floor(Math.random() * 90 + 10)}`,
+      status: inspectionData.readings?.some((r: any) => r.status === 'FAILED') ? 'FAILED' : 'PASSED'
+    };
+  },
+
+  async getDowntimeEntries(): Promise<any[]> {
+    try {
+      const res = await fetch(`${BASE_URL}/downtime`);
+      if (res.ok) return await res.json();
+    } catch (e) {
+      console.warn('Backend unavailable, returning mock downtime');
+    }
+    return [
+      {
+        downtimeId: 'DT-2026-001',
+        workstationId: 'WS-CNC-01',
+        operatorEmployeeId: 'EMP-101',
+        category: 'TOOLING',
+        downtimeInMins: 120,
+        remarks: 'Replaced worn tungsten carbide end-mill bit'
+      }
+    ];
+  },
+
+  async logDowntime(entry: any): Promise<any> {
+    try {
+      const res = await fetch(`${BASE_URL}/downtime`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(entry)
+      });
+      if (res.ok) return await res.json();
+    } catch (e) {
+      console.warn('Backend unavailable, mocking downtime log');
+    }
+    return {
+      ...entry,
+      downtimeId: entry.downtimeId || `DT-2026-00${Math.floor(Math.random() * 90 + 10)}`
+    };
+  },
+
+  async getScrapItems(): Promise<any[]> {
+    try {
+      const res = await fetch(`${BASE_URL}/scrap`);
+      if (res.ok) return await res.json();
+    } catch (e) {
+      console.warn('Backend unavailable, returning mock scrap');
+    }
+    return [
+      {
+        workOrderId: 'WO-2026-0001',
+        itemCode: 'RAW-CF-SHEET',
+        scrapQty: 1.5,
+        uom: 'SqM',
+        financialValuation: 225.0
+      }
+    ];
+  },
+
+  async logScrap(scrapItem: any): Promise<any> {
+    try {
+      const res = await fetch(`${BASE_URL}/scrap`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(scrapItem)
+      });
+      if (res.ok) return await res.json();
+    } catch (e) {
+      console.warn('Backend unavailable, mocking scrap log');
+    }
+    return scrapItem;
   }
 };
+
+
+

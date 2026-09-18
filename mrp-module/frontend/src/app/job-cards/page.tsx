@@ -50,51 +50,97 @@ export default function JobCardsPage() {
         </div>
       )}
 
-      {/* Real-time Material Consumption Modal / Panel */}
-      <div className="glass-card p-5 rounded-xl border border-gray-200 space-y-4">
-        <h2 className="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-2">
-          <Plus className="w-4 h-4 text-blue-600" />
-          Real-Time Material Consumption & Over-Consumption Logger
-        </h2>
+      {/* Real-time Material Consumption & Scrap Logger */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="glass-card p-5 rounded-xl border border-gray-200 space-y-4 shadow-xs">
+          <h2 className="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-2">
+            <Plus className="w-4 h-4 text-blue-600" />
+            Real-Time Material Consumption Logger
+          </h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-3 text-xs">
-          <div>
-            <label className="block text-gray-600 mb-1 font-medium">Target Work Order</label>
-            <input 
-              type="text" 
-              value={activeWoId} 
-              onChange={e => setActiveWoId(e.target.value)}
-              className="w-full bg-slate-50 border border-gray-200 rounded-lg p-2.5 text-gray-900 font-mono focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-            />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+            <div>
+              <label className="block text-gray-600 mb-1 font-medium">Target Work Order</label>
+              <input 
+                type="text" 
+                value={activeWoId} 
+                onChange={e => setActiveWoId(e.target.value)}
+                className="w-full bg-slate-50 border border-gray-200 rounded-lg p-2 text-gray-900 font-mono focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-gray-600 mb-1 font-medium">Material Item Code</label>
+              <input 
+                type="text" 
+                value={consumeItemCode} 
+                onChange={e => setConsumeItemCode(e.target.value)}
+                className="w-full bg-slate-50 border border-gray-200 rounded-lg p-2 text-gray-900 font-mono focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-gray-600 mb-1 font-medium">Quantity Consumed</label>
+              <input 
+                type="number" 
+                value={consumeQty} 
+                onChange={e => setConsumeQty(Number(e.target.value))}
+                className="w-full bg-slate-50 border border-gray-200 rounded-lg p-2 text-gray-900 font-mono focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+              />
+            </div>
           </div>
-          <div>
-            <label className="block text-gray-600 mb-1 font-medium">Material Item Code</label>
-            <input 
-              type="text" 
-              value={consumeItemCode} 
-              onChange={e => setConsumeItemCode(e.target.value)}
-              className="w-full bg-slate-50 border border-gray-200 rounded-lg p-2.5 text-gray-900 font-mono focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-            />
+          <button 
+            onClick={handleLogConsumption}
+            className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-all flex items-center justify-center gap-2 text-xs shadow-xs"
+          >
+            <Plus className="w-4 h-4" /> Log Real-Time Material Consumption
+          </button>
+        </div>
+
+        <div className="glass-card p-5 rounded-xl border border-gray-200 space-y-4 shadow-xs">
+          <h2 className="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-2 text-rose-700">
+            <Plus className="w-4 h-4 text-rose-600" />
+            Shop Floor Scrap & Waste Logger
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+            <div>
+              <label className="block text-gray-600 mb-1 font-medium">Work Order</label>
+              <input 
+                type="text" 
+                value={activeWoId} 
+                onChange={e => setActiveWoId(e.target.value)}
+                className="w-full bg-slate-50 border border-gray-200 rounded-lg p-2 text-gray-900 font-mono"
+              />
+            </div>
+            <div>
+              <label className="block text-gray-600 mb-1 font-medium">Scrapped Item</label>
+              <input 
+                type="text" 
+                value={consumeItemCode} 
+                onChange={e => setConsumeItemCode(e.target.value)}
+                className="w-full bg-slate-50 border border-gray-200 rounded-lg p-2 text-gray-900 font-mono"
+              />
+            </div>
+            <div>
+              <label className="block text-gray-600 mb-1 font-medium">Scrap Qty</label>
+              <input 
+                type="number" 
+                value={1} 
+                className="w-full bg-slate-50 border border-gray-200 rounded-lg p-2 text-gray-900 font-mono"
+              />
+            </div>
           </div>
-          <div>
-            <label className="block text-gray-600 mb-1 font-medium">Quantity Consumed</label>
-            <input 
-              type="number" 
-              value={consumeQty} 
-              onChange={e => setConsumeQty(Number(e.target.value))}
-              className="w-full bg-slate-50 border border-gray-200 rounded-lg p-2.5 text-gray-900 font-mono focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-            />
-          </div>
-          <div className="flex items-end">
-            <button 
-              onClick={handleLogConsumption}
-              className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-all flex items-center justify-center gap-2 text-xs shadow-xs"
-            >
-              <Plus className="w-4 h-4" /> Log Real-Time Material
-            </button>
-          </div>
+          <button 
+            onClick={async () => {
+              await api.logScrap({ workOrderId: activeWoId, itemCode: consumeItemCode, scrapQty: 1, uom: 'Nos', financialValuation: 150.0 });
+              setStatusMsg(`Logged 1 unit scrap for ${consumeItemCode} against ${activeWoId}`);
+            }}
+            className="w-full py-2 bg-rose-600 hover:bg-rose-700 text-white font-semibold rounded-lg transition-all flex items-center justify-center gap-2 text-xs shadow-xs"
+          >
+            <Plus className="w-4 h-4" /> Record Material Scrap Event
+          </button>
         </div>
       </div>
+
 
       {/* Job Card Execution List (Tablet Cards) */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

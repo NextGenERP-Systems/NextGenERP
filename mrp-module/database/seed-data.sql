@@ -156,3 +156,13 @@ INSERT INTO mrp_quality_inspection (inspection_id, work_order_id, inspection_typ
 INSERT INTO mrp_downtime_entry (downtime_id, workstation_id, operator_employee_id, category, start_time, end_time, downtime_in_mins, remarks) VALUES
 ('DT-2026-001', 'WS-CNC-01', 'EMP-101', 'TOOLING', CURRENT_TIMESTAMP - INTERVAL '1 day', CURRENT_TIMESTAMP - INTERVAL '22 hours', 120.00, 'Replaced worn tungsten carbide end-mill bit');
 
+-- 11. MOCK STOCK LEDGER ENTRIES
+INSERT INTO mrp_mock_stock_ledger (item_code, warehouse_id, actual_qty, valuation_rate, voucher_type, voucher_no) VALUES
+('RAW-CF-SHEET', 'WH-STORES', 50.0000, 150.0000, 'Stock Entry', 'STE-2026-001'),
+('RAW-TITANIUM-BOLT', 'WH-STORES', 100.0000, 25.0000, 'Stock Entry', 'STE-2026-001'),
+('RAW-BLDC-MOTOR', 'WH-STORES', 30.0000, 180.0000, 'Stock Entry', 'STE-2026-001'),
+('RAW-ESC-60A', 'WH-STORES', 15.0000, 75.0000, 'Stock Entry', 'STE-2026-001'),
+('RAW-BATTERY-PACK', 'WH-STORES', 5.0000, 850.0000, 'Stock Entry', 'STE-2026-001'),
+('RAW-FLIGHT-CTRL', 'WH-STORES', 8.0000, 320.0000, 'Stock Entry', 'STE-2026-001');
+
+

@@ -1,20 +1,28 @@
 'use client';
 
 import { useState } from 'react';
-import { Wand2, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { Wand2, ArrowRight, CheckCircle2, Loader2 } from 'lucide-react';
+import { api } from '@/lib/api';
 
 export default function MrpWizardPage() {
   const [step, setStep] = useState<number>(1);
   const [bomNo, setBomNo] = useState<string>('BOM-EV-DRONE-001');
   const [plannedQty, setPlannedQty] = useState<number>(10);
-  const [calculated, setCalculated] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [mrpResult, setMrpResult] = useState<any>(null);
 
-  const mockShortages = [
-    { itemCode: 'DRONE-FRAME-SUB', itemName: 'Carbon Fiber Chassis Sub-Assembly', required: 10, inStock: 10, shortage: 0, status: 'STOCK_AVAILABLE' },
-    { itemCode: 'DRONE-PROP-SUB', itemName: 'Brushless Motor Sub-Assembly', required: 20, inStock: 5, shortage: 15, status: 'SPAWN_NESTED_WO' },
-    { itemCode: 'RAW-BATTERY-PACK', itemName: 'LiFePO4 48V Smart Battery Pack', required: 10, inStock: 2, shortage: 8, status: 'GENERATE_PURCHASE_REQUEST' },
-    { itemCode: 'RAW-FLIGHT-CTRL', itemName: 'AI Flight Controller Board v4', required: 10, inStock: 10, shortage: 0, status: 'STOCK_AVAILABLE' }
-  ];
+  const handleRunExplosion = async () => {
+    setLoading(true);
+    try {
+      const res = await api.calculateMrpWizard(bomNo, plannedQty);
+      setMrpResult(res);
+      setStep(2);
+    } catch (err) {
+      console.error('Failed to execute MRP Wizard calculation:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -77,10 +85,11 @@ export default function MrpWizardPage() {
               />
             </div>
             <button 
-              onClick={() => { setCalculated(true); setStep(2); }}
-              className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg text-xs transition-all flex items-center gap-2 shadow-xs"
+              onClick={handleRunExplosion}
+              disabled={loading}
+              className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg text-xs transition-all flex items-center gap-2 shadow-xs disabled:opacity-50"
             >
-              Run CTE Explosion <ArrowRight className="w-4 h-4" />
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />} Run CTE Explosion & Dynamic Analysis <ArrowRight className="w-4 h-4" />
             </button>
           </div>
         )}
@@ -89,13 +98,13 @@ export default function MrpWizardPage() {
           <div className="space-y-4">
             <h2 className="text-xs font-bold text-gray-700 uppercase tracking-wider">Step 2: PostgreSQL CTE Explosion Analysis</h2>
             <div className="p-4 rounded-lg bg-blue-50 border border-blue-200 text-xs font-mono text-blue-800">
-              ✓ Multi-Level BoM successfully exploded using Postgres Recursive CTE. Total component requirements calculated for {plannedQty} units.
+              ✓ Multi-Level BoM ({bomNo}) successfully exploded using Postgres Recursive CTE. Found {mrpResult?.totalExplodedItems || 0} component requirements for {plannedQty} units.
             </div>
             <button 
               onClick={() => setStep(3)}
               className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg text-xs transition-all flex items-center gap-2 shadow-xs"
             >
-              Analyze Inventory Shortages <ArrowRight className="w-4 h-4" />
+              Analyze Dynamic Stock Shortages <ArrowRight className="w-4 h-4" />
             </button>
           </div>
         )}
@@ -109,31 +118,40 @@ export default function MrpWizardPage() {
                   <tr className="border-b border-gray-200 text-gray-500 font-mono uppercase text-[10px]">
                     <th className="py-2.5 px-3">Item Code</th>
                     <th className="py-2.5 px-3">Item Name</th>
-                    <th className="py-2.5 px-3">Required Qty</th>
-                    <th className="py-2.5 px-3">Mock In-Stock</th>
-                    <th className="py-2.5 px-3">Shortage</th>
+                    <th className="py-2.5 px-3">Required Total Qty</th>
+                    <th className="py-2.5 px-3">Actual In-Stock</th>
+                    <th className="py-2.5 px-3">Shortage Qty</th>
                     <th className="py-2.5 px-3">Recommended Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 font-mono">
-                  {mockShortages.map((s, i) => (
-                    <tr key={i} className="hover:bg-slate-50 transition-colors">
-                      <td className="py-3 px-3 text-blue-600 font-bold">{s.itemCode}</td>
-                      <td className="py-3 px-3 font-sans text-gray-900">{s.itemName}</td>
-                      <td className="py-3 px-3 text-gray-700">{s.required}</td>
-                      <td className="py-3 px-3 text-gray-500">{s.inStock}</td>
-                      <td className={`py-3 px-3 font-bold ${s.shortage > 0 ? 'text-amber-600' : 'text-gray-400'}`}>{s.shortage}</td>
-                      <td className="py-3 px-3">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                          s.status === 'SPAWN_NESTED_WO' ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' :
-                          s.status === 'GENERATE_PURCHASE_REQUEST' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
-                          'bg-gray-100 text-gray-600 border border-gray-200'
-                        }`}>
-                          {s.status}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
+                  {mrpResult?.requirements?.map((s: any, i: number) => {
+                    const itemCode = s.item_code || s.itemCode;
+                    const itemName = s.item_name || s.itemName;
+                    const reqQty = s.required_total_qty ?? s.required;
+                    const stock = s.actual_in_stock ?? s.mock_in_stock ?? s.inStock;
+                    const shortage = s.shortage_qty ?? s.shortage;
+                    const action = s.action_recommended || s.status;
+
+                    return (
+                      <tr key={i} className="hover:bg-slate-50 transition-colors">
+                        <td className="py-3 px-3 text-blue-600 font-bold">{itemCode}</td>
+                        <td className="py-3 px-3 font-sans text-gray-900">{itemName}</td>
+                        <td className="py-3 px-3 text-gray-700">{reqQty}</td>
+                        <td className="py-3 px-3 text-gray-500">{stock}</td>
+                        <td className={`py-3 px-3 font-bold ${shortage > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>{shortage}</td>
+                        <td className="py-3 px-3">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                            action?.includes('WORK_ORDER') ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' :
+                            action?.includes('PURCHASE') ? 'bg-amber-50 text-amber-700 border border-amber-200' :
+                            'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                          }`}>
+                            {action}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -153,8 +171,8 @@ export default function MrpWizardPage() {
               <div className="flex items-center gap-2 font-bold text-emerald-700">
                 <CheckCircle2 className="w-4 h-4" /> MRP Run Completed Successfully!
               </div>
-              <p>• Created Parent Work Order: <span className="underline font-bold">WO-2026-0001</span> for 10 units of EV-DRONE-X1.</p>
-              <p>• Automatically spawned Nested Child Work Order: <span className="underline font-bold">WO-2026-0002</span> for 15 units of DRONE-PROP-SUB (linked via <span className="font-mono">parent_wo_id</span>).</p>
+              <p>• Created Parent Work Order for {plannedQty} units of {bomNo}.</p>
+              <p>• Automatically calculated component requirements against stock ledger entries.</p>
             </div>
             <button 
               onClick={() => setStep(1)}
@@ -168,3 +186,4 @@ export default function MrpWizardPage() {
     </div>
   );
 }
+
