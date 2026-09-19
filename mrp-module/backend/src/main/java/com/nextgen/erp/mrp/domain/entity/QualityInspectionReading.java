@@ -4,9 +4,6 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
-import java.time.ZonedDateTime;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -33,4 +30,19 @@ public class QualityInspectionReading {
 
     @Column(name = "status", nullable = false)
     private String status;
+
+    public UUID getId() { return id; }
+    public void setId(UUID id) { this.id = id; }
+
+    public String getInspectionId() { return inspectionId; }
+    public void setInspectionId(String inspectionId) { this.inspectionId = inspectionId; }
+
+    public String getParameterName() { return parameterName; }
+    public void setParameterName(String parameterName) { this.parameterName = parameterName; }
+
+    public BigDecimal getReadingValue() { return readingValue; }
+    public void setReadingValue(BigDecimal readingValue) { this.readingValue = readingValue; }
+
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
 }

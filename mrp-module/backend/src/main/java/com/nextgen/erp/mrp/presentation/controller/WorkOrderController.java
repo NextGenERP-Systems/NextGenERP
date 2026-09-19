@@ -37,6 +37,18 @@ public class WorkOrderController {
         return ResponseEntity.ok(workOrderService.getChildWorkOrders(id));
     }
 
+    @PostMapping
+    @Operation(summary = "Create a new Work Order with automatic BOM & Routing operations resolution")
+    public ResponseEntity<WorkOrder> createWorkOrder(@RequestBody WorkOrder workOrder) {
+        return ResponseEntity.ok(workOrderService.createWorkOrder(workOrder));
+    }
+
+    @PostMapping("/{id}/submit")
+    @Operation(summary = "Submit a Work Order for production execution")
+    public ResponseEntity<WorkOrder> submitWorkOrder(@PathVariable String id) {
+        return ResponseEntity.ok(workOrderService.submitWorkOrder(id));
+    }
+
     @PostMapping("/{id}/consume")
     @Operation(summary = "Log Real-Time Material Consumption with Pessimistic Row Lock and Over-Consumption Tracking")
     public ResponseEntity<WorkOrder> logConsumption(

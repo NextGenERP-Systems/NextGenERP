@@ -37,4 +37,22 @@ public class ProductionPlan {
     @JoinColumn(name = "plan_id")
     @Builder.Default
     private List<ProductionPlanItem> items = new ArrayList<>();
+
+    public String getPlanId() { return planId; }
+    public void setPlanId(String planId) { this.planId = planId; }
+
+    public LocalDate getPostingDate() { return postingDate; }
+    public void setPostingDate(LocalDate postingDate) { this.postingDate = postingDate; }
+
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
+
+    public String getCreatedBy() { return createdBy; }
+    public void setCreatedBy(String createdBy) { this.createdBy = createdBy; }
+
+    public ZonedDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(ZonedDateTime createdAt) { this.createdAt = createdAt; }
+
+    public List<ProductionPlanItem> getItems() { return items; }
+    public void setItems(List<ProductionPlanItem> items) { this.items = items; }
 }

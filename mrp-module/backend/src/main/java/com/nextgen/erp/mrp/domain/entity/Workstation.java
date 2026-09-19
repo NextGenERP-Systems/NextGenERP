@@ -31,4 +31,22 @@ public class Workstation {
 
     @Column(columnDefinition = "TEXT")
     private String description;
+
+    public String getWorkstationId() { return workstationId; }
+    public void setWorkstationId(String workstationId) { this.workstationId = workstationId; }
+
+    public String getWorkstationName() { return workstationName; }
+    public void setWorkstationName(String workstationName) { this.workstationName = workstationName; }
+
+    public BigDecimal getHourlyCost() { return hourlyCost; }
+    public void setHourlyCost(BigDecimal hourlyCost) { this.hourlyCost = hourlyCost; }
+
+    public BigDecimal getElectricityCostPerHour() { return electricityCostPerHour; }
+    public void setElectricityCostPerHour(BigDecimal electricityCostPerHour) { this.electricityCostPerHour = electricityCostPerHour; }
+
+    public BigDecimal getWorkingHoursPerDay() { return workingHoursPerDay; }
+    public void setWorkingHoursPerDay(BigDecimal workingHoursPerDay) { this.workingHoursPerDay = workingHoursPerDay; }
+
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
 }

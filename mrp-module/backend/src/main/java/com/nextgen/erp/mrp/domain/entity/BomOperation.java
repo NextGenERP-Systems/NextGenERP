@@ -20,6 +20,7 @@ public class BomOperation {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "bom_no", nullable = false)
+    @com.fasterxml.jackson.annotation.JsonIgnore
     private Bom bom;
 
     @Column(name = "sequence_no", nullable = false)

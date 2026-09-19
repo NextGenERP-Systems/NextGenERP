@@ -43,4 +43,31 @@ public class BomItem {
 
     @Column(name = "sub_bom_no", length = 100)
     private String subBomNo;
+
+    public UUID getId() { return id; }
+    public void setId(UUID id) { this.id = id; }
+
+    public Bom getBom() { return bom; }
+    public void setBom(Bom bom) { this.bom = bom; }
+
+    public String getItemCode() { return itemCode; }
+    public void setItemCode(String itemCode) { this.itemCode = itemCode; }
+
+    public String getItemName() { return itemName; }
+    public void setItemName(String itemName) { this.itemName = itemName; }
+
+    public BigDecimal getQty() { return qty; }
+    public void setQty(BigDecimal qty) { this.qty = qty; }
+
+    public String getUom() { return uom; }
+    public void setUom(String uom) { this.uom = uom; }
+
+    public BigDecimal getStandardRate() { return standardRate; }
+    public void setStandardRate(BigDecimal standardRate) { this.standardRate = standardRate; }
+
+    public BigDecimal getAmount() { return amount; }
+    public void setAmount(BigDecimal amount) { this.amount = amount; }
+
+    public String getSubBomNo() { return subBomNo; }
+    public void setSubBomNo(String subBomNo) { this.subBomNo = subBomNo; }
 }

@@ -36,4 +36,19 @@ public class BomController {
     public ResponseEntity<List<Map<String, Object>>> explodeBom(@PathVariable String bomNo) {
         return ResponseEntity.ok(bomService.explodeBomViaCte(bomNo));
     }
+
+    @PostMapping("/replace-item")
+    @Operation(summary = "BOM Update Tool: Mass replace obsolete component across active BOMs")
+    public ResponseEntity<Map<String, Object>> replaceItem(
+            @RequestParam String currentItemCode,
+            @RequestParam String newItemCode,
+            @RequestParam String newItemName,
+            @RequestParam(required = false) java.math.BigDecimal newRate) {
+        int updatedCount = bomService.replaceItemInAllBoms(currentItemCode, newItemCode, newItemName, newRate);
+        return ResponseEntity.ok(Map.of(
+                "status", "SUCCESS",
+                "bomsUpdated", updatedCount,
+                "message", "Replaced item " + currentItemCode + " with " + newItemCode + " across " + updatedCount + " BOMs."
+        ));
+    }
 }

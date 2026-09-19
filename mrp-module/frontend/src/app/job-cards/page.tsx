@@ -19,8 +19,8 @@ export default function JobCardsPage() {
     load();
   }, []);
 
-  const handleComplete = async (id: string) => {
-    await api.completeJobCard(id, 2);
+  const handleComplete = async (id: string, scrapQty?: number, scrapReason?: string) => {
+    await api.completeJobCard(id, 2, scrapQty, scrapReason);
     const updated = await api.getJobCards();
     setJobCards(updated);
     setStatusMsg(`Job Card ${id} updated cleanly!`);
@@ -39,7 +39,7 @@ export default function JobCardsPage() {
             <Timer className="w-6 h-6 text-blue-600" />
             Shop Floor Job Cards (Tablet/Mobile Execution)
           </h1>
-          <p className="text-sm text-gray-500">Large-button touch UI optimized for shop floor workers, timer logs, and real-time consumption logging</p>
+          <p className="text-sm text-gray-500">Large-button touch UI optimized for shop floor workers, timer logs, scrap tracking, and real-time consumption logging</p>
         </div>
       </div>
 
@@ -124,7 +124,7 @@ export default function JobCardsPage() {
               <label className="block text-gray-600 mb-1 font-medium">Scrap Qty</label>
               <input 
                 type="number" 
-                value={1} 
+                defaultValue={1} 
                 className="w-full bg-slate-50 border border-gray-200 rounded-lg p-2 text-gray-900 font-mono"
               />
             </div>
@@ -167,6 +167,12 @@ export default function JobCardsPage() {
               <div>Progress: <span className="text-emerald-700 font-bold">{jc.completedQuantity}</span> / {jc.forQuantity} Units</div>
               <div className="text-gray-500">Logged Time: {jc.totalTimeInMins} mins</div>
             </div>
+
+            {jc.scrapQuantity && jc.scrapQuantity > 0 ? (
+              <div className="p-2 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-800 font-mono">
+                Scrap Recorded: <strong>{jc.scrapQuantity}</strong> units ({jc.scrapReason || 'Uncategorized'})
+              </div>
+            ) : null}
 
             <div className="flex gap-2 pt-2">
               <button 

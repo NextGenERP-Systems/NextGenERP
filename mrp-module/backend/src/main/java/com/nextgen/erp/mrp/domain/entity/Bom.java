@@ -38,6 +38,10 @@ public class Bom {
     @Column(name = "is_default", nullable = false)
     private Boolean isDefault;
 
+    @Column(name = "revision_number", nullable = false)
+    @Builder.Default
+    private Integer revisionNumber = 1;
+
     @Column(name = "routing_id", length = 100)
     private String routingId;
 
@@ -61,6 +65,62 @@ public class Bom {
     @Builder.Default
     private List<BomOperation> operations = new ArrayList<>();
 
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "bom_no")
+    @Builder.Default
+    private List<BomSecondaryItem> secondaryItems = new ArrayList<>();
+
     @Column(name = "created_at", insertable = false, updatable = false)
     private ZonedDateTime createdAt;
+
+    public String getBomNo() { return bomNo; }
+    public void setBomNo(String bomNo) { this.bomNo = bomNo; }
+
+    public String getItemCode() { return itemCode; }
+    public void setItemCode(String itemCode) { this.itemCode = itemCode; }
+
+    public String getItemName() { return itemName; }
+    public void setItemName(String itemName) { this.itemName = itemName; }
+
+    public BigDecimal getQuantity() { return quantity; }
+    public void setQuantity(BigDecimal quantity) { this.quantity = quantity; }
+
+    public String getUom() { return uom; }
+    public void setUom(String uom) { this.uom = uom; }
+
+    public Boolean getIsActive() { return isActive; }
+    public void setIsActive(Boolean isActive) { this.isActive = isActive; }
+
+    public Boolean getIsDefault() { return isDefault; }
+    public void setIsDefault(Boolean isDefault) { this.isDefault = isDefault; }
+
+    public Integer getRevisionNumber() { return revisionNumber; }
+    public void setRevisionNumber(Integer revisionNumber) { this.revisionNumber = revisionNumber; }
+
+    public String getRoutingId() { return routingId; }
+    public void setRoutingId(String routingId) { this.routingId = routingId; }
+
+    public BigDecimal getRawMaterialCost() { return rawMaterialCost; }
+    public void setRawMaterialCost(BigDecimal rawMaterialCost) { this.rawMaterialCost = rawMaterialCost; }
+
+    public BigDecimal getOperatingCost() { return operatingCost; }
+    public void setOperatingCost(BigDecimal operatingCost) { this.operatingCost = operatingCost; }
+
+    public BigDecimal getScrapCost() { return scrapCost; }
+    public void setScrapCost(BigDecimal scrapCost) { this.scrapCost = scrapCost; }
+
+    public BigDecimal getTotalCost() { return totalCost; }
+    public void setTotalCost(BigDecimal totalCost) { this.totalCost = totalCost; }
+
+    public List<BomItem> getItems() { return items; }
+    public void setItems(List<BomItem> items) { this.items = items; }
+
+    public List<BomOperation> getOperations() { return operations; }
+    public void setOperations(List<BomOperation> operations) { this.operations = operations; }
+
+    public List<BomSecondaryItem> getSecondaryItems() { return secondaryItems; }
+    public void setSecondaryItems(List<BomSecondaryItem> secondaryItems) { this.secondaryItems = secondaryItems; }
+
+    public ZonedDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(ZonedDateTime createdAt) { this.createdAt = createdAt; }
 }

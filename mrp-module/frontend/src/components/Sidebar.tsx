@@ -11,16 +11,20 @@ import {
   Wand2, 
   ShieldCheck, 
   Activity, 
-  Trash2 
+  Trash2,
+  Workflow
 } from 'lucide-react';
 
 const navItems = [
   { name: 'MRP Dashboard', href: '/', icon: Factory },
   { name: 'Bill of Materials (BOM)', href: '/boms', icon: Layers },
+  { name: 'Routings & Operations', href: '/routings', icon: Workflow },
+  { name: 'Master Schedule (MPS)', href: '/mps', icon: Activity },
   { name: 'Work Orders', href: '/work-orders', icon: ClipboardList },
   { name: 'Job Cards (Tablet UI)', href: '/job-cards', icon: Timer },
   { name: 'Workstations & Gantt', href: '/workstations', icon: Cpu },
   { name: 'MRP Shortage Wizard', href: '/mrp-wizard', icon: Wand2 },
+  { name: 'Subcontracting', href: '/subcontracting', icon: ClipboardList },
   { name: 'Quality Inspection', href: '/quality', icon: ShieldCheck },
   { name: 'Sandbox & Security', href: '/sandbox', icon: Trash2 },
 ];

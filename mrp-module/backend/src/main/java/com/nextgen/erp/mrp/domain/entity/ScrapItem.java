@@ -37,4 +37,25 @@ public class ScrapItem {
 
     @Column(name = "created_at")
     private ZonedDateTime createdAt;
+
+    public UUID getId() { return id; }
+    public void setId(UUID id) { this.id = id; }
+
+    public String getWorkOrderId() { return workOrderId; }
+    public void setWorkOrderId(String workOrderId) { this.workOrderId = workOrderId; }
+
+    public String getItemCode() { return itemCode; }
+    public void setItemCode(String itemCode) { this.itemCode = itemCode; }
+
+    public BigDecimal getScrapQty() { return scrapQty; }
+    public void setScrapQty(BigDecimal scrapQty) { this.scrapQty = scrapQty; }
+
+    public String getUom() { return uom; }
+    public void setUom(String uom) { this.uom = uom; }
+
+    public BigDecimal getFinancialValuation() { return financialValuation; }
+    public void setFinancialValuation(BigDecimal financialValuation) { this.financialValuation = financialValuation; }
+
+    public ZonedDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(ZonedDateTime createdAt) { this.createdAt = createdAt; }
 }

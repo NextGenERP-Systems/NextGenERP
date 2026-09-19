@@ -6,22 +6,22 @@ import java.math.BigDecimal;
 import java.util.UUID;
 
 @Entity
-@Table(name = "mrp_work_order_operation")
+@Table(name = "mrp_routing_operation")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class WorkOrderOperation {
+public class RoutingOperation {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "work_order_id", nullable = false)
+    @JoinColumn(name = "routing_id", nullable = false)
     @com.fasterxml.jackson.annotation.JsonIgnore
-    private WorkOrder workOrder;
+    private Routing routing;
 
     @Column(name = "sequence_no", nullable = false)
     private Integer sequenceNo;
@@ -35,17 +35,15 @@ public class WorkOrderOperation {
     @Column(name = "time_in_mins", precision = 10, scale = 2)
     private BigDecimal timeInMins;
 
-    @Column(name = "completed_qty", precision = 15, scale = 4)
-    private BigDecimal completedQty;
-
-    @Column(name = "status", nullable = false, length = 50)
-    private String status;
+    @Column(name = "batch_size")
+    @Builder.Default
+    private Integer batchSize = 1;
 
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
 
-    public WorkOrder getWorkOrder() { return workOrder; }
-    public void setWorkOrder(WorkOrder workOrder) { this.workOrder = workOrder; }
+    public Routing getRouting() { return routing; }
+    public void setRouting(Routing routing) { this.routing = routing; }
 
     public Integer getSequenceNo() { return sequenceNo; }
     public void setSequenceNo(Integer sequenceNo) { this.sequenceNo = sequenceNo; }
@@ -59,9 +57,6 @@ public class WorkOrderOperation {
     public BigDecimal getTimeInMins() { return timeInMins; }
     public void setTimeInMins(BigDecimal timeInMins) { this.timeInMins = timeInMins; }
 
-    public BigDecimal getCompletedQty() { return completedQty; }
-    public void setCompletedQty(BigDecimal completedQty) { this.completedQty = completedQty; }
-
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
+    public Integer getBatchSize() { return batchSize; }
+    public void setBatchSize(Integer batchSize) { this.batchSize = batchSize; }
 }

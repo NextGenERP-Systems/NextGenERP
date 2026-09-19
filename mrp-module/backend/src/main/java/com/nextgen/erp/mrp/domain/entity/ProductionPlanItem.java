@@ -36,4 +36,25 @@ public class ProductionPlanItem {
 
     @Column(name = "sales_order_ref")
     private String salesOrderRef;
+
+    public UUID getId() { return id; }
+    public void setId(UUID id) { this.id = id; }
+
+    public String getPlanId() { return planId; }
+    public void setPlanId(String planId) { this.planId = planId; }
+
+    public String getItemCode() { return itemCode; }
+    public void setItemCode(String itemCode) { this.itemCode = itemCode; }
+
+    public String getBomNo() { return bomNo; }
+    public void setBomNo(String bomNo) { this.bomNo = bomNo; }
+
+    public BigDecimal getPlannedQty() { return plannedQty; }
+    public void setPlannedQty(BigDecimal plannedQty) { this.plannedQty = plannedQty; }
+
+    public BigDecimal getProducedQty() { return producedQty; }
+    public void setProducedQty(BigDecimal producedQty) { this.producedQty = producedQty; }
+
+    public String getSalesOrderRef() { return salesOrderRef; }
+    public void setSalesOrderRef(String salesOrderRef) { this.salesOrderRef = salesOrderRef; }
 }

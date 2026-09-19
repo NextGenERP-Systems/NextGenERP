@@ -6,15 +6,7 @@
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- -----------------------------------------------------------------------------
--- ENUMS
--- -----------------------------------------------------------------------------
-CREATE TYPE mrp_bom_status AS ENUM ('DRAFT', 'ACTIVE', 'CANCELLED');
-CREATE TYPE mrp_wo_status AS ENUM ('DRAFT', 'SUBMITTED', 'NOT_STARTED', 'IN_PROGRESS', 'COMPLETED', 'STOPPED', 'CANCELLED');
-CREATE TYPE mrp_job_card_status AS ENUM ('OPEN', 'WORK_IN_PROGRESS', 'COMPLETED', 'ON_HOLD', 'CANCELLED');
-CREATE TYPE mrp_quality_status AS ENUM ('PENDING', 'PASSED', 'FAILED');
-CREATE TYPE mrp_plan_status AS ENUM ('DRAFT', 'SUBMITTED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED');
-CREATE TYPE mrp_downtime_category AS ENUM ('BREAKDOWN', 'MAINTENANCE', 'TOOLING', 'MATERIAL_SHORTAGE', 'POWER_OUTAGE', 'OPERATOR_UNAVAILABLE');
+-- ENUMS mapped as standard VARCHAR(50) for JDBC / JPA compatibility
 
 -- -----------------------------------------------------------------------------
 -- 1. ISOLATED MOCK FOUNDATION TABLES (SANDBOX ADAPTERS)
@@ -107,7 +99,8 @@ CREATE TABLE mrp_bom (
     uom VARCHAR(20) NOT NULL DEFAULT 'Nos',
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     is_default BOOLEAN NOT NULL DEFAULT FALSE,
-    status mrp_bom_status NOT NULL DEFAULT 'DRAFT',
+    revision_number INT NOT NULL DEFAULT 1,
+    status VARCHAR(50) NOT NULL DEFAULT 'DRAFT',
     routing_id VARCHAR(100) REFERENCES mrp_routing(routing_id),
     raw_material_cost DECIMAL(15, 4) NOT NULL DEFAULT 0.0000,
     operating_cost DECIMAL(15, 4) NOT NULL DEFAULT 0.0000,
@@ -128,6 +121,24 @@ CREATE TABLE mrp_bom_item (
     standard_rate DECIMAL(15, 4) NOT NULL DEFAULT 0.0000,
     amount DECIMAL(15, 4) NOT NULL DEFAULT 0.0000,
     sub_bom_no VARCHAR(100) REFERENCES mrp_bom(bom_no)
+);
+
+CREATE TABLE mrp_bom_secondary_item (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    bom_no VARCHAR(100) NOT NULL REFERENCES mrp_bom(bom_no) ON DELETE CASCADE,
+    item_code VARCHAR(100) NOT NULL REFERENCES mrp_mock_item(item_code),
+    item_name VARCHAR(255) NOT NULL,
+    qty DECIMAL(15, 4) NOT NULL,
+    uom VARCHAR(20) NOT NULL DEFAULT 'Nos',
+    valuation_rate DECIMAL(15, 4) NOT NULL DEFAULT 0.0000
+);
+
+CREATE TABLE mrp_item_alternative (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    item_code VARCHAR(100) NOT NULL REFERENCES mrp_mock_item(item_code),
+    alternative_item_code VARCHAR(100) NOT NULL REFERENCES mrp_mock_item(item_code),
+    two_way BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE mrp_bom_operation (
@@ -158,7 +169,7 @@ CREATE TABLE mrp_work_order (
     planned_end_date TIMESTAMP WITH TIME ZONE NOT NULL,
     actual_start_date TIMESTAMP WITH TIME ZONE,
     actual_end_date TIMESTAMP WITH TIME ZONE,
-    status mrp_wo_status NOT NULL DEFAULT 'DRAFT',
+    status VARCHAR(50) NOT NULL DEFAULT 'DRAFT',
     planned_operating_cost DECIMAL(15, 4) DEFAULT 0.0000,
     actual_operating_cost DECIMAL(15, 4) DEFAULT 0.0000,
     planned_material_cost DECIMAL(15, 4) DEFAULT 0.0000,
@@ -188,7 +199,7 @@ CREATE TABLE mrp_work_order_operation (
     workstation_id VARCHAR(100) NOT NULL REFERENCES mrp_workstation(workstation_id),
     time_in_mins DECIMAL(10, 2) NOT NULL,
     completed_qty DECIMAL(15, 4) NOT NULL DEFAULT 0.0000,
-    status mrp_job_card_status NOT NULL DEFAULT 'OPEN'
+    status VARCHAR(50) NOT NULL DEFAULT 'OPEN'
 );
 
 -- -----------------------------------------------------------------------------
@@ -202,9 +213,13 @@ CREATE TABLE mrp_job_card (
     for_quantity DECIMAL(15, 4) NOT NULL,
     completed_quantity DECIMAL(15, 4) NOT NULL DEFAULT 0.0000,
     transferred_qty DECIMAL(15, 4) NOT NULL DEFAULT 0.0000,
-    status mrp_job_card_status NOT NULL DEFAULT 'OPEN',
+    status VARCHAR(50) NOT NULL DEFAULT 'OPEN',
     assigned_employee_id VARCHAR(100) REFERENCES mrp_mock_employee(employee_id),
+    scheduled_start_time TIMESTAMP WITH TIME ZONE,
+    scheduled_end_time TIMESTAMP WITH TIME ZONE,
     total_time_in_mins DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+    scrap_quantity DECIMAL(15, 4) DEFAULT 0.0000,
+    scrap_reason VARCHAR(255),
     version INT NOT NULL DEFAULT 0,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
@@ -245,7 +260,7 @@ CREATE TABLE mrp_quality_inspection (
     inspection_type VARCHAR(50) NOT NULL DEFAULT 'In-Process',
     inspected_by VARCHAR(100) NOT NULL,
     inspected_qty DECIMAL(15, 4) NOT NULL,
-    status mrp_quality_status NOT NULL DEFAULT 'PENDING',
+    status VARCHAR(50) NOT NULL DEFAULT 'PENDING',
     remarks TEXT,
     inspection_date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
@@ -255,16 +270,38 @@ CREATE TABLE mrp_quality_inspection_reading (
     inspection_id VARCHAR(100) NOT NULL REFERENCES mrp_quality_inspection(inspection_id) ON DELETE CASCADE,
     parameter_name VARCHAR(255) NOT NULL,
     reading_value DECIMAL(15, 4) NOT NULL,
-    status mrp_quality_status NOT NULL DEFAULT 'PASSED'
+    status VARCHAR(50) NOT NULL DEFAULT 'PASSED'
 );
 
 -- -----------------------------------------------------------------------------
--- 7. MATERIAL REQUIREMENT PLANNING (MRP) & PRODUCTION PLAN
+-- 7. MATERIAL REQUIREMENT PLANNING (MRP), MPS & DEMAND FORECASTING
 -- -----------------------------------------------------------------------------
+CREATE TABLE mrp_sales_forecast (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    forecast_id VARCHAR(100) NOT NULL UNIQUE,
+    item_code VARCHAR(100) NOT NULL REFERENCES mrp_mock_item(item_code),
+    period_start_date DATE NOT NULL,
+    period_end_date DATE NOT NULL,
+    forecast_qty DECIMAL(15, 4) NOT NULL,
+    confidence_score DECIMAL(5, 2) DEFAULT 100.00,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE mrp_master_production_schedule (
+    mps_id VARCHAR(100) PRIMARY KEY,
+    item_code VARCHAR(100) NOT NULL REFERENCES mrp_mock_item(item_code),
+    bom_no VARCHAR(100) NOT NULL REFERENCES mrp_bom(bom_no),
+    schedule_date DATE NOT NULL,
+    planned_qty DECIMAL(15, 4) NOT NULL,
+    source_type VARCHAR(50) NOT NULL DEFAULT 'FORECAST',
+    status VARCHAR(50) NOT NULL DEFAULT 'DRAFT',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE mrp_production_plan (
     plan_id VARCHAR(100) PRIMARY KEY,
     posting_date DATE NOT NULL DEFAULT CURRENT_DATE,
-    status mrp_plan_status NOT NULL DEFAULT 'DRAFT',
+    status VARCHAR(50) NOT NULL DEFAULT 'DRAFT',
     created_by VARCHAR(100) DEFAULT 'planner',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
@@ -277,6 +314,24 @@ CREATE TABLE mrp_production_plan_item (
     planned_qty DECIMAL(15, 4) NOT NULL,
     produced_qty DECIMAL(15, 4) NOT NULL DEFAULT 0.0000,
     sales_order_ref VARCHAR(100)
+);
+
+-- -----------------------------------------------------------------------------
+-- 8. SUBCONTRACTING ORDERS
+-- -----------------------------------------------------------------------------
+CREATE TABLE mrp_subcontract_order (
+    subcontract_id VARCHAR(100) PRIMARY KEY,
+    work_order_id VARCHAR(100) NOT NULL REFERENCES mrp_work_order(work_order_id) ON DELETE CASCADE,
+    supplier_id VARCHAR(100) NOT NULL,
+    item_code VARCHAR(100) NOT NULL REFERENCES mrp_mock_item(item_code),
+    qty DECIMAL(15, 4) NOT NULL,
+    service_cost DECIMAL(15, 4) NOT NULL DEFAULT 0.0000,
+    status VARCHAR(50) NOT NULL DEFAULT 'DRAFT',
+    warehouse_from VARCHAR(100) DEFAULT 'WH-STORES',
+    warehouse_to VARCHAR(100) DEFAULT 'WH-SUBCONTRACTOR',
+    materials_dispatched BOOLEAN DEFAULT FALSE,
+    dispatch_date TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 -- -----------------------------------------------------------------------------
@@ -296,7 +351,7 @@ CREATE TABLE mrp_downtime_entry (
     downtime_id VARCHAR(100) PRIMARY KEY,
     workstation_id VARCHAR(100) NOT NULL REFERENCES mrp_workstation(workstation_id),
     operator_employee_id VARCHAR(100) REFERENCES mrp_mock_employee(employee_id),
-    category mrp_downtime_category NOT NULL,
+    category VARCHAR(50) NOT NULL,
     start_time TIMESTAMP WITH TIME ZONE NOT NULL,
     end_time TIMESTAMP WITH TIME ZONE,
     downtime_in_mins DECIMAL(10, 2) DEFAULT 0.00,

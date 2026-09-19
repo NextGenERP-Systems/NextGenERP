@@ -141,6 +141,50 @@ export default function BomPage() {
           </div>
         </div>
       )}
+
+      {/* BOM Update Tool Component */}
+      <div className="glass-card p-5 rounded-xl border border-gray-200 space-y-4">
+        <h2 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+          <Layers className="w-4 h-4 text-blue-600" />
+          BOM Update Tool: Mass Component Replacement
+        </h2>
+        <p className="text-xs text-gray-500">
+          Replace an obsolete or out-of-stock raw material across all active Bills of Material and bump revision numbers.
+        </p>
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault();
+            const form = e.currentTarget;
+            const currentItem = (form.elements.namedItem('currentItem') as HTMLInputElement).value;
+            const newItem = (form.elements.namedItem('newItem') as HTMLInputElement).value;
+            const newItemName = (form.elements.namedItem('newItemName') as HTMLInputElement).value;
+            const newRate = Number((form.elements.namedItem('newRate') as HTMLInputElement).value);
+            const res = await api.replaceBomItem(currentItem, newItem, newItemName, newRate);
+            alert(res.message);
+            const data = await api.getBoms();
+            setBoms(data);
+          }}
+          className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs"
+        >
+          <div>
+            <label className="block text-gray-700 mb-1">Current Item Code</label>
+            <input name="currentItem" defaultValue="RAW-ESC-60A" required className="w-full px-3 py-2 border rounded-md" />
+          </div>
+          <div>
+            <label className="block text-gray-700 mb-1">New Item Code</label>
+            <input name="newItem" defaultValue="RAW-ESC-80A" required className="w-full px-3 py-2 border rounded-md" />
+          </div>
+          <div>
+            <label className="block text-gray-700 mb-1">New Item Name</label>
+            <input name="newItemName" defaultValue="80A High-Capacity ESC" required className="w-full px-3 py-2 border rounded-md" />
+          </div>
+          <div className="flex items-end">
+            <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded-md transition-colors">
+              Execute Replacement
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

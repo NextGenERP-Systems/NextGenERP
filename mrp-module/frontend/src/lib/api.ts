@@ -79,7 +79,37 @@ export interface JobCard {
   status: 'OPEN' | 'WORK_IN_PROGRESS' | 'COMPLETED' | 'ON_HOLD' | 'CANCELLED';
   assignedEmployeeId?: string;
   totalTimeInMins: number;
+  scrapQuantity?: number;
+  scrapReason?: string;
   timeLogs?: any[];
+}
+
+export interface OperationItem {
+  operationId: string;
+  operationName: string;
+  defaultWorkstationId?: string;
+  defaultOperatingCost?: number;
+  description?: string;
+}
+
+export interface RoutingOperation {
+  id?: string;
+  sequenceNo: number;
+  operationId: string;
+  workstationId: string;
+  timeInMins: number;
+  operatingCost?: number;
+  batchSize?: number;
+}
+
+export interface Routing {
+  routingId: string;
+  routingName: string;
+  itemCode?: string;
+  isActive: boolean;
+  totalOperatingCost?: number;
+  totalRoutingTimeMins?: number;
+  operations: RoutingOperation[];
 }
 
 // Enterprise Mock Store for Offline / Resilient Mode
@@ -278,9 +308,12 @@ export const api = {
     return mockJobCards;
   },
 
-  async completeJobCard(id: string, completedQty: number): Promise<JobCard> {
+  async completeJobCard(id: string, completedQty: number, scrapQty?: number, scrapReason?: string): Promise<JobCard> {
     try {
-      const res = await fetch(`${BASE_URL}/job-cards/${id}/complete?completedQty=${completedQty}`, { method: 'POST' });
+      let url = `${BASE_URL}/job-cards/${id}/complete?completedQty=${completedQty}`;
+      if (scrapQty) url += `&scrapQty=${scrapQty}`;
+      if (scrapReason) url += `&scrapReason=${encodeURIComponent(scrapReason)}`;
+      const res = await fetch(url, { method: 'POST' });
       if (res.ok) return await res.json();
     } catch (e) {
       console.warn('Backend unavailable, completing job card in mock store');
@@ -288,6 +321,8 @@ export const api = {
     const jc = mockJobCards.find(j => j.jobCardId === id);
     if (jc) {
       jc.completedQuantity = (jc.completedQuantity || 0) + completedQty;
+      if (scrapQty) jc.scrapQuantity = (jc.scrapQuantity || 0) + scrapQty;
+      if (scrapReason) jc.scrapReason = scrapReason;
       if (jc.completedQuantity >= jc.forQuantity) {
         jc.status = 'COMPLETED';
       } else {
@@ -470,8 +505,267 @@ export const api = {
       console.warn('Backend unavailable, mocking scrap log');
     }
     return scrapItem;
+  },
+
+  // Phase 1, 2, 3 Extensions: MPS, BOM Update Tool, Subcontracting
+  async replaceBomItem(currentItemCode: string, newItemCode: string, newItemName: string, newRate?: number): Promise<any> {
+    try {
+      const params = new URLSearchParams({ currentItemCode, newItemCode, newItemName });
+      if (newRate) params.append('newRate', newRate.toString());
+      const res = await fetch(`${BASE_URL}/boms/replace-item?${params}`, { method: 'POST' });
+      if (res.ok) return await res.json();
+    } catch (e) {
+      console.warn('Backend unavailable, mocking BOM item replacement');
+    }
+    let updatedCount = 0;
+    mockBoms.forEach(bom => {
+      bom.items.forEach(item => {
+        if (item.itemCode === currentItemCode) {
+          item.itemCode = newItemCode;
+          item.itemName = newItemName;
+          if (newRate) {
+            item.standardRate = newRate;
+            item.amount = item.qty * newRate;
+          }
+          updatedCount++;
+        }
+      });
+    });
+    return { status: 'SUCCESS', bomsUpdated: updatedCount, message: `Replaced ${currentItemCode} with ${newItemCode} in mock store.` };
+  },
+
+  async getMpsSchedules(): Promise<any[]> {
+    try {
+      const res = await fetch(`${BASE_URL}/mps`);
+      if (res.ok) return await res.json();
+    } catch (e) {
+      console.warn('Backend unavailable, returning mock MPS');
+    }
+    return [
+      {
+        mpsId: 'MPS-2026-001',
+        itemCode: 'EV-DRONE-X1',
+        bomNo: 'BOM-EV-DRONE-001',
+        scheduleDate: '2026-09-25',
+        plannedQty: 20,
+        sourceType: 'FORECAST',
+        status: 'SUBMITTED'
+      }
+    ];
+  },
+
+  async createMpsSchedule(mps: any): Promise<any> {
+    try {
+      const res = await fetch(`${BASE_URL}/mps`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(mps)
+      });
+      if (res.ok) return await res.json();
+    } catch (e) {
+      console.warn('Backend unavailable, mocking MPS creation');
+    }
+    return { ...mps, mpsId: mps.mpsId || `MPS-2026-${Math.floor(Math.random() * 900 + 100)}` };
+  },
+
+  async convertMpsToPlan(mpsId: string): Promise<any> {
+    try {
+      const res = await fetch(`${BASE_URL}/mps/${mpsId}/to-production-plan`, { method: 'POST' });
+      if (res.ok) return await res.json();
+    } catch (e) {
+      console.warn('Backend unavailable, mocking MPS conversion');
+    }
+    return {
+      planId: `PLAN-MPS-${mpsId}`,
+      status: 'SUBMITTED',
+      createdBy: 'MPS-Auto-Generator',
+      items: [{ itemCode: 'EV-DRONE-X1', bomNo: 'BOM-EV-DRONE-001', plannedQty: 20 }]
+    };
+  },
+
+  async getSubcontracts(): Promise<any[]> {
+    try {
+      const res = await fetch(`${BASE_URL}/subcontracting`);
+      if (res.ok) return await res.json();
+    } catch (e) {
+      console.warn('Backend unavailable, returning mock subcontracts');
+    }
+    return [
+      {
+        subcontractId: 'SUB-2026-001',
+        workOrderId: 'WO-2026-0001',
+        supplierId: 'SUP-AERO-TECH',
+        itemCode: 'DRONE-PROP-SUB',
+        qty: 5,
+        serviceCost: 250.0,
+        status: 'SUBMITTED'
+      }
+    ];
+  },
+
+  async createSubcontract(order: any): Promise<any> {
+    try {
+      const res = await fetch(`${BASE_URL}/subcontracting`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(order)
+      });
+      if (res.ok) return await res.json();
+    } catch (e) {
+      console.warn('Backend unavailable, mocking subcontract creation');
+    }
+    return { ...order, subcontractId: order.subcontractId || `SUB-2026-${Math.floor(Math.random() * 900 + 100)}`, status: 'SUBMITTED' };
+  },
+
+  async dispatchSubcontractMaterials(subcontractId: string): Promise<any> {
+    try {
+      const res = await fetch(`${BASE_URL}/subcontracting/${subcontractId}/dispatch-materials`, { method: 'POST' });
+      if (res.ok) return await res.json();
+    } catch (e) {
+      console.warn('Backend unavailable, mocking material dispatch');
+    }
+    return { subcontractId, status: 'MATERIALS_DISPATCHED', materialsDispatched: true, dispatchDate: new Date().toISOString() };
+  },
+
+  async receiveSubcontractGoods(subcontractId: string): Promise<any> {
+    try {
+      const res = await fetch(`${BASE_URL}/subcontracting/${subcontractId}/receive-goods`, { method: 'POST' });
+      if (res.ok) return await res.json();
+    } catch (e) {
+      console.warn('Backend unavailable, mocking goods receipt');
+    }
+    return { subcontractId, status: 'COMPLETED' };
+  },
+
+  async getOperations(): Promise<OperationItem[]> {
+    try {
+      const res = await fetch(`${BASE_URL}/operations`);
+      if (res.ok) return await res.json();
+    } catch (e) {
+      console.warn('Backend unavailable, returning mock operations');
+    }
+    return [
+      { operationId: 'OP-CNC-01', operationName: 'Precision CNC Machining', defaultWorkstationId: 'WS-CNC-01', defaultOperatingCost: 15.5, description: 'Milling & Cutting' },
+      { operationId: 'OP-ASSM-02', operationName: 'Robotic Chassis Assembly', defaultWorkstationId: 'WS-ASSM-01', defaultOperatingCost: 22.0, description: 'Chassis Wiring & Fastening' },
+      { operationId: 'OP-QUAL-03', operationName: 'Laser Calibration & QA', defaultWorkstationId: 'WS-QUAL-01', defaultOperatingCost: 12.0, description: 'Inspection & Sensor Calibration' }
+    ];
+  },
+
+  async createOperation(op: OperationItem): Promise<OperationItem> {
+    try {
+      const res = await fetch(`${BASE_URL}/operations`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(op)
+      });
+      if (res.ok) return await res.json();
+    } catch (e) {
+      console.warn('Backend unavailable, mocking operation creation');
+    }
+    return { ...op, operationId: op.operationId || `OP-${Math.floor(Math.random() * 9000 + 1000)}` };
+  },
+
+  async getRoutings(): Promise<Routing[]> {
+    try {
+      const res = await fetch(`${BASE_URL}/routings`);
+      if (res.ok) return await res.json();
+    } catch (e) {
+      console.warn('Backend unavailable, returning mock routings');
+    }
+    return [
+      {
+        routingId: 'RT-DRONE-X1',
+        routingName: 'Standard Industrial Drone Assembly Routing',
+        itemCode: 'EV-DRONE-X1',
+        isActive: true,
+        totalOperatingCost: 49.5,
+        totalRoutingTimeMins: 75,
+        operations: [
+          { sequenceNo: 1, operationId: 'Precision CNC Machining', workstationId: 'WS-CNC-01', timeInMins: 30, operatingCost: 15.5 },
+          { sequenceNo: 2, operationId: 'Robotic Chassis Assembly', workstationId: 'WS-ASSM-01', timeInMins: 30, operatingCost: 22.0 },
+          { sequenceNo: 3, operationId: 'Laser Calibration & QA', workstationId: 'WS-QUAL-01', timeInMins: 15, operatingCost: 12.0 }
+        ]
+      }
+    ];
+  },
+
+  async getRoutingById(routingId: string): Promise<Routing> {
+    try {
+      const res = await fetch(`${BASE_URL}/routings/${routingId}`);
+      if (res.ok) return await res.json();
+    } catch (e) {
+      console.warn('Backend unavailable, returning mock routing');
+    }
+    const list = await this.getRoutings();
+    return list.find(r => r.routingId === routingId) || list[0];
+  },
+
+  async createRouting(routing: Routing): Promise<Routing> {
+    try {
+      const res = await fetch(`${BASE_URL}/routings`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(routing)
+      });
+      if (res.ok) return await res.json();
+    } catch (e) {
+      console.warn('Backend unavailable, mocking routing creation');
+    }
+    return { ...routing, routingId: routing.routingId || `RT-${Math.floor(Math.random() * 9000 + 1000)}` };
+  },
+
+  async createWorkOrder(wo: Partial<WorkOrder>): Promise<WorkOrder> {
+    try {
+      const res = await fetch(`${BASE_URL}/work-orders`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(wo)
+      });
+      if (res.ok) return await res.json();
+    } catch (e) {
+      console.warn('Backend unavailable, mocking work order creation');
+    }
+    return {
+      workOrderId: wo.workOrderId || `WO-2026-${Math.floor(Math.random() * 9000 + 1000)}`,
+      productionItem: wo.productionItem || 'EV-DRONE-X1',
+      itemName: wo.itemName || 'Industrial EV Drone',
+      bomNo: wo.bomNo || 'BOM-EV-DRONE-001',
+      qtyToProduce: wo.qtyToProduce || 10,
+      producedQty: 0,
+      plannedStartDate: wo.plannedStartDate || new Date().toISOString(),
+      plannedEndDate: wo.plannedEndDate || new Date(Date.now() + 86400000*3).toISOString(),
+      status: 'NOT_STARTED',
+      plannedMaterialCost: 2800,
+      actualMaterialCost: 0,
+      plannedOperatingCost: 50,
+      actualOperatingCost: 0,
+      items: []
+    };
+  },
+
+  async getWorkOrderById(id: string): Promise<WorkOrder> {
+    try {
+      const res = await fetch(`${BASE_URL}/work-orders/${id}`);
+      if (res.ok) return await res.json();
+    } catch (e) {
+      console.warn('Backend unavailable, returning mock work order');
+    }
+    const list = await this.getWorkOrders();
+    return list.find(w => w.workOrderId === id) || list[0];
+  },
+
+  async submitWorkOrder(id: string): Promise<WorkOrder> {
+    try {
+      const res = await fetch(`${BASE_URL}/work-orders/${id}/submit`, { method: 'POST' });
+      if (res.ok) return await res.json();
+    } catch (e) {
+      console.warn('Backend unavailable, mocking work order submit');
+    }
+    const wo = await this.getWorkOrderById(id);
+    return { ...wo, status: 'SUBMITTED' };
   }
 };
+
 
 
 

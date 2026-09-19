@@ -28,11 +28,13 @@ services:
     ports:
       - "8085:8085"
     environment:
-      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:postgresql://host.docker.internal:5433/nextgen_mrp}
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:postgresql://mrp-postgres:5432/nextgen_mrp}
       SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:-postgres}
       SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-postgres}
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+    depends_on:
+      mrp-postgres:
+        condition: service_healthy
+
 
 
   mrp-frontend:
@@ -43,6 +45,7 @@ services:
     ports:
       - "3005:3005"
     environment:
+      BACKEND_URL: http://mrp-backend:8085/api/v1
       NEXT_PUBLIC_API_URL: http://localhost:8085/api/v1
     depends_on:
       - mrp-backend

@@ -38,8 +38,21 @@ public class JobCardController {
     }
 
     @PostMapping("/{id}/complete")
-    @Operation(summary = "Complete production quantity on Job Card with concurrency lock")
-    public ResponseEntity<JobCard> completeJobCard(@PathVariable String id, @RequestParam BigDecimal completedQty) {
-        return ResponseEntity.ok(jobCardService.completeJobCard(id, completedQty));
+    @Operation(summary = "Complete production quantity on Job Card with optional scrap recording & concurrency lock")
+    public ResponseEntity<JobCard> completeJobCard(
+            @PathVariable String id,
+            @RequestParam BigDecimal completedQty,
+            @RequestParam(required = false) BigDecimal scrapQty,
+            @RequestParam(required = false) String scrapReason) {
+        return ResponseEntity.ok(jobCardService.completeJobCard(id, completedQty, scrapQty, scrapReason));
+    }
+
+    @PostMapping("/{id}/schedule")
+    @Operation(summary = "Capacity Scheduling: Auto-schedule Job Card on workstation without overbooking")
+    public ResponseEntity<JobCard> scheduleJobCard(
+            @PathVariable String id,
+            @RequestParam(required = false) java.time.ZonedDateTime startFrom,
+            @RequestParam(defaultValue = "60") long durationMins) {
+        return ResponseEntity.ok(jobCardService.scheduleJobCard(id, startFrom, durationMins));
     }
 }

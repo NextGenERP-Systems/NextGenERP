@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 
@@ -29,5 +30,39 @@ public class BomService {
     @Transactional(readOnly = true)
     public List<Map<String, Object>> explodeBomViaCte(String bomNo) {
         return bomRepository.explodeBomWithCte(bomNo);
+    }
+
+    @Transactional
+    public int replaceItemInAllBoms(String currentItemCode, String newItemCode, String newItemName, BigDecimal newRate) {
+        List<Bom> boms = bomRepository.findAll();
+        int count = 0;
+        for (Bom bom : boms) {
+            boolean updated = false;
+            for (var item : bom.getItems()) {
+                if (item.getItemCode().equals(currentItemCode)) {
+                    item.setItemCode(newItemCode);
+                    item.setItemName(newItemName);
+                    if (newRate != null) {
+                        item.setStandardRate(newRate);
+                        item.setAmount(newRate.multiply(item.getQty()));
+                    }
+                    updated = true;
+                }
+            }
+            if (updated) {
+                bom.setRevisionNumber(bom.getRevisionNumber() + 1);
+                bomRepository.save(bom);
+                count++;
+            }
+        }
+        return count;
+    }
+
+    @Transactional
+    public Bom saveBom(Bom bom) {
+        if (bom.getRevisionNumber() == null) {
+            bom.setRevisionNumber(1);
+        }
+        return bomRepository.save(bom);
     }
 }
