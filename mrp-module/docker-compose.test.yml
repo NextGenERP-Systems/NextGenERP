@@ -12,7 +12,8 @@ services:
       - "5435:5432"
     volumes:
       - mrp-postgres-test-data:/var/lib/postgresql/data
-      - ./database/init-schema.sql:/docker-entrypoint-initdb.d/01-init-schema.sql:ro
+      - ./database/test-prerequisites.sql:/docker-entrypoint-initdb.d/00-test-prerequisites.sql:ro
+      - ./backend/src/main/resources/db/migration/V1__create_mrp_schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
       - ./database/seed-data.sql:/docker-entrypoint-initdb.d/02-seed-data.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d nextgen_mrp"]
@@ -42,15 +43,12 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-      args:
-        NEXT_PUBLIC_MRP_DEMO_MODE: ${NEXT_PUBLIC_MRP_DEMO_MODE:-false}
     container_name: nextgen-mrp-frontend-test
     ports:
       - "3006:3005"
     environment:
       BACKEND_URL: http://mrp-backend:8085/api/v1
       NEXT_PUBLIC_API_URL: http://localhost:8086/api/v1
-      NEXT_PUBLIC_MRP_DEMO_MODE: ${NEXT_PUBLIC_MRP_DEMO_MODE:-false}
     depends_on:
       - mrp-backend
 

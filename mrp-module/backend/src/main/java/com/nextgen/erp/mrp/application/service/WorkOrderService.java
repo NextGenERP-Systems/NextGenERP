@@ -148,7 +148,10 @@ public class WorkOrderService {
                                 woOp.setWorkOrder(wo);
                                 woOp.setSequenceNo(rOp.getSequenceNo());
                                 woOp.setOperationId(rOp.getOperationId());
-                                woOp.setWorkstationId(rOp.getWorkstationId() != null ? rOp.getWorkstationId() : "WS-ASM-01");
+                                if (rOp.getWorkstationId() == null || rOp.getWorkstationId().isBlank()) {
+                                    throw new IllegalArgumentException("Routing operation is missing a workstation");
+                                }
+                                woOp.setWorkstationId(rOp.getWorkstationId());
                                 woOp.setTimeInMins(rOp.getTimeInMins());
                                 woOp.setCompletedQty(BigDecimal.ZERO);
                                 woOp.setStatus("PENDING");

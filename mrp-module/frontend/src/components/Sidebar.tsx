@@ -11,7 +11,6 @@ import {
   Wand2, 
   ShieldCheck, 
   Activity, 
-  Trash2,
   Workflow
 } from 'lucide-react';
 
@@ -28,7 +27,6 @@ const navItems = [
   { name: 'MRP Runs', href: '/mrp-runs', icon: Activity },
   { name: 'Subcontracting', href: '/subcontracting', icon: ClipboardList },
   { name: 'Quality Inspection', href: '/quality', icon: ShieldCheck },
-  { name: 'Sandbox & Security', href: '/sandbox', icon: Trash2 },
 ];
 
 export default function Sidebar() {
@@ -77,7 +75,7 @@ export default function Sidebar() {
         </div>
       </div>
 
-      {/* Footer Sandbox Status Banner */}
+      {/* Connection Status */}
       <div className="p-3 border-t border-gray-200 bg-[#f8f8f8]">
         <div className="p-2.5 bg-white border border-gray-200 rounded-lg text-xs text-gray-600 space-y-1 shadow-2xs">
           <div className="flex items-center gap-2 text-blue-700 font-semibold">

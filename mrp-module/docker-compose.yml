@@ -20,14 +20,11 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-      args:
-        NEXT_PUBLIC_MRP_DEMO_MODE: ${NEXT_PUBLIC_MRP_DEMO_MODE:-false}
     container_name: nextgen-mrp-frontend
     ports:
       - "3005:3005"
     environment:
       BACKEND_URL: http://mrp-backend:8085/api/v1
       NEXT_PUBLIC_API_URL: http://localhost:8085/api/v1
-      NEXT_PUBLIC_MRP_DEMO_MODE: ${NEXT_PUBLIC_MRP_DEMO_MODE:-false}
     depends_on:
       - mrp-backend

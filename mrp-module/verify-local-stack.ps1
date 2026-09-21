@@ -16,8 +16,7 @@ function Invoke-JsonRequest {
 }
 
 try {
-    # This profile owns only the disposable test volume; reset it so init-schema.sql
-    # always reflects the current MRP schema under test.
+    # This profile owns only the disposable test volume; reset it before each run.
     docker compose -f docker-compose.test.yml down -v
     docker compose -f docker-compose.test.yml up -d --build
     if ($LASTEXITCODE -ne 0) { throw 'The isolated MRP Compose stack failed to start.' }

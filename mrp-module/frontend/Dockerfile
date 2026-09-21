@@ -1,9 +1,7 @@
 FROM node:20-alpine AS build
 WORKDIR /app
-ARG NEXT_PUBLIC_MRP_DEMO_MODE=false
-ENV NEXT_PUBLIC_MRP_DEMO_MODE=$NEXT_PUBLIC_MRP_DEMO_MODE
 COPY package*.json ./
-RUN npm install
+RUN npm ci
 COPY . .
 RUN mkdir -p public
 RUN npm run build

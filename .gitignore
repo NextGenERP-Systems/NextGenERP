@@ -49,3 +49,5 @@ projects-module-dump.sql
 
 .docker-env/
 **/frappe-bench/sites/assets/
+# TypeScript incremental build artifacts
+*.tsbuildinfo

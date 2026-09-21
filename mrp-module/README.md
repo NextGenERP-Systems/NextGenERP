@@ -14,7 +14,6 @@
 | **Concurrency Protection** | `@Lock(LockModeType.PESSIMISTIC_WRITE)` | Prevents race conditions and double-counting during simultaneous shop floor Job Card completions. |
 | **MRP Wizard** | `MrpWizardService` | 4-Step Material Shortage calculator exploding BoMs against inventory stock. |
 | **Sandbox Security** | PostgreSQL RLS (`mrp_shop_floor_worker` vs `mrp_production_manager`) | Enforces role-based data isolation right in the database layer. |
-| **Data Teardown Script** | `teardown-sandbox.sql` | One-click clean truncation of mock testing states. |
 
 ---
 
@@ -45,9 +44,7 @@ NextGenERP/
     │   ├── src/lib/api.ts            # API Client with Resilient Offline Fallback
     │   └── Dockerfile
     ├── database/
-    │   ├── init-schema.sql           # PostgreSQL Schema (CTEs, RLS, Parent WO Foreign Keys)
     │   ├── seed-data.sql             # Enterprise Seed Dataset (Multi-level EV Drone BOM)
-    │   └── teardown-sandbox.sql      # Sandbox Teardown & Reset Script
     ├── docker-compose.yml            # Isolated Multi-container Orchestration
     └── README.md
 ```
@@ -69,7 +66,7 @@ docker compose up -d --build
 - **Database identity check**: `http://localhost:8085/api/v1/mrp/runtime/database`
 - **Database**: the Dockerized backend connects through the IAP tunnel to the persistent GCP `nextgen_mrp` database on local port `5433`.
 - Set `SPRING_DATASOURCE_USERNAME` and `SPRING_DATASOURCE_PASSWORD` before starting the Compose stack.
-- Normal mode keeps `NEXT_PUBLIC_MRP_DEMO_MODE=false`; enable demo fallback explicitly only for demonstrations.
+- The frontend uses the MRP backend as its sole source of truth; failed requests are surfaced to the operator.
 - Flyway remains disabled by default during normal application startup. Structural changes must use the reviewed, guarded migration job after backup and validation.
 
 ### Optional Local PostgreSQL Test Mode
@@ -135,4 +132,4 @@ cd mrp-module/frontend
 npm install
 npm run dev
 ```
-Open [http://localhost:3005](http://localhost:3005) in your browser. Normal development reads and writes the persistent cloud database. Offline mock behavior is available only when `NEXT_PUBLIC_MRP_DEMO_MODE=true` is explicitly supplied before building the frontend image.
+Open [http://localhost:3005](http://localhost:3005) in your browser. Normal development reads and writes the persistent cloud database.

@@ -78,12 +78,12 @@ Flyway is present but disabled by default. Do not set `SPRING_FLYWAY_ENABLED=tru
 
 - A schema-only dump and full backup of `nextgen_mrp` exist.
 - The full backup has been restored and verified.
-- The live schema has been compared with `database/init-schema.sql` and the JPA entities.
+- The live schema has been compared with Flyway migrations and the JPA entities.
 - The actual PostgreSQL version, extensions, roles and permissions are recorded.
 - A baseline migration has been reviewed and tested against the restored copy.
 - The migration role and restricted application role are available.
 
-Never apply `seed-data.sql` or `teardown-sandbox.sql` to the persistent cloud database. Those files are only for the isolated test container and sandbox workflows.
+Never apply `seed-data.sql` to the persistent cloud database. It is only for the isolated test container.
 
 ## Production deployment order
 
