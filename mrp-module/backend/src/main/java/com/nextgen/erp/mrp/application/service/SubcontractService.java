@@ -1,6 +1,5 @@
 package com.nextgen.erp.mrp.application.service;
 
-import com.nextgen.erp.mrp.domain.entity.MockItem;
 import com.nextgen.erp.mrp.domain.entity.SubcontractOrder;
 import com.nextgen.erp.mrp.domain.repository.MockItemRepository;
 import com.nextgen.erp.mrp.domain.repository.SubcontractOrderRepository;
@@ -8,7 +7,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
@@ -30,17 +28,9 @@ public class SubcontractService {
             order.setSubcontractId("SUB-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
         }
 
-        // Auto-create missing MockItem if it doesn't exist to prevent FK constraint failure
         if (order.getItemCode() != null && !order.getItemCode().isBlank()) {
             if (!mockItemRepository.existsById(order.getItemCode())) {
-                MockItem item = new MockItem();
-                item.setItemCode(order.getItemCode());
-                item.setItemName(order.getItemCode());
-                item.setItemGroup("Subcontract Services");
-                item.setUom("Nos");
-                item.setStandardRate(order.getServiceCost() != null ? order.getServiceCost() : BigDecimal.ZERO);
-                item.setIsStockItem(false);
-                mockItemRepository.saveAndFlush(item);
+                throw new IllegalArgumentException("Item master not found: " + order.getItemCode());
             }
         }
 

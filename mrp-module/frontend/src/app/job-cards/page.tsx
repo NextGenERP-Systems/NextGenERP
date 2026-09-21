@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { api, JobCard } from '@/lib/api';
 import { Timer, CheckCircle, Plus } from 'lucide-react';
 
@@ -10,6 +10,9 @@ export default function JobCardsPage() {
   const [consumeQty, setConsumeQty] = useState<number>(1);
   const [activeWoId, setActiveWoId] = useState<string>('WO-2026-0001');
   const [statusMsg, setStatusMsg] = useState<string>('');
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
 
   useEffect(() => {
     async function load() {
@@ -30,6 +33,14 @@ export default function JobCardsPage() {
     await api.logMaterialConsumption(activeWoId, consumeItemCode, consumeQty);
     setStatusMsg(`Logged ${consumeQty} units of ${consumeItemCode} against ${activeWoId}`);
   };
+
+  const filteredJobCards = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    return jobCards.filter((jc) => !term || [jc.jobCardId, jc.workOrderId, jc.operationId, jc.status]
+      .some((value) => value?.toLowerCase().includes(term)));
+  }, [jobCards, search]);
+  const pageCount = Math.max(1, Math.ceil(filteredJobCards.length / pageSize));
+  const pagedJobCards = filteredJobCards.slice((page - 1) * pageSize, page * pageSize);
 
   return (
     <div className="space-y-6">
@@ -143,8 +154,9 @@ export default function JobCardsPage() {
 
 
       {/* Job Card Execution List (Tablet Cards) */}
+      <div className="flex items-center gap-3"><input value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); }} placeholder="Search Job Cards, Work Orders, operations, or status..." className="w-full max-w-md rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500" /><span className="text-xs text-gray-500">{filteredJobCards.length} cards</span></div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {jobCards.map((jc) => (
+        {pagedJobCards.map((jc) => (
           <div key={jc.jobCardId} className="glass-card p-6 rounded-2xl border border-gray-200 space-y-4 shadow-xs">
             <div className="flex items-center justify-between">
               <span className="text-sm font-mono font-bold text-blue-600">{jc.jobCardId}</span>
@@ -186,6 +198,7 @@ export default function JobCardsPage() {
           </div>
         ))}
       </div>
+      {pageCount > 1 && <div className="flex items-center justify-between text-xs text-gray-500"><span>Page {page} of {pageCount}</span><div className="flex gap-2"><button disabled={page === 1} onClick={() => setPage((current) => current - 1)} className="rounded border border-gray-200 bg-white px-3 py-1.5 disabled:opacity-40">Previous</button><button disabled={page === pageCount} onClick={() => setPage((current) => current + 1)} className="rounded border border-gray-200 bg-white px-3 py-1.5 disabled:opacity-40">Next</button></div></div>}
     </div>
   );
 }

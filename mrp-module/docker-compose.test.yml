@@ -1,0 +1,58 @@
+# Optional isolated PostgreSQL profile for tests and offline development.
+# Normal development uses docker-compose.yml and the GCP nextgen_mrp database.
+services:
+  mrp-postgres-test:
+    image: postgres:15-alpine
+    container_name: nextgen-mrp-postgres-test
+    environment:
+      POSTGRES_DB: nextgen_mrp
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5435:5432"
+    volumes:
+      - mrp-postgres-test-data:/var/lib/postgresql/data
+      - ./database/init-schema.sql:/docker-entrypoint-initdb.d/01-init-schema.sql:ro
+      - ./database/seed-data.sql:/docker-entrypoint-initdb.d/02-seed-data.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d nextgen_mrp"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  mrp-backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: nextgen-mrp-backend-test
+    ports:
+      - "8086:8085"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://mrp-postgres-test:5432/nextgen_mrp
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_JPA_HIBERNATE_DDL_AUTO: none
+      SPRING_FLYWAY_ENABLED: false
+      SPRING_FLYWAY_BASELINE_ON_MIGRATE: false
+    depends_on:
+      mrp-postgres-test:
+        condition: service_healthy
+
+  mrp-frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_MRP_DEMO_MODE: ${NEXT_PUBLIC_MRP_DEMO_MODE:-false}
+    container_name: nextgen-mrp-frontend-test
+    ports:
+      - "3006:3005"
+    environment:
+      BACKEND_URL: http://mrp-backend:8085/api/v1
+      NEXT_PUBLIC_API_URL: http://localhost:8086/api/v1
+      NEXT_PUBLIC_MRP_DEMO_MODE: ${NEXT_PUBLIC_MRP_DEMO_MODE:-false}
+    depends_on:
+      - mrp-backend
+
+volumes:
+  mrp-postgres-test-data:

@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import com.nextgen.erp.mrp.domain.entity.WorkOrder;
 
 @RestController
 @RequestMapping("/api/v1/mrp/production-plans")
@@ -40,5 +41,11 @@ public class ProductionPlanController {
     @Operation(summary = "Submit production plan for execution")
     public ResponseEntity<ProductionPlan> submitPlan(@PathVariable String id) {
         return ResponseEntity.ok(productionPlanService.submitProductionPlan(id));
+    }
+
+    @PostMapping("/{id}/generate-work-orders")
+    @Operation(summary = "Generate idempotent Work Orders from a submitted production plan")
+    public ResponseEntity<List<WorkOrder>> generateWorkOrders(@PathVariable String id) {
+        return ResponseEntity.ok(productionPlanService.generateWorkOrders(id));
     }
 }

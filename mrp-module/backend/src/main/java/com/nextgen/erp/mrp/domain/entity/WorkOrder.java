@@ -23,6 +23,9 @@ public class WorkOrder {
     @Column(name = "parent_wo_id", length = 100)
     private String parentWoId;
 
+    @Column(name = "production_plan_id", length = 100)
+    private String productionPlanId;
+
     @Column(name = "production_item", nullable = false, length = 100)
     private String productionItem;
 
@@ -52,6 +55,12 @@ public class WorkOrder {
 
     @Column(name = "planned_end_date", nullable = false)
     private ZonedDateTime plannedEndDate;
+
+    @Column(name = "actual_start_date")
+    private ZonedDateTime actualStartDate;
+
+    @Column(name = "actual_end_date")
+    private ZonedDateTime actualEndDate;
 
     @Column(name = "status", nullable = false, length = 50)
     private String status;
@@ -87,6 +96,15 @@ public class WorkOrder {
 
     public String getParentWoId() { return parentWoId; }
     public void setParentWoId(String parentWoId) { this.parentWoId = parentWoId; }
+
+    public String getProductionPlanId() { return productionPlanId; }
+    public void setProductionPlanId(String productionPlanId) { this.productionPlanId = productionPlanId; }
+
+    public ZonedDateTime getActualStartDate() { return actualStartDate; }
+    public void setActualStartDate(ZonedDateTime actualStartDate) { this.actualStartDate = actualStartDate; }
+
+    public ZonedDateTime getActualEndDate() { return actualEndDate; }
+    public void setActualEndDate(ZonedDateTime actualEndDate) { this.actualEndDate = actualEndDate; }
 
     public String getProductionItem() { return productionItem; }
     public void setProductionItem(String productionItem) { this.productionItem = productionItem; }

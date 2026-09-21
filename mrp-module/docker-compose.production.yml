@@ -1,0 +1,52 @@
+# Dedicated MRP production deployment definition.
+# It contains only MRP services and connects to the existing single nextgen_mrp database.
+# Supply versioned images and credentials through the VM environment or an uncommitted .env file.
+services:
+  mrp-backend:
+    image: ${MRP_BACKEND_IMAGE:?Set MRP_BACKEND_IMAGE to a versioned MRP backend image}
+    container_name: nextgen-mrp-backend
+    restart: unless-stopped
+    ports:
+      - "${MRP_BACKEND_PORT:-8085}:8085"
+    environment:
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:?Set the production PostgreSQL URL for nextgen_mrp}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:?Set the restricted MRP application database user}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:?Set the restricted MRP application database password}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: "none"
+      SPRING_FLYWAY_ENABLED: "false"
+      MRP_MIGRATION_ONLY: "false"
+      MRP_WEB_APPLICATION_TYPE: servlet
+    networks:
+      - mrp-production
+
+  mrp-frontend:
+    image: ${MRP_FRONTEND_IMAGE:?Set MRP_FRONTEND_IMAGE to a versioned MRP frontend image}
+    container_name: nextgen-mrp-frontend
+    restart: unless-stopped
+    ports:
+      - "${MRP_FRONTEND_PORT:-3005}:3005"
+    environment:
+      BACKEND_URL: http://mrp-backend:8085/api/v1
+      NEXT_PUBLIC_MRP_DEMO_MODE: "false"
+    depends_on:
+      - mrp-backend
+    networks:
+      - mrp-production
+
+  mrp-migration:
+    image: ${MRP_BACKEND_IMAGE:?Set MRP_BACKEND_IMAGE to the same versioned MRP backend image}
+    profiles: [migration]
+    environment:
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:?Set the production PostgreSQL URL for nextgen_mrp}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_MIGRATION_USERNAME:?Set the restricted MRP migration database user}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_MIGRATION_PASSWORD:?Set the MRP migration database password}
+      SPRING_FLYWAY_ENABLED: "true"
+      SPRING_FLYWAY_BASELINE_ON_MIGRATE: ${SPRING_FLYWAY_BASELINE_ON_MIGRATE:-false}
+      MRP_MIGRATION_ONLY: "true"
+      MRP_WEB_APPLICATION_TYPE: none
+    networks:
+      - mrp-production
+
+networks:
+  mrp-production:
+    name: nextgen-mrp-production

@@ -1,0 +1,7 @@
+# Disposable migration test override. Use only with docker-compose.test.yml.
+# Never combine this file with the normal cloud-connected Compose profile.
+services:
+  mrp-backend:
+    environment:
+      SPRING_FLYWAY_ENABLED: "true"
+      SPRING_FLYWAY_BASELINE_ON_MIGRATE: "true"

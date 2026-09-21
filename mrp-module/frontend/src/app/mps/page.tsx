@@ -31,13 +31,18 @@ export default function MasterSchedulePage() {
       plannedQty,
       scheduleDate,
       sourceType: 'FORECAST',
-      status: 'SUBMITTED'
+      status: 'DRAFT'
     });
     await loadData();
   };
 
   const handleConvertToPlan = async (mpsId: string) => {
     await api.convertMpsToPlan(mpsId);
+    await loadData();
+  };
+
+  const handleSubmitSchedule = async (mpsId: string) => {
+    await api.submitMpsSchedule(mpsId);
     await loadData();
   };
 
@@ -155,7 +160,14 @@ export default function MasterSchedulePage() {
                         </span>
                       </td>
                       <td className="px-4 py-3 text-right">
-                        {item.status !== 'COMPLETED' ? (
+                        {item.status === 'DRAFT' ? (
+                          <button
+                            onClick={() => handleSubmitSchedule(item.mpsId)}
+                            className="inline-flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white font-medium px-2.5 py-1 rounded-md text-[11px] transition-colors"
+                          >
+                            Submit for Planning <ArrowRight className="w-3 h-3" />
+                          </button>
+                        ) : item.status === 'SUBMITTED' ? (
                           <button
                             onClick={() => handleConvertToPlan(item.mpsId)}
                             className="inline-flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-2.5 py-1 rounded-md text-[11px] transition-colors"

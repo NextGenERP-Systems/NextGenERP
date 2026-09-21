@@ -6,6 +6,7 @@ import java.math.BigDecimal;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Entity
 @Table(name = "mrp_job_card")
@@ -25,6 +26,9 @@ public class JobCard {
 
     @Column(name = "operation_id", nullable = false, length = 100)
     private String operationId;
+
+    @Column(name = "work_order_operation_id")
+    private UUID workOrderOperationId;
 
     @Column(name = "workstation_id", nullable = false, length = 100)
     private String workstationId;
@@ -75,6 +79,9 @@ public class JobCard {
 
     public String getOperationId() { return operationId; }
     public void setOperationId(String operationId) { this.operationId = operationId; }
+
+    public UUID getWorkOrderOperationId() { return workOrderOperationId; }
+    public void setWorkOrderOperationId(UUID workOrderOperationId) { this.workOrderOperationId = workOrderOperationId; }
 
     public String getWorkstationId() { return workstationId; }
     public void setWorkstationId(String workstationId) { this.workstationId = workstationId; }

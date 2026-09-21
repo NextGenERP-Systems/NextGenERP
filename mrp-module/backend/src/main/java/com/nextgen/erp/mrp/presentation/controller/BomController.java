@@ -31,6 +31,12 @@ public class BomController {
         return ResponseEntity.ok(bomService.getBomByNo(bomNo));
     }
 
+    @PostMapping("/{bomNo}/approve")
+    @Operation(summary = "Approve a draft BOM for MRP explosion")
+    public ResponseEntity<Bom> approveBom(@PathVariable String bomNo) {
+        return ResponseEntity.ok(bomService.approveBom(bomNo));
+    }
+
     @GetMapping("/{bomNo}/explode")
     @Operation(summary = "Explode Multi-Level BOM using PostgreSQL Recursive CTE")
     public ResponseEntity<List<Map<String, Object>>> explodeBom(@PathVariable String bomNo) {

@@ -31,6 +31,12 @@ public class MasterProductionScheduleController {
         return ResponseEntity.ok(mpsService.createSchedule(mps));
     }
 
+    @PostMapping("/{mpsId}/submit")
+    @Operation(summary = "Submit a draft MPS for production planning")
+    public ResponseEntity<MasterProductionSchedule> submitSchedule(@PathVariable String mpsId) {
+        return ResponseEntity.ok(mpsService.submitSchedule(mpsId));
+    }
+
     @PostMapping("/{mpsId}/to-production-plan")
     @Operation(summary = "Convert MPS entry directly into an actionable Production Plan")
     public ResponseEntity<ProductionPlan> convertToProductionPlan(@PathVariable String mpsId) {

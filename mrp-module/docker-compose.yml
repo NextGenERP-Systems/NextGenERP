@@ -1,25 +1,4 @@
-version: '3.8'
-
 services:
-  mrp-postgres:
-    image: postgres:15-alpine
-    container_name: nextgen-mrp-postgres
-    environment:
-      POSTGRES_DB: nextgen_mrp
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-    ports:
-      - "5435:5432"
-    volumes:
-      - mrp-postgres-data:/var/lib/postgresql/data
-      - ./database/init-schema.sql:/docker-entrypoint-initdb.d/01-init-schema.sql
-      - ./database/seed-data.sql:/docker-entrypoint-initdb.d/02-seed-data.sql
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d nextgen_mrp"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
   mrp-backend:
     build:
       context: ./backend
@@ -27,28 +6,28 @@ services:
     container_name: nextgen-mrp-backend
     ports:
       - "8085:8085"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
-      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:postgresql://mrp-postgres:5432/nextgen_mrp}
-      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:-postgres}
-      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-postgres}
-    depends_on:
-      mrp-postgres:
-        condition: service_healthy
-
-
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:postgresql://host.docker.internal:5433/nextgen_mrp}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:?Set SPRING_DATASOURCE_USERNAME before starting MRP}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:?Set SPRING_DATASOURCE_PASSWORD before starting MRP}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: none
+      SPRING_FLYWAY_ENABLED: ${SPRING_FLYWAY_ENABLED:-false}
+      SPRING_FLYWAY_BASELINE_ON_MIGRATE: ${SPRING_FLYWAY_BASELINE_ON_MIGRATE:-false}
 
   mrp-frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_MRP_DEMO_MODE: ${NEXT_PUBLIC_MRP_DEMO_MODE:-false}
     container_name: nextgen-mrp-frontend
     ports:
       - "3005:3005"
     environment:
       BACKEND_URL: http://mrp-backend:8085/api/v1
       NEXT_PUBLIC_API_URL: http://localhost:8085/api/v1
+      NEXT_PUBLIC_MRP_DEMO_MODE: ${NEXT_PUBLIC_MRP_DEMO_MODE:-false}
     depends_on:
       - mrp-backend
-
-volumes:
-  mrp-postgres-data:

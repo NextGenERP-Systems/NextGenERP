@@ -3,7 +3,11 @@ package com.nextgen.erp.mrp.application.service;
 import com.nextgen.erp.mrp.domain.entity.*;
 import com.nextgen.erp.mrp.domain.repository.BomRepository;
 import com.nextgen.erp.mrp.domain.repository.JobCardRepository;
+import com.nextgen.erp.mrp.domain.repository.InventoryMovementRepository;
 import com.nextgen.erp.mrp.domain.repository.MockItemRepository;
+import com.nextgen.erp.mrp.domain.repository.QualityInspectionRepository;
+import com.nextgen.erp.mrp.domain.repository.StateTransitionAuditRepository;
+import com.nextgen.erp.mrp.domain.entity.StateTransitionAudit;
 import com.nextgen.erp.mrp.domain.repository.RoutingRepository;
 import com.nextgen.erp.mrp.domain.repository.WorkOrderRepository;
 import lombok.RequiredArgsConstructor;
@@ -14,16 +18,23 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
 public class WorkOrderService {
 
+    private static final Set<String> ALLOWED_STATUSES = Set.of(
+            "DRAFT", "NOT_STARTED", "SUBMITTED", "IN_PROGRESS", "COMPLETED", "CANCELLED");
+
     private final WorkOrderRepository workOrderRepository;
     private final BomRepository bomRepository;
     private final RoutingRepository routingRepository;
     private final JobCardRepository jobCardRepository;
+    private final InventoryMovementRepository inventoryMovementRepository;
     private final MockItemRepository mockItemRepository;
+    private final QualityInspectionRepository qualityInspectionRepository;
+    private final StateTransitionAuditRepository stateTransitionAuditRepository;
 
     @Transactional(readOnly = true)
     public List<WorkOrder> getAllWorkOrders() {
@@ -43,51 +54,45 @@ public class WorkOrderService {
 
     @Transactional
     public WorkOrder createWorkOrder(WorkOrder wo) {
+        if (wo.getQtyToProduce() == null || wo.getQtyToProduce().signum() <= 0) {
+            throw new IllegalArgumentException("Work order quantity must be greater than zero");
+        }
+        if (wo.getPlannedStartDate() == null || wo.getPlannedEndDate() == null) {
+            throw new IllegalArgumentException("Work order planned start and end dates are required");
+        }
+        if (wo.getPlannedEndDate().isBefore(wo.getPlannedStartDate())) {
+            throw new IllegalArgumentException("Work order planned end date cannot precede its start date");
+        }
         if (wo.getWorkOrderId() == null || wo.getWorkOrderId().isBlank()) {
             wo.setWorkOrderId("WO-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
         }
         if (wo.getStatus() == null || wo.getStatus().isBlank()) {
             wo.setStatus("NOT_STARTED");
         }
+        String normalizedStatus = wo.getStatus().toUpperCase();
+        if (!ALLOWED_STATUSES.contains(normalizedStatus)) {
+            throw new IllegalArgumentException("Unsupported work order status: " + wo.getStatus());
+        }
+        wo.setStatus(normalizedStatus);
         if (wo.getProducedQty() == null) {
             wo.setProducedQty(BigDecimal.ZERO);
         }
 
-        // Auto-create missing MockItem for productionItem to prevent FK constraint failure
         if (wo.getProductionItem() != null && !wo.getProductionItem().isBlank()) {
             if (!mockItemRepository.existsById(wo.getProductionItem())) {
-                MockItem item = new MockItem();
-                item.setItemCode(wo.getProductionItem());
-                item.setItemName(wo.getItemName() != null ? wo.getItemName() : wo.getProductionItem());
-                item.setItemGroup("Products");
-                item.setUom("Nos");
-                item.setStandardRate(BigDecimal.ZERO);
-                item.setIsStockItem(true);
-                mockItemRepository.saveAndFlush(item);
+                throw new IllegalArgumentException("Production item master not found: " + wo.getProductionItem());
             }
         }
 
-        // Auto-create missing Bom if provided to prevent FK constraint failure
         if (wo.getBomNo() != null && !wo.getBomNo().isBlank()) {
             if (!bomRepository.existsById(wo.getBomNo())) {
-                Bom bom = new Bom();
-                bom.setBomNo(wo.getBomNo());
-                bom.setItemCode(wo.getProductionItem() != null ? wo.getProductionItem() : "GENERIC-ITEM");
-                bom.setItemName(wo.getItemName() != null ? wo.getItemName() : "Generic Item");
-                bom.setQuantity(BigDecimal.ONE);
-                bom.setUom("Nos");
-                bom.setIsActive(true);
-                bom.setIsDefault(true);
-                bom.setRevisionNumber(1);
-                bom.setRawMaterialCost(BigDecimal.ZERO);
-                bom.setOperatingCost(BigDecimal.ZERO);
-                bom.setScrapCost(BigDecimal.ZERO);
-                bom.setTotalCost(BigDecimal.ZERO);
-                bomRepository.saveAndFlush(bom);
+                throw new IllegalArgumentException("BOM not found: " + wo.getBomNo());
             }
         }
 
         List<JobCard> jobCardsToSave = new ArrayList<>();
+        BigDecimal[] plannedMaterialCost = {BigDecimal.ZERO};
+        BigDecimal[] plannedOperatingCost = {BigDecimal.ZERO};
 
         // Auto-populate items and routing operations from BOM if available
         if (wo.getBomNo() != null && !wo.getBomNo().isBlank()) {
@@ -111,11 +116,25 @@ public class WorkOrderService {
                             item.setRequiredQty(bItem.getQty().multiply(wo.getQtyToProduce()));
                             item.setTransferredQty(BigDecimal.ZERO);
                             item.setActualConsumedQty(BigDecimal.ZERO);
+                            item.setUom(bItem.getUom());
                             item.setStandardRate(bItem.getStandardRate());
                             woItems.add(item);
+                            if (bItem.getStandardRate() != null) {
+                                plannedMaterialCost[0] = plannedMaterialCost[0]
+                                        .add(bItem.getQty().multiply(bItem.getStandardRate()).multiply(wo.getQtyToProduce()));
+                            }
                         }
                     }
                     wo.setItems(woItems);
+                }
+
+                if (wo.getPlannedOperatingCost() == null && bom.getOperations() != null) {
+                    bom.getOperations().forEach(operation -> {
+                        if (operation.getOperatingCost() != null) {
+                            plannedOperatingCost[0] = plannedOperatingCost[0]
+                                    .add(operation.getOperatingCost().multiply(wo.getQtyToProduce()));
+                        }
+                    });
                 }
 
                 // Routing operations logic
@@ -156,8 +175,18 @@ public class WorkOrderService {
             });
         }
 
+        if (wo.getPlannedMaterialCost() == null) {
+            wo.setPlannedMaterialCost(plannedMaterialCost[0]);
+        }
+        if (wo.getPlannedOperatingCost() == null) {
+            wo.setPlannedOperatingCost(plannedOperatingCost[0]);
+        }
+
         WorkOrder savedWo = workOrderRepository.saveAndFlush(wo);
         if (!jobCardsToSave.isEmpty()) {
+            for (int i = 0; i < jobCardsToSave.size() && i < savedWo.getOperations().size(); i++) {
+                jobCardsToSave.get(i).setWorkOrderOperationId(savedWo.getOperations().get(i).getId());
+            }
             jobCardRepository.saveAll(jobCardsToSave);
         }
         return savedWo;
@@ -165,10 +194,31 @@ public class WorkOrderService {
 
     @Transactional
     public WorkOrder submitWorkOrder(String workOrderId) {
-        WorkOrder wo = workOrderRepository.findById(workOrderId)
+        WorkOrder wo = workOrderRepository.findByIdForUpdate(workOrderId)
                 .orElseThrow(() -> new IllegalArgumentException("Work Order not found: " + workOrderId));
 
+        if ("SUBMITTED".equalsIgnoreCase(wo.getStatus())) {
+            return wo;
+        }
+        if (!"NOT_STARTED".equalsIgnoreCase(wo.getStatus()) && !"DRAFT".equalsIgnoreCase(wo.getStatus())) {
+            throw new IllegalStateException("Work Order " + workOrderId + " cannot be submitted from status " + wo.getStatus());
+        }
+        String previousStatus = wo.getStatus();
         wo.setStatus("SUBMITTED");
+        for (WorkOrderItem item : wo.getItems()) {
+            String sourceReference = "WO-RESERVE:" + workOrderId + ":" + item.getItemCode();
+            if (inventoryMovementRepository.findBySourceReference(sourceReference).isEmpty()) {
+                InventoryMovement reservation = new InventoryMovement();
+                reservation.setItemCode(item.getItemCode());
+                reservation.setWarehouseId(wo.getSourceWarehouse());
+                reservation.setQuantity(item.getRequiredQty());
+                reservation.setMovementType("RESERVATION");
+                reservation.setWorkOrderId(workOrderId);
+                reservation.setSourceReference(sourceReference);
+                inventoryMovementRepository.save(reservation);
+            }
+        }
+        recordTransition(workOrderId, previousStatus, "SUBMITTED", "SUBMIT");
         return workOrderRepository.save(wo);
     }
 
@@ -178,8 +228,25 @@ public class WorkOrderService {
      */
     @Transactional
     public WorkOrder logMaterialConsumption(String workOrderId, String itemCode, BigDecimal consumeQty) {
+        return logMaterialConsumption(workOrderId, itemCode, consumeQty, null);
+    }
+
+    @Transactional
+    public WorkOrder logMaterialConsumption(String workOrderId, String itemCode, BigDecimal consumeQty,
+                                             String idempotencyKey) {
+        if (consumeQty == null || consumeQty.signum() <= 0) {
+            throw new IllegalArgumentException("Material consumption quantity must be greater than zero");
+        }
         WorkOrder wo = workOrderRepository.findByIdForUpdate(workOrderId)
                 .orElseThrow(() -> new IllegalArgumentException("Work Order not found for lock: " + workOrderId));
+
+        String requestKey = idempotencyKey == null || idempotencyKey.isBlank()
+                ? UUID.randomUUID().toString()
+                : idempotencyKey.trim();
+        String sourceReference = "WO-CONSUME:" + workOrderId + ":" + requestKey;
+        if (inventoryMovementRepository.findBySourceReference(sourceReference).isPresent()) {
+            return wo;
+        }
 
         WorkOrderItem woItem = wo.getItems().stream()
                 .filter(i -> i.getItemCode().equalsIgnoreCase(itemCode))
@@ -198,7 +265,91 @@ public class WorkOrderService {
             wo.setStatus("IN_PROGRESS");
         }
 
-        return workOrderRepository.save(wo);
+        WorkOrder savedWo = workOrderRepository.save(wo);
+
+        InventoryMovement movement = new InventoryMovement();
+        movement.setItemCode(woItem.getItemCode());
+        movement.setWarehouseId(wo.getSourceWarehouse());
+        movement.setQuantity(consumeQty);
+        movement.setMovementType("CONSUMPTION");
+        movement.setWorkOrderId(workOrderId);
+        movement.setSourceReference(sourceReference);
+        inventoryMovementRepository.save(movement);
+
+        return savedWo;
+    }
+
+    @Transactional
+    public WorkOrder completeWorkOrder(String workOrderId) {
+        WorkOrder wo = workOrderRepository.findByIdForUpdate(workOrderId)
+                .orElseThrow(() -> new IllegalArgumentException("Work Order not found for lock: " + workOrderId));
+        String sourceReference = "WO-FINISH:" + workOrderId;
+        if (inventoryMovementRepository.findBySourceReference(sourceReference).isPresent()) {
+            if (!"COMPLETED".equalsIgnoreCase(wo.getStatus())
+                    || wo.getProducedQty() == null
+                    || wo.getProducedQty().compareTo(wo.getQtyToProduce()) != 0
+                    || wo.getActualEndDate() == null) {
+                wo.setStatus("COMPLETED");
+                wo.setProducedQty(wo.getQtyToProduce());
+                if (wo.getActualEndDate() == null) {
+                    wo.setActualEndDate(java.time.ZonedDateTime.now());
+                }
+                if (wo.getActualStartDate() == null) {
+                    wo.setActualStartDate(wo.getActualEndDate());
+                }
+                return workOrderRepository.save(wo);
+            }
+            return wo;
+        }
+        if (!("IN_PROGRESS".equals(wo.getStatus()) || "SUBMITTED".equals(wo.getStatus()))) {
+            throw new IllegalStateException("Work Order " + workOrderId + " cannot complete from status " + wo.getStatus());
+        }
+        List<WorkOrder> children = workOrderRepository.findByParentWoId(workOrderId);
+        if (children.stream().anyMatch(child -> !"COMPLETED".equalsIgnoreCase(child.getStatus()))) {
+            throw new IllegalStateException("All child Work Orders must be completed before " + workOrderId);
+        }
+        var inspections = qualityInspectionRepository.findByWorkOrderId(workOrderId);
+        if (inspections == null || inspections.isEmpty()
+                || inspections.stream().anyMatch(inspection -> !"PASSED".equalsIgnoreCase(inspection.getStatus()))) {
+            throw new IllegalStateException("Quality inspection approval is required before completing Work Order " + workOrderId);
+        }
+        BigDecimal inspectedQty = inspections.stream()
+                .map(inspection -> inspection.getInspectedQty() == null ? BigDecimal.ZERO : inspection.getInspectedQty())
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        if (inspectedQty.compareTo(wo.getQtyToProduce()) < 0) {
+            throw new IllegalStateException("Passed inspection quantity " + inspectedQty
+                    + " is insufficient for Work Order completion quantity " + wo.getQtyToProduce());
+        }
+
+        String previousStatus = wo.getStatus();
+        wo.setStatus("COMPLETED");
+        wo.setProducedQty(wo.getQtyToProduce());
+        wo.setActualEndDate(java.time.ZonedDateTime.now());
+        if (wo.getActualStartDate() == null) {
+            wo.setActualStartDate(wo.getActualEndDate());
+        }
+        recordTransition(workOrderId, previousStatus, "COMPLETED", "COMPLETE");
+        WorkOrder saved = workOrderRepository.save(wo);
+
+        InventoryMovement movement = new InventoryMovement();
+        movement.setItemCode(wo.getProductionItem());
+        movement.setWarehouseId(wo.getFgWarehouse());
+        movement.setQuantity(wo.getQtyToProduce());
+        movement.setMovementType("FINISHED_GOODS");
+        movement.setWorkOrderId(workOrderId);
+        movement.setSourceReference(sourceReference);
+        inventoryMovementRepository.save(movement);
+        return saved;
+    }
+
+    private void recordTransition(String entityId, String fromStatus, String toStatus, String action) {
+        StateTransitionAudit audit = new StateTransitionAudit();
+        audit.setEntityType("WORK_ORDER");
+        audit.setEntityId(entityId);
+        audit.setFromStatus(fromStatus);
+        audit.setToStatus(toStatus);
+        audit.setAction(action);
+        stateTransitionAuditRepository.save(audit);
     }
 
     /**
@@ -220,4 +371,3 @@ public class WorkOrderService {
         }
     }
 }
-

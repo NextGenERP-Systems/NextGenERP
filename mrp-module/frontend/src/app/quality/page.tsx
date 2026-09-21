@@ -1,12 +1,18 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ShieldCheck, Plus, CheckCircle, AlertTriangle } from 'lucide-react';
 import { api } from '@/lib/api';
 
 export default function QualityPage() {
   const [inspections, setInspections] = useState<any[]>([]);
   const [showModal, setShowModal] = useState<boolean>(false);
+  const [search, setSearch] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
 
   // Form State
   const [workOrderId, setWorkOrderId] = useState<string>('WO-2026-0001');
@@ -18,16 +24,32 @@ export default function QualityPage() {
   const [remarks, setRemarks] = useState<string>('All quality thresholds satisfied.');
 
   const loadInspections = async () => {
-    const data = await api.getQualityInspections();
-    setInspections(data);
+    setLoading(true);
+    setError(null);
+    try {
+      setInspections(await api.getQualityInspections());
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Unable to load quality inspections');
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
     loadInspections();
   }, []);
 
+  const filteredInspections = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    return inspections.filter((q) => !term || [q.inspectionId, q.id, q.workOrderId, q.woId, q.inspectedBy, q.inspector, q.status]
+      .some((value) => value?.toString().toLowerCase().includes(term)));
+  }, [inspections, search]);
+  const pageCount = Math.max(1, Math.ceil(filteredInspections.length / pageSize));
+  const pagedInspections = filteredInspections.slice((page - 1) * pageSize, page * pageSize);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitError(null);
     const hoverPassed = hoverReading >= 0.0 && hoverReading <= 5.0;
     const voltagePassed = voltageReading >= 47.5 && voltageReading <= 52.0;
 
@@ -44,9 +66,13 @@ export default function QualityPage() {
       ]
     };
 
-    const result = await api.submitQualityInspection(newInspection);
-    setInspections([result, ...inspections]);
-    setShowModal(false);
+    try {
+      const result = await api.submitQualityInspection(newInspection);
+      setInspections([result, ...inspections]);
+      setShowModal(false);
+    } catch (e) {
+      setSubmitError(e instanceof Error ? e.message : 'Unable to save quality inspection');
+    }
   };
 
   return (
@@ -70,7 +96,18 @@ export default function QualityPage() {
       <div className="glass-card p-5 rounded-xl border border-gray-200 space-y-4 shadow-xs">
         <h2 className="text-xs font-bold text-gray-700 uppercase tracking-wider">Quality Inspection Logs</h2>
 
-        <div className="overflow-x-auto">
+        <div className="flex items-center gap-3">
+          <input
+            value={search}
+            onChange={(event) => { setSearch(event.target.value); setPage(1); }}
+            placeholder="Search inspection, Work Order, inspector, or status..."
+            className="w-full max-w-lg rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500"
+          />
+          <span className="text-xs text-gray-500">{filteredInspections.length} inspections</span>
+        </div>
+
+        {error && <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">{error}</div>}
+        {loading ? <p className="text-sm text-gray-500">Loading persisted inspections…</p> : <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead>
               <tr className="border-b border-gray-200 text-gray-500 font-mono uppercase text-[10px]">
@@ -84,7 +121,7 @@ export default function QualityPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 font-mono">
-              {inspections.map((q) => {
+              {pagedInspections.map((q) => {
                 const id = q.inspectionId || q.id;
                 const woId = q.workOrderId || q.woId;
                 const type = q.inspectionType || q.type;
@@ -113,7 +150,8 @@ export default function QualityPage() {
               })}
             </tbody>
           </table>
-        </div>
+        </div>}
+        {pageCount > 1 && <div className="mt-4 flex items-center justify-between text-xs text-gray-500"><span>Page {page} of {pageCount}</span><div className="flex gap-2"><button disabled={page === 1} onClick={() => setPage((current) => current - 1)} className="rounded border border-gray-200 bg-white px-3 py-1.5 disabled:opacity-40">Previous</button><button disabled={page === pageCount} onClick={() => setPage((current) => current + 1)} className="rounded border border-gray-200 bg-white px-3 py-1.5 disabled:opacity-40">Next</button></div></div>}
       </div>
 
       {/* Perform Inspection Modal */}
@@ -122,6 +160,7 @@ export default function QualityPage() {
           <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-2xl space-y-4 border border-gray-200">
             <h3 className="text-lg font-bold text-gray-900">Record Shop Floor Quality Inspection</h3>
             <form onSubmit={handleSubmit} className="space-y-3 text-xs">
+              {submitError && <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">{submitError}</div>}
               <div>
                 <label className="block text-gray-600 mb-1 font-medium">Work Order ID</label>
                 <input
@@ -200,4 +239,3 @@ export default function QualityPage() {
     </div>
   );
 }
-

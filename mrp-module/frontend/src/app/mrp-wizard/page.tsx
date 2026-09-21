@@ -8,17 +8,23 @@ export default function MrpWizardPage() {
   const [step, setStep] = useState<number>(1);
   const [bomNo, setBomNo] = useState<string>('BOM-EV-DRONE-001');
   const [plannedQty, setPlannedQty] = useState<number>(10);
+  const [planningDate, setPlanningDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
   const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  const [productionPlan, setProductionPlan] = useState<any | null>(null);
+  const [generatedWorkOrders, setGeneratedWorkOrders] = useState<any[]>([]);
   const [mrpResult, setMrpResult] = useState<any>(null);
 
   const handleRunExplosion = async () => {
     setLoading(true);
+    setError(null);
     try {
-      const res = await api.calculateMrpWizard(bomNo, plannedQty);
+      const res = await api.calculateMrpWizard(bomNo, plannedQty, planningDate);
       setMrpResult(res);
       setStep(2);
     } catch (err) {
-      console.error('Failed to execute MRP Wizard calculation:', err);
+      const message = err instanceof Error ? err.message : 'MRP calculation failed';
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -55,12 +61,17 @@ export default function MrpWizardPage() {
         <ArrowRight className="w-4 h-4 text-gray-300" />
         <div className={`flex items-center gap-2 ${step >= 4 ? 'text-blue-600 font-bold' : 'text-gray-400'}`}>
           <span className={`w-6 h-6 rounded-full flex items-center justify-center border ${step >= 4 ? 'bg-blue-50 border-blue-200 text-blue-600' : 'bg-gray-100 border-gray-200 text-gray-500'}`}>4</span>
-          Spawn Nested Work Orders
+          Planner Review
         </div>
       </div>
 
       {/* Step Content */}
       <div className="glass-card p-6 rounded-xl border border-gray-200 space-y-6 shadow-xs">
+        {error && (
+          <div role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-700">
+            <span className="font-semibold">Unable to calculate MRP:</span> {error}
+          </div>
+        )}
         {step === 1 && (
           <div className="space-y-4 max-w-md">
             <h2 className="text-xs font-bold text-gray-700 uppercase tracking-wider">Step 1: Configure Manufacturing Run</h2>
@@ -83,6 +94,16 @@ export default function MrpWizardPage() {
                 onChange={e => setPlannedQty(Number(e.target.value))}
                 className="w-full bg-slate-50 border border-gray-200 rounded-lg p-2.5 text-xs text-gray-900 font-mono focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
               />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-600 mb-1 font-medium">Planning Date</label>
+              <input
+                type="date"
+                value={planningDate}
+                onChange={e => setPlanningDate(e.target.value)}
+                className="w-full bg-slate-50 border border-gray-200 rounded-lg p-2.5 text-xs text-gray-900 font-mono focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+              />
+              <p className="mt-1 text-[10px] text-gray-500">Only BOM revisions effective on this date are included.</p>
             </div>
             <button 
               onClick={handleRunExplosion}
@@ -159,21 +180,102 @@ export default function MrpWizardPage() {
               onClick={() => setStep(4)}
               className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg text-xs transition-all flex items-center gap-2 shadow-xs"
             >
-              Generate Work Orders <ArrowRight className="w-4 h-4" />
+              Review MRP Run <ArrowRight className="w-4 h-4" />
             </button>
           </div>
         )}
 
         {step === 4 && (
           <div className="space-y-4">
-            <h2 className="text-xs font-bold text-gray-700 uppercase tracking-wider">Step 4: Nested Work Orders Generated</h2>
+            <h2 className="text-xs font-bold text-gray-700 uppercase tracking-wider">Step 4: Planner Review</h2>
             <div className="p-4 rounded-lg bg-emerald-50 border border-emerald-200 text-xs font-mono text-emerald-800 space-y-2">
               <div className="flex items-center gap-2 font-bold text-emerald-700">
-                <CheckCircle2 className="w-4 h-4" /> MRP Run Completed Successfully!
+                <CheckCircle2 className="w-4 h-4" /> MRP Run Ready for Approval
               </div>
-              <p>• Created Parent Work Order for {plannedQty} units of {bomNo}.</p>
-              <p>• Automatically calculated component requirements against stock ledger entries.</p>
+              <p>• Run ID: {mrpResult?.runId || 'Unavailable'}</p>
+              <p>• Requirements are persisted for planner review.</p>
+              <p>• Release creates an MRP-only production plan lineage; Work Orders are generated from the submitted plan.</p>
             </div>
+            <button
+              onClick={async () => {
+                if (!mrpResult?.runId) return;
+                setLoading(true);
+                try {
+                  const reviewed = await api.reviewMrpRun(mrpResult.runId);
+                  setMrpResult((current: any) => ({ ...current, status: reviewed.status }));
+                } finally {
+                  setLoading(false);
+                }
+              }}
+              disabled={loading || !mrpResult?.runId || mrpResult?.status === 'REVIEWED'}
+              className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg text-xs transition-all disabled:opacity-50"
+            >
+              {mrpResult?.status === 'REVIEWED' ? 'Run Reviewed' : 'Mark Run as Reviewed'}
+            </button>
+            <button
+              onClick={async () => {
+                if (!mrpResult?.runId || mrpResult?.status !== 'REVIEWED') return;
+                setLoading(true);
+                setError(null);
+                try {
+                  const released = await api.releaseMrpRun(mrpResult.runId);
+                  setMrpResult((current: any) => ({ ...current, status: released.status }));
+                } catch (err) {
+                  setError(err instanceof Error ? err.message : 'MRP run release failed');
+                } finally {
+                  setLoading(false);
+                }
+              }}
+              disabled={loading || mrpResult?.status !== 'REVIEWED'}
+              className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg text-xs transition-all disabled:opacity-50"
+            >
+              {mrpResult?.status === 'RELEASED' ? 'Run Released' : 'Release MRP Run'}
+            </button>
+            <button
+              onClick={async () => {
+                if (!mrpResult?.runId || mrpResult?.status !== 'RELEASED') return;
+                setLoading(true);
+                setError(null);
+                try {
+                  const plan = await api.createProductionPlanFromMrpRun(mrpResult.runId);
+                  setProductionPlan(plan);
+                } catch (err) {
+                  setError(err instanceof Error ? err.message : 'Production plan creation failed');
+                } finally {
+                  setLoading(false);
+                }
+              }}
+              disabled={loading || mrpResult?.status !== 'RELEASED'}
+              className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg text-xs transition-all disabled:opacity-50"
+            >
+              {productionPlan?.planId ? `Plan Created: ${productionPlan.planId}` : 'Create Production Plan'}
+            </button>
+            {productionPlan?.planId && (
+              <button
+                onClick={async () => {
+                  setLoading(true);
+                  setError(null);
+                  try {
+                    const submitted = productionPlan.status === 'SUBMITTED'
+                      ? productionPlan
+                      : await api.submitProductionPlan(productionPlan.planId);
+                    setProductionPlan(submitted);
+                    const workOrders = await api.generateWorkOrdersFromProductionPlan(productionPlan.planId);
+                    setGeneratedWorkOrders(workOrders);
+                  } catch (err) {
+                    setError(err instanceof Error ? err.message : 'Work Order generation failed');
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
+                disabled={loading || productionPlan.status === 'COMPLETED'}
+                className="px-5 py-2.5 bg-slate-800 hover:bg-slate-900 text-white font-semibold rounded-lg text-xs transition-all disabled:opacity-50"
+              >
+                {generatedWorkOrders.length > 0
+                  ? `${generatedWorkOrders.length} Work Orders Generated`
+                  : 'Submit Plan & Generate Work Orders'}
+              </button>
+            )}
             <button 
               onClick={() => setStep(1)}
               className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-gray-800 font-semibold rounded-lg text-xs transition-all"
@@ -186,4 +288,3 @@ export default function MrpWizardPage() {
     </div>
   );
 }
-

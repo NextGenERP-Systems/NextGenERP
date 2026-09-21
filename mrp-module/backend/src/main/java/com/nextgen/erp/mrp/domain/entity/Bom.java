@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
 import java.time.ZonedDateTime;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -38,9 +39,19 @@ public class Bom {
     @Column(name = "is_default", nullable = false)
     private Boolean isDefault;
 
+    @Column(name = "status", nullable = false, length = 50)
+    @Builder.Default
+    private String status = "DRAFT";
+
     @Column(name = "revision_number", nullable = false)
     @Builder.Default
     private Integer revisionNumber = 1;
+
+    @Column(name = "effective_from")
+    private LocalDate effectiveFrom;
+
+    @Column(name = "effective_to")
+    private LocalDate effectiveTo;
 
     @Column(name = "routing_id", length = 100)
     private String routingId;
@@ -93,6 +104,9 @@ public class Bom {
 
     public Boolean getIsDefault() { return isDefault; }
     public void setIsDefault(Boolean isDefault) { this.isDefault = isDefault; }
+
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
 
     public Integer getRevisionNumber() { return revisionNumber; }
     public void setRevisionNumber(Integer revisionNumber) { this.revisionNumber = revisionNumber; }

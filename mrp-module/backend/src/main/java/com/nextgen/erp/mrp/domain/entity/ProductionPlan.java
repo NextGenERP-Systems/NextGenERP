@@ -7,6 +7,7 @@ import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Entity
 @Table(name = "mrp_production_plan")
@@ -20,6 +21,9 @@ public class ProductionPlan {
     @Id
     @Column(name = "plan_id", nullable = false)
     private String planId;
+
+    @Column(name = "source_mrp_run_id")
+    private UUID sourceMrpRunId;
 
     @Column(name = "posting_date", nullable = false)
     private LocalDate postingDate;
@@ -40,6 +44,9 @@ public class ProductionPlan {
 
     public String getPlanId() { return planId; }
     public void setPlanId(String planId) { this.planId = planId; }
+
+    public UUID getSourceMrpRunId() { return sourceMrpRunId; }
+    public void setSourceMrpRunId(UUID sourceMrpRunId) { this.sourceMrpRunId = sourceMrpRunId; }
 
     public LocalDate getPostingDate() { return postingDate; }
     public void setPostingDate(LocalDate postingDate) { this.postingDate = postingDate; }

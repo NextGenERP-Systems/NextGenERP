@@ -2,26 +2,17 @@
 # NextGen ERP - Initialize Remote MRP Database on Sales VM via SSH / SCP
 # ==============================================================================
 
-$PROJECT_ID = "nextgen-erp-7753216"
-$INSTANCE_NAME = "nextgen-erp-core-vm"
-$ZONE = "us-central1-a"
-$CONTAINER = "nextgen-workflow-postgres"
+throw @"
+This legacy remote-initialization script is permanently disabled.
 
-Write-Host "🚀 Creating 'nextgen_mrp' database on $INSTANCE_NAME..." -ForegroundColor Green
+It is unsafe for the single persistent nextgen_mrp database because it applies
+the full baseline schema and seed data directly to the cloud database.
 
-# 1. Create nextgen_mrp database if it doesn't exist
-gcloud compute ssh $INSTANCE_NAME --zone=$ZONE --project=$PROJECT_ID --command="sudo docker exec $CONTAINER psql -U postgres -c 'CREATE DATABASE nextgen_mrp;'" 2>$null
+Use CLOUD_DATABASE_RUNBOOK.md instead:
+  1. Verify the VM and database read-only.
+  2. Take and verify a backup.
+  3. Run the versioned Flyway migration job.
+  4. Validate the migration and deploy the application manually.
 
-# 2. Upload schema and seed files to the remote VM
-Write-Host "📤 Uploading SQL files to VM..." -ForegroundColor Green
-gcloud compute scp database/init-schema.sql database/seed-data.sql "${INSTANCE_NAME}:/tmp/" --zone=$ZONE --project=$PROJECT_ID
-
-# 3. Apply init-schema.sql
-Write-Host "📜 Applying init-schema.sql..." -ForegroundColor Green
-gcloud compute ssh $INSTANCE_NAME --zone=$ZONE --project=$PROJECT_ID --command="cat /tmp/init-schema.sql | sudo docker exec -i $CONTAINER psql -U postgres -d nextgen_mrp"
-
-# 4. Apply seed-data.sql
-Write-Host "🌱 Applying seed-data.sql..." -ForegroundColor Green
-gcloud compute ssh $INSTANCE_NAME --zone=$ZONE --project=$PROJECT_ID --command="cat /tmp/seed-data.sql | sudo docker exec -i $CONTAINER psql -U postgres -d nextgen_mrp"
-
-Write-Host "✨ Remote 'nextgen_mrp' database successfully initialized!" -ForegroundColor Cyan
+Never apply database/init-schema.sql or database/seed-data.sql to production.
+"@
