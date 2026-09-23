@@ -6,11 +6,11 @@ services:
       dockerfile: Dockerfile
     container_name: workflow_backend
     ports:
-      - "8082:8082"
+      - "127.0.0.1:8082:8082"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://host.docker.internal:5432/workflow_db
-      SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: postgres_secure_2026
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:?Set SPRING_DATASOURCE_URL before starting Workflow}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:?Set SPRING_DATASOURCE_USERNAME before starting Workflow}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:?Set SPRING_DATASOURCE_PASSWORD before starting Workflow}
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
       GOOGLE_CLOUD_PROJECT: nextgen-erp-7753216
     extra_hosts:
@@ -23,14 +23,13 @@ services:
       target: dev
     container_name: workflow_frontend
     ports:
-      - "3002:3000"
+      - "127.0.0.1:3002:3000"
     volumes:
       - ./frontend:/app
       - /app/node_modules
       - /app/.next
     environment:
       - WATCHPACK_POLLING=true
-      - NEXT_PUBLIC_API_URL=http://localhost:8082/api/v1
       - INTERNAL_API_URL=http://workflow_backend:8082/api/v1
     depends_on:
       - backend

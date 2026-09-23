@@ -1,41 +1,26 @@
 services:
   workflow-backend:
-    build:
-      context: ../backend
-      dockerfile: Dockerfile
+    image: ${WORKFLOW_BACKEND_IMAGE:?Set WORKFLOW_BACKEND_IMAGE to a versioned Artifact Registry image}
     container_name: nextgen-workflow-backend
     restart: always
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://10.128.0.2:5432/workflow_db
-      SPRING_DATASOURCE_USERNAME: ${DB_USER:-postgres}
-      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-postgres}
+      PORT: 8082
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:?Set the private Workflow PostgreSQL URL}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:?Set the Workflow database username}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:?Set the Workflow database password}
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
     ports:
-      - "8080:8080"
+      - "127.0.0.1:${WORKFLOW_BACKEND_PORT:-8082}:8082"
 
   workflow-frontend:
-    build:
-      context: ../frontend
-      dockerfile: Dockerfile
+    image: ${WORKFLOW_FRONTEND_IMAGE:?Set WORKFLOW_FRONTEND_IMAGE to a versioned Artifact Registry image}
     container_name: nextgen-workflow-frontend
     restart: always
     environment:
       NODE_ENV: production
       PORT: 3000
-      NEXT_PUBLIC_API_URL: http://workflow-backend:8080/api/v1
+      INTERNAL_API_URL: http://workflow-backend:8082/api/v1
     ports:
-      - "3000:3000"
+      - "127.0.0.1:${WORKFLOW_FRONTEND_PORT:-3002}:3000"
     depends_on:
-      - workflow-backend
-
-  workflow-nginx:
-    image: nginx:alpine
-    container_name: nextgen-workflow-nginx-proxy
-    restart: always
-    ports:
-      - "81:80"
-    volumes:
-      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
-    depends_on:
-      - workflow-frontend
       - workflow-backend

@@ -60,13 +60,15 @@ cd mrp-module
 # powershell -ExecutionPolicy Bypass -File .\connect-cloud-db.ps1
 docker compose up -d --build
 ```
-- **MRP Dashboard UI**: `http://localhost:3005`
+- **Private application tunnel**: `powershell -ExecutionPolicy Bypass -File .\connect-private-app.ps1`
+- **MRP Dashboard UI**: `http://localhost:3005` (while the private app tunnel is running)
 - **Spring Boot API**: `http://localhost:8085/api/v1/mrp/boms`
 - **Swagger OpenAPI Docs**: `http://localhost:8085/swagger-ui.html`
 - **Database identity check**: `http://localhost:8085/api/v1/mrp/runtime/database`
 - **Database**: the Dockerized backend connects through the IAP tunnel to the persistent GCP `nextgen_mrp` database on local port `5433`.
 - Set `SPRING_DATASOURCE_USERNAME` and `SPRING_DATASOURCE_PASSWORD` before starting the Compose stack.
 - The frontend uses the MRP backend as its sole source of truth; failed requests are surfaced to the operator.
+- Compose host ports bind to loopback only; do not expose them through a public firewall rule.
 - Flyway remains disabled by default during normal application startup. Structural changes must use the reviewed, guarded migration job after backup and validation.
 
 ### Optional Local PostgreSQL Test Mode
@@ -116,6 +118,8 @@ credentials on the VM. After backup and migration review, run:
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\deploy-mrp-production.ps1 -ConfirmProductionDeployment
 ```
+Production services bind to the VM loopback interface and should be reached through
+`connect-private-app.ps1` over IAP/SSH.
 
 The wrapper validates the target database and runs the migration profile before
 starting the application services. It is never run automatically by local code changes.

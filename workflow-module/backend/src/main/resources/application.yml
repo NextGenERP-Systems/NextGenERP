@@ -5,9 +5,9 @@ spring:
   application:
     name: nextgen-erp-workflow-module
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://136.112.152.181:5432/workflow_db}
-    username: ${SPRING_DATASOURCE_USERNAME:postgres}
-    password: ${SPRING_DATASOURCE_PASSWORD:postgres}
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
     driver-class-name: ${SPRING_DATASOURCE_DRIVER_CLASS_NAME:org.postgresql.Driver}
   jpa:
     open-in-view: false

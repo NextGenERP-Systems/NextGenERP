@@ -72,6 +72,9 @@ This only describes the configured VM. It must not be treated as proof that Post
 
 4. Verify the backend health and call `GET /api/v1/mrp/runtime/database`. It must report `databaseName: nextgen_mrp`; after Flyway is enabled, a release containing the current repository migrations must report migration version `29` or higher. Do not perform state-changing smoke tests until that identity is correct. Validation failures use HTTP 400 with `code: VALIDATION_ERROR`; invalid state commands use HTTP 409 with `code: INVALID_STATE`.
 
+For the private UI/API, start `connect-private-app.ps1` in another terminal. MRP
+Compose host ports bind only to `127.0.0.1`; do not add public firewall access.
+
 ## Migration gate
 
 Flyway is present but disabled by default. Do not set `SPRING_FLYWAY_ENABLED=true` until all of these are complete:

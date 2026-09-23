@@ -62,6 +62,23 @@ We use a fully dockerized environment that supports **Hot Module Replacement (HM
    - **Spring Boot API Base URL**: [http://localhost:8082/api/v1](http://localhost:8082/api/v1)
    - **PostgreSQL Database**: `localhost:5432`
 
+The local UI and API ports bind to loopback only. Set `SPRING_DATASOURCE_URL`,
+`SPRING_DATASOURCE_USERNAME`, and `SPRING_DATASOURCE_PASSWORD` explicitly before
+starting the stack; no public database fallback or default password is provided.
+
+### Private Cloud Deployment
+
+Cloud deployment uses prebuilt versioned `WORKFLOW_BACKEND_IMAGE` and
+`WORKFLOW_FRONTEND_IMAGE` values from Artifact Registry. The deployment wrapper
+targets an existing VM through IAP and never creates a VM, external IP, or public
+firewall rule. Set the database variables on the target VM, then run
+`gcp-deployment/deploy-gcp-free-tier.sh` through an authenticated IAP SSH session.
+The remote directory must contain this Compose file and a private `.env` file with
+the required image, database, and port variables.
+
+Start `connect-private-app.ps1` locally to forward the private UI on port `3002`
+and API on port `8082`. Do not publish these ports through a public firewall rule.
+
 ### Container Configuration
 - **Database Seeding**: On startup, the Spring Boot `DatabaseSeeder` automatically initializes the schema and injects essential initial data:
   - Default Roles (`ADMIN`, `MANAGER`, `EMPLOYEE`, `HR_MANAGER`, `FINANCE`).

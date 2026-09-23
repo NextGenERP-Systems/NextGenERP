@@ -7,7 +7,7 @@ services:
     container_name: nextgen-mrp-backend
     restart: unless-stopped
     ports:
-      - "${MRP_BACKEND_PORT:-8085}:8085"
+      - "127.0.0.1:${MRP_BACKEND_PORT:-8085}:8085"
     environment:
       SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:?Set the production PostgreSQL URL for nextgen_mrp}
       SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:?Set the restricted MRP application database user}
@@ -24,7 +24,7 @@ services:
     container_name: nextgen-mrp-frontend
     restart: unless-stopped
     ports:
-      - "${MRP_FRONTEND_PORT:-3005}:3005"
+      - "127.0.0.1:${MRP_FRONTEND_PORT:-3005}:3005"
     environment:
       BACKEND_URL: http://mrp-backend:8085/api/v1
     depends_on:

@@ -9,7 +9,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     ports:
-      - "5435:5432"
+      - "127.0.0.1:5435:5432"
     volumes:
       - mrp-postgres-test-data:/var/lib/postgresql/data
       - ./database/test-prerequisites.sql:/docker-entrypoint-initdb.d/00-test-prerequisites.sql:ro
@@ -27,7 +27,7 @@ services:
       dockerfile: Dockerfile
     container_name: nextgen-mrp-backend-test
     ports:
-      - "8086:8085"
+      - "127.0.0.1:8086:8085"
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://mrp-postgres-test:5432/nextgen_mrp
       SPRING_DATASOURCE_USERNAME: postgres
@@ -45,10 +45,9 @@ services:
       dockerfile: Dockerfile
     container_name: nextgen-mrp-frontend-test
     ports:
-      - "3006:3005"
+      - "127.0.0.1:3006:3005"
     environment:
       BACKEND_URL: http://mrp-backend:8085/api/v1
-      NEXT_PUBLIC_API_URL: http://localhost:8086/api/v1
     depends_on:
       - mrp-backend
 
