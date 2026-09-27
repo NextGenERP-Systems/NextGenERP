@@ -44,6 +44,7 @@ import {
   Wrench,
   Briefcase,
   Target,
+  Scale,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useRef, useEffect } from "react";
@@ -130,6 +131,16 @@ const ALL_WORKSPACES: WorkspaceDef[] = [
     colorText: "text-teal-600",
     defaultHref: "/stock",
   },
+  {
+    id: "buying",
+    name: "Buying & Procurement",
+    category: "operations",
+    subtitle: "Purchase Orders & 3-Way Match",
+    icon: ShoppingCart,
+    colorBg: "bg-amber-100/90",
+    colorText: "text-amber-700",
+    defaultHref: "/sales/buying",
+  },
 ];
 
 export function Sidebar() {
@@ -214,6 +225,9 @@ export function Sidebar() {
     if (pathname.startsWith("/sales/items")) {
       return "stock";
     }
+    if (pathname.startsWith("/sales/buying")) {
+      return "buying";
+    }
     if (pathname.startsWith("/sales/blanket-orders")) {
       return "buying";
     }
@@ -254,6 +268,7 @@ export function Sidebar() {
     { title: "Delivery Note", href: "/sales/delivery-notes", icon: Truck },
     { title: "Packing Slip", href: "/sales/packing-slips", icon: Boxes },
     { title: "Drop Shipping", href: "/sales/drop-ship", icon: Package },
+    { title: "Buying & Procurement", href: "/sales/buying", icon: ShoppingCart },
     { title: "Maintenance & AMC", href: "/sales/maintenance", icon: Wrench },
     { title: "Payment Terms", href: "/sales/payment-terms", icon: Layers },
     { title: "Sales Targets", href: "/sales/targets", icon: Target },
@@ -696,6 +711,81 @@ export function Sidebar() {
                   </Link>
                 );
               })}
+              <div className="h-[1px] bg-gray-200/70 mx-1 my-2" />
+              <Link
+                href="/sales"
+                className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-gray-700 hover:bg-gray-200/60 hover:text-gray-900 transition-colors text-[13px]"
+              >
+                <ShoppingBag className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                <span className="truncate">Selling Workspace</span>
+              </Link>
+            </div>
+          )}
+
+          {/* BUYING & PROCUREMENT WORKSPACE */}
+          {activeWorkspaceId === "buying" && (
+            <div className="space-y-0.5">
+              <Link
+                href="/sales/buying"
+                className={cn(
+                  "flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-[13px] font-semibold transition-colors",
+                  pathname === "/sales/buying"
+                    ? "bg-amber-100/90 text-amber-900"
+                    : "text-gray-700 hover:bg-gray-200/60 hover:text-gray-900"
+                )}
+              >
+                <LayoutDashboard className="w-4 h-4 text-amber-700 flex-shrink-0" />
+                <span className="truncate">Buying Overview</span>
+              </Link>
+              <Link
+                href="/sales/buying/material-requests"
+                className={cn(
+                  "flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-[13px] font-semibold transition-colors",
+                  pathname.startsWith("/sales/buying/material-requests")
+                    ? "bg-amber-100/90 text-amber-900"
+                    : "text-gray-700 hover:bg-gray-200/60 hover:text-gray-900"
+                )}
+              >
+                <Boxes className="w-4 h-4 text-amber-700 flex-shrink-0" />
+                <span className="truncate">Material Requests</span>
+              </Link>
+              <Link
+                href="/sales/buying/quotations"
+                className={cn(
+                  "flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-[13px] font-semibold transition-colors",
+                  pathname.startsWith("/sales/buying/quotations")
+                    ? "bg-amber-100/90 text-amber-900"
+                    : "text-gray-700 hover:bg-gray-200/60 hover:text-gray-900"
+                )}
+              >
+                <Sparkles className="w-4 h-4 text-amber-700 flex-shrink-0" />
+                <span className="truncate">Supplier Quotations</span>
+              </Link>
+              <Link
+                href="/sales/buying/purchase-orders"
+                className={cn(
+                  "flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-[13px] font-semibold transition-colors",
+                  pathname.startsWith("/sales/buying/purchase-orders")
+                    ? "bg-amber-100/90 text-amber-900"
+                    : "text-gray-700 hover:bg-gray-200/60 hover:text-gray-900"
+                )}
+              >
+                <ShoppingCart className="w-4 h-4 text-amber-700 flex-shrink-0" />
+                <span className="truncate">Purchase Orders</span>
+              </Link>
+              <Link
+                href="/sales/buying/three-way-match"
+                className={cn(
+                  "flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-[13px] font-semibold transition-colors",
+                  pathname.startsWith("/sales/buying/three-way-match")
+                    ? "bg-amber-100/90 text-amber-900"
+                    : "text-gray-700 hover:bg-gray-200/60 hover:text-gray-900"
+                )}
+              >
+                <Scale className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                <span className="truncate">3-Way Match Tool</span>
+              </Link>
+
               <div className="h-[1px] bg-gray-200/70 mx-1 my-2" />
               <Link
                 href="/sales"
