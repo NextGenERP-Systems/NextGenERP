@@ -30,6 +30,8 @@ import {
   X,
   Home,
   Truck,
+  Landmark,
+  Factory,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useRef, useEffect } from "react";
@@ -85,6 +87,36 @@ const ALL_WORKSPACES: WorkspaceDef[] = [
     colorBg: "bg-indigo-100/90",
     colorText: "text-indigo-600",
     defaultHref: "http://localhost:3001/hrm",
+  },
+  {
+    id: "accounts",
+    name: "Finance & Accounts",
+    category: "core",
+    subtitle: "Chart of Accounts & GL",
+    icon: Landmark,
+    colorBg: "bg-emerald-100/90",
+    colorText: "text-emerald-600",
+    defaultHref: "http://localhost:3000/accounts",
+  },
+  {
+    id: "mrp",
+    name: "Manufacturing MRP",
+    category: "operations",
+    subtitle: "Work Orders, BOMs & Operations",
+    icon: Factory,
+    colorBg: "bg-rose-100/90",
+    colorText: "text-rose-600",
+    defaultHref: "http://localhost:3005",
+  },
+  {
+    id: "projects",
+    name: "Projects & Tasks",
+    category: "operations",
+    subtitle: "Kanban, Sprints & Timesheets",
+    icon: FolderKanban,
+    colorBg: "bg-violet-100/90",
+    colorText: "text-violet-600",
+    defaultHref: "http://localhost:3000/projects",
   },
 ];
 
@@ -151,6 +183,7 @@ export function Sidebar() {
   const TRANSACTIONS_SUBITEMS = [
     { title: "Stock Entries (Universal)", href: "/stock/entries" },
     { title: "Stock Ledger Entries (SLE)", href: "/stock/ledger" },
+    { title: "Landed Cost Vouchers", href: "/stock/landed-cost" },
     { title: "Delivery Notes (Sales)", href: "http://localhost:3000/sales/delivery-notes" },
   ];
 

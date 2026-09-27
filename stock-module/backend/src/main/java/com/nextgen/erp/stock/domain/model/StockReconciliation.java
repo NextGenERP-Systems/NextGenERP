@@ -6,6 +6,8 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "stock_reconciliations", schema = "stock")
@@ -32,7 +34,7 @@ public class StockReconciliation {
     @Builder.Default
     private String purpose = "Stock Reconciliation";
 
-    @Enumerated(EnumType.STRING)
+    @Convert(converter = StockEntryStatus.StockEntryStatusConverter.class)
     @Column(length = 30)
     @Builder.Default
     private StockEntryStatus status = StockEntryStatus.DRAFT;
@@ -55,4 +57,8 @@ public class StockReconciliation {
     @Column(name = "updated_at")
     @Builder.Default
     private ZonedDateTime updatedAt = ZonedDateTime.now();
+
+    @OneToMany(mappedBy = "reconciliation", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @Builder.Default
+    private List<StockReconciliationItem> items = new ArrayList<>();
 }

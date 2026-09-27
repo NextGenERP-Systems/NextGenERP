@@ -5,6 +5,8 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "quality_inspections", schema = "stock")
@@ -59,4 +61,8 @@ public class QualityInspection {
     @Column(name = "updated_at")
     @Builder.Default
     private ZonedDateTime updatedAt = ZonedDateTime.now();
+
+    @OneToMany(mappedBy = "inspection", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @Builder.Default
+    private List<QualityInspectionReading> readings = new ArrayList<>();
 }

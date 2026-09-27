@@ -1,8 +1,13 @@
 package com.nextgen.erp.stock.application.dto;
 
-import com.nextgen.erp.stock.domain.model.InspectionStatus;
 import com.nextgen.erp.stock.domain.model.InspectionType;
-import lombok.*;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
@@ -11,33 +16,40 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class QualityInspectionDto {
-    private String id;
-    private String inspectionNumber;
+public class QualityInspectionCreateRequest {
+    @NotNull
     private InspectionType inspectionType;
-    private String referenceType;
+
+    @NotNull
+    private String referenceType; // 'Purchase Receipt', 'Delivery Note', 'Stock Entry'
+
+    @NotNull
     private String referenceId;
+
+    @NotNull
     private String itemId;
-    private String itemCode;
-    private String itemName;
-    private BigDecimal sampleSize;
+
+    @Builder.Default
+    private BigDecimal sampleSize = BigDecimal.ONE;
+
     private LocalDate inspectionDate;
     private String inspector;
-    private InspectionStatus status;
     private String remarks;
-    private List<QualityInspectionReadingDto> readings;
+
+    @NotEmpty
+    private List<ReadingRequest> readings;
 
     @Data
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class QualityInspectionReadingDto {
-        private String id;
+    public static class ReadingRequest {
+        @NotNull
         private String parameterName;
         private String specification;
         private BigDecimal minValue;
         private BigDecimal maxValue;
+        @NotNull
         private BigDecimal readingValue;
-        private InspectionStatus status;
     }
 }

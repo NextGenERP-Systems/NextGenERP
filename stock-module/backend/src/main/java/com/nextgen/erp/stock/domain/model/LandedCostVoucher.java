@@ -5,6 +5,8 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "landed_cost_vouchers", schema = "stock")
@@ -26,13 +28,13 @@ public class LandedCostVoucher {
 
     @Column(name = "distribute_charges_based_on", length = 30)
     @Builder.Default
-    private String distributeChargesBasedOn = "Amount";
+    private String distributeChargesBasedOn = "Amount"; // 'Amount', 'Qty', 'Distribute Manually'
 
     @Column(name = "total_taxes_and_charges", precision = 18, scale = 4)
     @Builder.Default
     private BigDecimal totalTaxesAndCharges = BigDecimal.ZERO;
 
-    @Enumerated(EnumType.STRING)
+    @Convert(converter = StockEntryStatus.StockEntryStatusConverter.class)
     @Column(length = 30)
     @Builder.Default
     private StockEntryStatus status = StockEntryStatus.DRAFT;
@@ -47,4 +49,12 @@ public class LandedCostVoucher {
     @Column(name = "updated_at")
     @Builder.Default
     private ZonedDateTime updatedAt = ZonedDateTime.now();
+
+    @OneToMany(mappedBy = "voucher", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @Builder.Default
+    private List<LandedCostItem> items = new ArrayList<>();
+
+    @OneToMany(mappedBy = "voucher", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @Builder.Default
+    private List<LandedCostTax> taxes = new ArrayList<>();
 }

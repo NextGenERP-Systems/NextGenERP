@@ -28,6 +28,7 @@ public class StockController {
     private final BatchSerialService batchSerialService;
     private final StockReconciliationService stockReconciliationService;
     private final DashboardMetricsService dashboardMetricsService;
+    private final LandedCostVoucherService landedCostVoucherService;
 
     // --- Dashboard Metrics ---
     @GetMapping("/metrics")
@@ -115,10 +116,22 @@ public class StockController {
         return new ResponseEntity<>(stockEntryService.createAndSubmitEntry(request), HttpStatus.CREATED);
     }
 
-    // --- Stock Reconciliation (Physical Count Adjustment) ---
+    // --- Stock Reconciliation (Physical Count Adjustment & Audits) ---
+    @GetMapping("/reconcile")
+    @Operation(summary = "List all physical inventory reconciliation audit entries")
+    public ResponseEntity<List<StockReconciliationDto>> getAllReconciliations() {
+        return ResponseEntity.ok(stockReconciliationService.getAllReconciliations());
+    }
+
+    @GetMapping("/reconcile/{id}")
+    @Operation(summary = "Get stock reconciliation by ID with discrepancy lines")
+    public ResponseEntity<StockReconciliationDto> getReconciliationById(@PathVariable String id) {
+        return ResponseEntity.ok(stockReconciliationService.getReconciliationById(id));
+    }
+
     @PostMapping("/reconcile")
     @Operation(summary = "Submit Physical Inventory Reconciliation Adjustment")
-    public ResponseEntity<StockReconciliation> reconcileStock(@Valid @RequestBody StockReconciliationCreateRequest request) {
+    public ResponseEntity<StockReconciliationDto> reconcileStock(@Valid @RequestBody StockReconciliationCreateRequest request) {
         return new ResponseEntity<>(stockReconciliationService.reconcileStock(request), HttpStatus.CREATED);
     }
 
@@ -152,5 +165,36 @@ public class StockController {
     @Operation(summary = "List quality inspections")
     public ResponseEntity<List<QualityInspectionDto>> getAllInspections() {
         return ResponseEntity.ok(batchSerialService.getAllInspections());
+    }
+
+    @GetMapping("/inspections/{id}")
+    @Operation(summary = "Get quality inspection by ID with parameter readings")
+    public ResponseEntity<QualityInspectionDto> getInspectionById(@PathVariable String id) {
+        return ResponseEntity.ok(batchSerialService.getInspectionById(id));
+    }
+
+    @PostMapping("/inspections")
+    @Operation(summary = "Record quality inspection with parameter readings and automated tolerance verification")
+    public ResponseEntity<QualityInspectionDto> createInspection(@Valid @RequestBody QualityInspectionCreateRequest request) {
+        return new ResponseEntity<>(batchSerialService.createInspection(request), HttpStatus.CREATED);
+    }
+
+    // --- Landed Cost Vouchers (Cost Absorption Engine) ---
+    @GetMapping("/landed-cost")
+    @Operation(summary = "List all Landed Cost Vouchers")
+    public ResponseEntity<List<LandedCostVoucherDto>> getAllLandedCostVouchers() {
+        return ResponseEntity.ok(landedCostVoucherService.getAllVouchers());
+    }
+
+    @GetMapping("/landed-cost/{id}")
+    @Operation(summary = "Get Landed Cost Voucher by ID")
+    public ResponseEntity<LandedCostVoucherDto> getLandedCostVoucherById(@PathVariable String id) {
+        return ResponseEntity.ok(landedCostVoucherService.getVoucherById(id));
+    }
+
+    @PostMapping("/landed-cost")
+    @Operation(summary = "Create and submit a Landed Cost Voucher to allocate freight, duties and charges")
+    public ResponseEntity<LandedCostVoucherDto> createLandedCostVoucher(@Valid @RequestBody LandedCostVoucherCreateRequest request) {
+        return new ResponseEntity<>(landedCostVoucherService.createAndSubmitVoucher(request), HttpStatus.CREATED);
     }
 }

@@ -73,6 +73,74 @@ public class BatchSerialService {
         return qualityInspectionRepository.findAll().stream().map(this::mapQIToDto).toList();
     }
 
+    @Transactional(readOnly = true)
+    public QualityInspectionDto getInspectionById(String id) {
+        QualityInspection qi = qualityInspectionRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Quality Inspection not found: " + id));
+        return mapQIToDto(qi);
+    }
+
+    @Transactional
+    public QualityInspectionDto createInspection(QualityInspectionCreateRequest request) {
+        String id = "qi-" + UUID.randomUUID().toString().substring(0, 8);
+        String number = "QI-" + LocalDate.now().getYear() + "-" + String.format("%04d", new Random().nextInt(9000) + 1000);
+
+        boolean anyRejected = false;
+        List<QualityInspectionReading> readings = new ArrayList<>();
+
+        if (request.getReadings() != null) {
+            for (QualityInspectionCreateRequest.ReadingRequest rr : request.getReadings()) {
+                BigDecimal val = rr.getReadingValue();
+                InspectionStatus readingStatus = InspectionStatus.ACCEPTED;
+                if (rr.getMinValue() != null && val.compareTo(rr.getMinValue()) < 0) {
+                    readingStatus = InspectionStatus.REJECTED;
+                    anyRejected = true;
+                }
+                if (rr.getMaxValue() != null && val.compareTo(rr.getMaxValue()) > 0) {
+                    readingStatus = InspectionStatus.REJECTED;
+                    anyRejected = true;
+                }
+
+                readings.add(QualityInspectionReading.builder()
+                        .id("qir-" + UUID.randomUUID().toString().substring(0, 8))
+                        .parameterName(rr.getParameterName())
+                        .specification(rr.getSpecification())
+                        .minValue(rr.getMinValue())
+                        .maxValue(rr.getMaxValue())
+                        .readingValue(val)
+                        .status(readingStatus)
+                        .createdAt(ZonedDateTime.now())
+                        .build());
+            }
+        }
+
+        InspectionStatus overallStatus = anyRejected ? InspectionStatus.REJECTED : InspectionStatus.ACCEPTED;
+
+        QualityInspection qi = QualityInspection.builder()
+                .id(id)
+                .inspectionNumber(number)
+                .inspectionType(request.getInspectionType())
+                .referenceType(request.getReferenceType())
+                .referenceId(request.getReferenceId())
+                .itemId(request.getItemId())
+                .sampleSize(request.getSampleSize() != null ? request.getSampleSize() : BigDecimal.ONE)
+                .inspectionDate(request.getInspectionDate() != null ? request.getInspectionDate() : LocalDate.now())
+                .inspector(request.getInspector() != null && !request.getInspector().isBlank() ? request.getInspector() : "QC Specialist")
+                .status(overallStatus)
+                .remarks(request.getRemarks())
+                .createdAt(ZonedDateTime.now())
+                .updatedAt(ZonedDateTime.now())
+                .build();
+
+        for (QualityInspectionReading r : readings) {
+            r.setInspection(qi);
+        }
+        qi.setReadings(readings);
+
+        QualityInspection saved = qualityInspectionRepository.save(qi);
+        return mapQIToDto(saved);
+    }
+
     private BatchDto mapBatchToDto(Batch b) {
         Item item = itemRepository.findById(b.getItemId()).orElse(null);
         return BatchDto.builder()
@@ -110,6 +178,22 @@ public class BatchSerialService {
 
     private QualityInspectionDto mapQIToDto(QualityInspection qi) {
         Item item = itemRepository.findById(qi.getItemId()).orElse(null);
+
+        List<QualityInspectionDto.QualityInspectionReadingDto> readingDtos = null;
+        if (qi.getReadings() != null) {
+            readingDtos = qi.getReadings().stream()
+                    .map(r -> QualityInspectionDto.QualityInspectionReadingDto.builder()
+                            .id(r.getId())
+                            .parameterName(r.getParameterName())
+                            .specification(r.getSpecification())
+                            .minValue(r.getMinValue())
+                            .maxValue(r.getMaxValue())
+                            .readingValue(r.getReadingValue())
+                            .status(r.getStatus())
+                            .build())
+                    .toList();
+        }
+
         return QualityInspectionDto.builder()
                 .id(qi.getId())
                 .inspectionNumber(qi.getInspectionNumber())
@@ -124,6 +208,7 @@ public class BatchSerialService {
                 .inspector(qi.getInspector())
                 .status(qi.getStatus())
                 .remarks(qi.getRemarks())
+                .readings(readingDtos)
                 .build();
     }
 }
