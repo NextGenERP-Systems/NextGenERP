@@ -73,6 +73,9 @@ public class GeneralLedgerEntry {
     @Builder.Default
     private Boolean isCancelled = false;
 
+    @Column(name = "clearance_date")
+    private LocalDate clearanceDate;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private OffsetDateTime createdAt;

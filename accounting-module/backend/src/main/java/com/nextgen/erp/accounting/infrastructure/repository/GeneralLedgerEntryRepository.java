@@ -20,4 +20,8 @@ public interface GeneralLedgerEntryRepository extends JpaRepository<GeneralLedge
 
     @Query("SELECT g FROM GeneralLedgerEntry g WHERE g.account.id = :accountId AND g.postingDate <= :asOfDate AND g.isCancelled = false")
     List<GeneralLedgerEntry> findActiveEntriesForAccountAsOf(@Param("accountId") UUID accountId, @Param("asOfDate") LocalDate asOfDate);
+
+    List<GeneralLedgerEntry> findByAccountIdAndIsCancelledFalseOrderByPostingDateDesc(UUID accountId);
+
+    List<GeneralLedgerEntry> findByVoucherNumber(String voucherNumber);
 }

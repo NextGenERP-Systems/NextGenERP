@@ -20,6 +20,7 @@ import java.util.UUID;
 public class GeneralLedgerController {
 
     private final GeneralLedgerEntryRepository glEntryRepository;
+    private final com.nextgen.erp.accounting.application.service.PerpetualStockGlService perpetualStockGlService;
 
     @GetMapping
     @Operation(summary = "Get all General Ledger entries")
@@ -35,5 +36,13 @@ public class GeneralLedgerController {
             return ResponseEntity.ok(glEntryRepository.findByPostingDateBetweenOrderByPostingDateAsc(fromDate, toDate));
         }
         return ResponseEntity.ok(glEntryRepository.findAllByOrderByPostingDateDescCreatedAtDesc());
+    }
+
+    @PostMapping("/perpetual-stock")
+    @Operation(summary = "Post automated double-entry GL ledger transactions for perpetual inventory movements")
+    public ResponseEntity<List<GeneralLedgerEntry>> postPerpetualStockGl(
+            @RequestBody com.nextgen.erp.accounting.domain.model.PerpetualStockGlRequest request) {
+        return ResponseEntity.status(org.springframework.http.HttpStatus.CREATED)
+                .body(perpetualStockGlService.postPerpetualStockGl(request));
     }
 }

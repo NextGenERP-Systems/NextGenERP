@@ -17,12 +17,14 @@ import {
   Building2,
   Laptop,
   FileSpreadsheet,
+  Layers,
 } from "lucide-react";
 import { AppSwitcher } from "@/components/layout/AppSwitcher";
 
 const navItems = [
   { name: "Overview", href: "/accounts", icon: LayoutDashboard },
   { name: "Chart of Accounts", href: "/accounts/chart-of-accounts", icon: FolderTree },
+  { name: "General Ledger", href: "/accounts/general-ledger", icon: Layers },
   { name: "Journal Entries", href: "/accounts/journal-entries", icon: BookOpen },
   { name: "Sales Invoices (AR)", href: "/accounts/sales-invoices", icon: FileText },
   { name: "Purchase Invoices (AP)", href: "/accounts/purchase-invoices", icon: Receipt },

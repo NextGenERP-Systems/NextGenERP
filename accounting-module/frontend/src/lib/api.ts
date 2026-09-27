@@ -12,6 +12,9 @@ import {
   BalanceSheetReport,
   TrialBalanceReport,
   CashFlowReport,
+  BankReconciliation,
+  UnclearedTransaction,
+  PerpetualStockGlRequest,
 } from "@/types/accounting";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api/v1";
@@ -173,10 +176,83 @@ export async function getGeneralLedgerEntries(): Promise<GeneralLedgerEntry[]> {
     const res = await fetch(`${API_BASE}/gl`, { cache: "no-store" });
     if (res.ok) {
       const data = await res.json();
-      if (Array.isArray(data)) return data;
+      if (Array.isArray(data)) {
+        setStored("GL_ENTRIES", data);
+        return data;
+      }
     }
   } catch (err) {}
-  return [];
+  return getStored<GeneralLedgerEntry>("GL_ENTRIES");
+}
+
+export async function postPerpetualStockGl(data: PerpetualStockGlRequest): Promise<GeneralLedgerEntry[]> {
+  const current = getStored<GeneralLedgerEntry>("GL_ENTRIES");
+  try {
+    const res = await fetch(`${API_BASE}/gl/perpetual-stock`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    if (res.ok) {
+      const created = await res.json();
+      setStored("GL_ENTRIES", [...created, ...current]);
+      return created;
+    }
+  } catch (err) {}
+
+  const now = new Date().toISOString().split("T")[0];
+  const drAccName = data.transactionNature === "DELIVERY" ? "Cost of Goods Sold" : "Stock In Hand";
+  const crAccName = data.transactionNature === "DELIVERY" ? "Stock In Hand" : "Stock Received But Not Billed";
+
+  const mock: GeneralLedgerEntry[] = [
+    {
+      id: `gle-${Date.now()}-dr`,
+      postingDate: data.postingDate || now,
+      account: {
+        id: "acc-dr",
+        accountCode: data.transactionNature === "DELIVERY" ? "5110" : "1130",
+        accountName: drAccName,
+        rootType: data.transactionNature === "DELIVERY" ? "EXPENSE" : "ASSET",
+        currency: "INR",
+        isGroup: false,
+        balance: data.amount,
+        isActive: true,
+      },
+      voucherType: data.voucherType,
+      voucherNumber: data.voucherNumber,
+      voucherId: data.voucherId || `vch-${Date.now()}`,
+      debit: data.amount,
+      credit: 0,
+      againstAccount: crAccName,
+      remarks: data.remarks || "Perpetual Inventory GL Posting",
+      isCancelled: false,
+    },
+    {
+      id: `gle-${Date.now()}-cr`,
+      postingDate: data.postingDate || now,
+      account: {
+        id: "acc-cr",
+        accountCode: data.transactionNature === "DELIVERY" ? "1130" : "2120",
+        accountName: crAccName,
+        rootType: data.transactionNature === "DELIVERY" ? "ASSET" : "LIABILITY",
+        currency: "INR",
+        isGroup: false,
+        balance: data.amount,
+        isActive: true,
+      },
+      voucherType: data.voucherType,
+      voucherNumber: data.voucherNumber,
+      voucherId: data.voucherId || `vch-${Date.now()}`,
+      debit: 0,
+      credit: data.amount,
+      againstAccount: drAccName,
+      remarks: data.remarks || "Perpetual Inventory GL Posting",
+      isCancelled: false,
+    },
+  ];
+
+  setStored("GL_ENTRIES", [...mock, ...current]);
+  return mock;
 }
 
 // ------------------------------------------------------------------------------
@@ -429,6 +505,86 @@ export async function deleteBankAccount(id: string): Promise<boolean> {
   const current = getStored<BankAccount>("BANK_ACCOUNTS");
   setStored("BANK_ACCOUNTS", current.filter((b) => b.id !== id));
   return true;
+}
+
+export async function getBankReconciliation(
+  bankAccountId: string,
+  statementBalance?: number,
+  statementDate?: string
+): Promise<BankReconciliation> {
+  const query = new URLSearchParams();
+  if (statementBalance !== undefined) query.set("statementBalance", statementBalance.toString());
+  if (statementDate) query.set("statementDate", statementDate);
+
+  try {
+    const res = await fetch(`${API_BASE}/banking/accounts/${bankAccountId}/reconciliation?${query.toString()}`, {
+      cache: "no-store",
+    });
+    if (res.ok) {
+      return await res.json();
+    }
+  } catch (err) {}
+
+  // Fallback local calculation
+  const accounts = getStored<BankAccount>("BANK_ACCOUNTS");
+  const bank = accounts.find((a) => a.id === bankAccountId) || accounts[0];
+  const glEntries = getStored<GeneralLedgerEntry>("GL_ENTRIES");
+  const glBal = bank ? bank.currentBalance : 2500000;
+  const stmtBal = statementBalance !== undefined ? statementBalance : glBal;
+
+  const uncleared: UnclearedTransaction[] = glEntries
+    .filter((g) => !g.isCancelled)
+    .slice(0, 10)
+    .map((g) => ({
+      voucherId: g.voucherId || g.id,
+      voucherNumber: g.voucherNumber || "VCH-001",
+      voucherType: g.voucherType || "PAYMENT_ENTRY",
+      postingDate: g.postingDate || new Date().toISOString().split("T")[0],
+      partyType: g.partyType,
+      partyName: g.partyName,
+      debit: g.debit || 0,
+      credit: g.credit || 0,
+      isDeposit: (g.debit || 0) > 0,
+      isCleared: false,
+    }));
+
+  const depositsInTransit = uncleared.filter((u) => u.isDeposit && !u.isCleared).reduce((s, u) => s + u.debit, 0);
+  const outstandingPayments = uncleared.filter((u) => !u.isDeposit && !u.isCleared).reduce((s, u) => s + u.credit, 0);
+  const calculatedBookBalance = stmtBal + depositsInTransit - outstandingPayments;
+  const variance = calculatedBookBalance - glBal;
+
+  return {
+    bankAccountId,
+    accountName: bank?.accountName || "Corporate Bank Account",
+    bankName: bank?.bankName || "HDFC Bank",
+    accountNumber: bank?.accountNumber || "50200088991122",
+    bankStatementBalance: stmtBal,
+    generalLedgerBalance: glBal,
+    depositsInTransit,
+    outstandingPayments,
+    calculatedBookBalance,
+    variance,
+    isReconciled: Math.abs(variance) < 0.01,
+    unclearedTransactions: uncleared,
+  };
+}
+
+export async function clearBankTransactions(
+  bankAccountId: string,
+  items: { voucherNumber: string; clearanceDate?: string }[]
+): Promise<BankReconciliation> {
+  try {
+    const res = await fetch(`${API_BASE}/banking/accounts/${bankAccountId}/clear`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ items }),
+    });
+    if (res.ok) {
+      return await res.json();
+    }
+  } catch (err) {}
+
+  return getBankReconciliation(bankAccountId);
 }
 
 // ------------------------------------------------------------------------------

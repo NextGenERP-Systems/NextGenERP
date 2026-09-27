@@ -226,3 +226,44 @@ export interface CashFlowReport {
   openingCashBalance: number;
   closingCashBalance: number;
 }
+
+export interface UnclearedTransaction {
+  voucherId: string;
+  voucherNumber: string;
+  voucherType: string;
+  postingDate: string;
+  partyType?: string;
+  partyName?: string;
+  debit: number;
+  credit: number;
+  isDeposit: boolean;
+  isCleared: boolean;
+  clearanceDate?: string;
+}
+
+export interface BankReconciliation {
+  bankAccountId: string;
+  accountName: string;
+  bankName: string;
+  accountNumber: string;
+  bankStatementBalance: number;
+  generalLedgerBalance: number;
+  depositsInTransit: number;
+  outstandingPayments: number;
+  calculatedBookBalance: number;
+  variance: number;
+  isReconciled: boolean;
+  unclearedTransactions: UnclearedTransaction[];
+}
+
+export interface PerpetualStockGlRequest {
+  voucherType: "STOCK_ENTRY" | "DELIVERY_NOTE" | "PURCHASE_RECEIPT" | "LANDED_COST_VOUCHER";
+  voucherNumber: string;
+  voucherId?: string;
+  postingDate?: string;
+  transactionNature: "RECEIPT" | "DELIVERY" | "LANDED_COST" | "VARIANCE_SURPLUS" | "VARIANCE_SHORTAGE";
+  amount: number;
+  itemSummary?: string;
+  remarks?: string;
+}
+

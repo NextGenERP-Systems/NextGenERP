@@ -102,6 +102,7 @@ CREATE TABLE IF NOT EXISTS general_ledger_entries (
     cost_center_id UUID REFERENCES cost_centers(id) ON DELETE SET NULL,
     remarks TEXT,
     is_cancelled BOOLEAN DEFAULT false,
+    clearance_date DATE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 

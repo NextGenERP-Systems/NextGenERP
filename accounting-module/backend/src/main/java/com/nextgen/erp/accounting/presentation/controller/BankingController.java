@@ -46,4 +46,21 @@ public class BankingController {
         bankingService.deleteBankAccount(id);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/accounts/{id}/reconciliation")
+    @Operation(summary = "Generate Bank Reconciliation Statement & Uncleared Vouchers Sheet")
+    public ResponseEntity<com.nextgen.erp.accounting.domain.model.BankReconciliationDto> getBankReconciliation(
+            @PathVariable UUID id,
+            @RequestParam(required = false) java.math.BigDecimal statementBalance,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate statementDate) {
+        return ResponseEntity.ok(bankingService.getBankReconciliationSheet(id, statementBalance, statementDate));
+    }
+
+    @PostMapping("/accounts/{id}/clear")
+    @Operation(summary = "Clear bank transaction vouchers with settlement date")
+    public ResponseEntity<com.nextgen.erp.accounting.domain.model.BankReconciliationDto> clearBankTransactions(
+            @PathVariable UUID id,
+            @RequestBody com.nextgen.erp.accounting.domain.model.BankClearanceRequest request) {
+        return ResponseEntity.ok(bankingService.clearBankVouchers(id, request));
+    }
 }

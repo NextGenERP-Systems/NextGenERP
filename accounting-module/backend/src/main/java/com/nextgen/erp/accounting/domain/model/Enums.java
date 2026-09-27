@@ -29,7 +29,11 @@ public class Enums {
         SALES_INVOICE,
         PURCHASE_INVOICE,
         PAYMENT_ENTRY,
-        JOURNAL_ENTRY
+        JOURNAL_ENTRY,
+        STOCK_ENTRY,
+        DELIVERY_NOTE,
+        PURCHASE_RECEIPT,
+        LANDED_COST_VOUCHER
     }
 
     public enum JournalVoucherType {
