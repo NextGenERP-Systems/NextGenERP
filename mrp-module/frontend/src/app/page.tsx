@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { api, WorkOrder, JobCard } from '@/lib/api';
+import { api, RuntimeDatabaseInfo, WorkOrder, JobCard } from '@/lib/api';
 import { 
   Factory, 
   CheckCircle2, 
@@ -27,19 +27,34 @@ import {
 export default function MRPDashboard() {
   const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
   const [jobCards, setJobCards] = useState<JobCard[]>([]);
+  const [runtime, setRuntime] = useState<RuntimeDatabaseInfo | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadData() {
-      const woData = await api.getWorkOrders();
-      const jcData = await api.getJobCards();
-      setWorkOrders(woData);
-      setJobCards(jcData);
+      setLoading(true);
+      setError(null);
+      try {
+        const [woData, jcData, runtimeData] = await Promise.all([
+          api.getWorkOrders(),
+          api.getJobCards(),
+          api.getRuntimeDatabase()
+        ]);
+        setWorkOrders(woData);
+        setJobCards(jcData);
+        setRuntime(runtimeData);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Unable to load the MRP dashboard');
+      } finally {
+        setLoading(false);
+      }
     }
     loadData();
   }, []);
 
-  const totalPlannedCost = workOrders.reduce((acc, wo) => acc + (wo.plannedMaterialCost || 0), 0);
-  const totalActualCost = workOrders.reduce((acc, wo) => acc + (wo.actualMaterialCost || 0), 0);
+  const totalPlannedCost = workOrders.reduce((acc, wo) => acc + (wo.plannedMaterialCost || 0) + (wo.plannedOperatingCost || 0), 0);
+  const totalActualCost = workOrders.reduce((acc, wo) => acc + (wo.actualMaterialCost || 0) + (wo.actualOperatingCost || 0), 0);
   const costVariance = totalActualCost - totalPlannedCost;
 
   const statusData = [
@@ -50,8 +65,8 @@ export default function MRPDashboard() {
 
   const costComparisonData = workOrders.map(wo => ({
     name: wo.workOrderId,
-    Planned: wo.plannedMaterialCost,
-    Actual: wo.actualMaterialCost
+    Planned: (wo.plannedMaterialCost || 0) + (wo.plannedOperatingCost || 0),
+    Actual: (wo.actualMaterialCost || 0) + (wo.actualOperatingCost || 0)
   }));
 
   return (
@@ -64,7 +79,16 @@ export default function MRPDashboard() {
           </h1>
           <p className="text-sm text-gray-500">Real-time status of Work Orders, Job Cards, and Standard Cost Variances</p>
         </div>
+        {runtime && (
+          <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-right text-[10px] font-mono text-slate-600">
+            <div>DB: <span className="font-bold text-slate-900">{runtime.databaseName}</span></div>
+            <div>Migration: {runtime.migrationVersion || 'baseline'} · {runtime.status}</div>
+          </div>
+        )}
       </div>
+
+      {loading && <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-xs text-blue-700">Loading persisted MRP data…</div>}
+      {error && <div role="alert" className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-700"><span className="font-semibold">Dashboard unavailable:</span> {error}</div>}
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -85,12 +109,12 @@ export default function MRPDashboard() {
             <DollarSign className="w-4 h-4 text-emerald-600" />
           </div>
           <div className="text-2xl font-bold text-gray-900">${totalPlannedCost.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
-          <div className="text-xs text-gray-500 mt-1">Standard Cost Baseline</div>
+          <div className="text-xs text-gray-500 mt-1">Material + Operating Standard Cost</div>
         </div>
 
         <div className="glass-card p-5 rounded-xl border border-gray-200">
           <div className="flex items-center justify-between text-gray-500 mb-2">
-            <span className="text-xs font-semibold uppercase tracking-wider">Actual Material Cost</span>
+            <span className="text-xs font-semibold uppercase tracking-wider">Actual Manufacturing Cost</span>
             <TrendingUp className="w-4 h-4 text-amber-500" />
           </div>
           <div className="text-2xl font-bold text-gray-900">${totalActualCost.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>

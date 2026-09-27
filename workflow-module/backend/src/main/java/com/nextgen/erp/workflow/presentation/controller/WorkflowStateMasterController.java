@@ -25,4 +25,10 @@ public class WorkflowStateMasterController {
     public ResponseEntity<WorkflowStateMaster> createMasterState(@RequestBody WorkflowStateMaster stateMaster) {
         return ResponseEntity.ok(repository.save(stateMaster));
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteMasterState(@PathVariable java.util.UUID id) {
+        repository.deleteById(id);
+        return ResponseEntity.noContent().build();
+    }
 }

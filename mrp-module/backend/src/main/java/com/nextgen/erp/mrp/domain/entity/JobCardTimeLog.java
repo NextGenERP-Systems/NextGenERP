@@ -36,4 +36,25 @@ public class JobCardTimeLog {
 
     @Column(name = "completed_qty", precision = 15, scale = 4)
     private BigDecimal completedQty;
+
+    public UUID getId() { return id; }
+    public void setId(UUID id) { this.id = id; }
+
+    public String getJobCardId() { return jobCardId; }
+    public void setJobCardId(String jobCardId) { this.jobCardId = jobCardId; }
+
+    public String getEmployeeId() { return employeeId; }
+    public void setEmployeeId(String employeeId) { this.employeeId = employeeId; }
+
+    public ZonedDateTime getStartTime() { return startTime; }
+    public void setStartTime(ZonedDateTime startTime) { this.startTime = startTime; }
+
+    public ZonedDateTime getEndTime() { return endTime; }
+    public void setEndTime(ZonedDateTime endTime) { this.endTime = endTime; }
+
+    public BigDecimal getTimeInMins() { return timeInMins; }
+    public void setTimeInMins(BigDecimal timeInMins) { this.timeInMins = timeInMins; }
+
+    public BigDecimal getCompletedQty() { return completedQty; }
+    public void setCompletedQty(BigDecimal completedQty) { this.completedQty = completedQty; }
 }

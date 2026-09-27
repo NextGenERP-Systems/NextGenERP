@@ -8,6 +8,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import org.springframework.format.annotation.DateTimeFormat;
 import java.util.Map;
 
 @RestController
@@ -22,8 +24,10 @@ public class MrpWizardController {
     @Operation(summary = "Explode multi-level BOM and calculate raw material shortages")
     public ResponseEntity<Map<String, Object>> calculateRequirements(
             @RequestParam String bomNo,
-            @RequestParam BigDecimal plannedQty
+            @RequestParam BigDecimal plannedQty,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate planningDate
     ) {
-        return ResponseEntity.ok(mrpWizardService.calculateMaterialRequirements(bomNo, plannedQty));
+        return ResponseEntity.ok(mrpWizardService.calculateMaterialRequirements(bomNo, plannedQty,
+                planningDate == null ? LocalDate.now() : planningDate));
     }
 }

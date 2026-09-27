@@ -19,7 +19,8 @@ import {
   FileText, Clock, ArrowLeft, CheckCircle, 
   XCircle, Send, History, AlertCircle, ShieldAlert, Edit3, Save, X, Trash2
 } from "lucide-react";
-import { formatDate } from "@/lib/utils";
+import { formatDate, formatCurrency } from "@/lib/utils";
+
 import Link from "next/link";
 import { toast } from "sonner";
 import { useParams, useRouter } from "next/navigation";
@@ -223,7 +224,7 @@ export default function DocumentDetailPage() {
             <button
               onClick={() => setSelectedAction('provide_clarification')}
               disabled={actionLoading !== null}
-              className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 transition-colors flex items-center gap-2 shadow-sm"
+              className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors flex items-center gap-2 shadow-sm"
             >
               <Send className="w-4 h-4" />
               Provide Clarification
@@ -276,7 +277,7 @@ export default function DocumentDetailPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">Amount / Value ($)</label>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">Amount / Value (₹)</label>
                   <input
                     type="number"
                     value={editAmount}
@@ -315,7 +316,7 @@ export default function DocumentDetailPage() {
                 <div className="grid grid-cols-2 gap-y-4 gap-x-6 text-sm">
                   <div>
                     <span className="block text-slate-500 mb-1">Amount / Value</span>
-                    <span className="font-medium text-slate-900">${document.amount?.toFixed(2) || '0.00'}</span>
+                    <span className="font-medium text-slate-900">{formatCurrency(document.amount)}</span>
                   </div>
                   <div>
                     <span className="block text-slate-500 mb-1">Owner</span>

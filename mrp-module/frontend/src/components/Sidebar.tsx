@@ -11,18 +11,22 @@ import {
   Wand2, 
   ShieldCheck, 
   Activity, 
-  Trash2 
+  Workflow
 } from 'lucide-react';
 
 const navItems = [
   { name: 'MRP Dashboard', href: '/', icon: Factory },
   { name: 'Bill of Materials (BOM)', href: '/boms', icon: Layers },
+  { name: 'Routings & Operations', href: '/routings', icon: Workflow },
+  { name: 'Master Schedule (MPS)', href: '/mps', icon: Activity },
   { name: 'Work Orders', href: '/work-orders', icon: ClipboardList },
+  { name: 'Production Plans', href: '/production-plans', icon: ClipboardList },
   { name: 'Job Cards (Tablet UI)', href: '/job-cards', icon: Timer },
   { name: 'Workstations & Gantt', href: '/workstations', icon: Cpu },
   { name: 'MRP Shortage Wizard', href: '/mrp-wizard', icon: Wand2 },
+  { name: 'MRP Runs', href: '/mrp-runs', icon: Activity },
+  { name: 'Subcontracting', href: '/subcontracting', icon: ClipboardList },
   { name: 'Quality Inspection', href: '/quality', icon: ShieldCheck },
-  { name: 'Sandbox & Security', href: '/sandbox', icon: Trash2 },
 ];
 
 export default function Sidebar() {
@@ -71,15 +75,15 @@ export default function Sidebar() {
         </div>
       </div>
 
-      {/* Footer Sandbox Status Banner */}
+      {/* Connection Status */}
       <div className="p-3 border-t border-gray-200 bg-[#f8f8f8]">
         <div className="p-2.5 bg-white border border-gray-200 rounded-lg text-xs text-gray-600 space-y-1 shadow-2xs">
           <div className="flex items-center gap-2 text-blue-700 font-semibold">
             <Activity className="w-3.5 h-3.5 animate-pulse" />
-            Isolated Sandbox Mode
+            Cloud-Connected MRP Mode
           </div>
           <p className="text-[11px] text-gray-500 leading-normal">
-            Standalone MRP engine running independently with mock adapters.
+            MRP services running locally through Docker with persistent cloud database connectivity.
           </p>
         </div>
       </div>

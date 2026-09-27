@@ -37,13 +37,32 @@ public class WorkOrderController {
         return ResponseEntity.ok(workOrderService.getChildWorkOrders(id));
     }
 
+    @PostMapping
+    @Operation(summary = "Create a new Work Order with automatic BOM & Routing operations resolution")
+    public ResponseEntity<WorkOrder> createWorkOrder(@RequestBody WorkOrder workOrder) {
+        return ResponseEntity.ok(workOrderService.createWorkOrder(workOrder));
+    }
+
+    @PostMapping("/{id}/submit")
+    @Operation(summary = "Submit a Work Order for production execution")
+    public ResponseEntity<WorkOrder> submitWorkOrder(@PathVariable String id) {
+        return ResponseEntity.ok(workOrderService.submitWorkOrder(id));
+    }
+
+    @PostMapping("/{id}/complete")
+    @Operation(summary = "Complete a Work Order after child dependency validation")
+    public ResponseEntity<WorkOrder> completeWorkOrder(@PathVariable String id) {
+        return ResponseEntity.ok(workOrderService.completeWorkOrder(id));
+    }
+
     @PostMapping("/{id}/consume")
     @Operation(summary = "Log Real-Time Material Consumption with Pessimistic Row Lock and Over-Consumption Tracking")
     public ResponseEntity<WorkOrder> logConsumption(
             @PathVariable String id,
             @RequestParam String itemCode,
-            @RequestParam BigDecimal consumeQty
+            @RequestParam BigDecimal consumeQty,
+            @RequestParam(required = false) String idempotencyKey
     ) {
-        return ResponseEntity.ok(workOrderService.logMaterialConsumption(id, itemCode, consumeQty));
+        return ResponseEntity.ok(workOrderService.logMaterialConsumption(id, itemCode, consumeQty, idempotencyKey));
     }
 }

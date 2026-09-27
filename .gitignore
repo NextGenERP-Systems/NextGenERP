@@ -46,3 +46,8 @@ test-results/
 workflow-module/problems.md
 Projects.md
 projects-module-dump.sql
+
+.docker-env/
+**/frappe-bench/sites/assets/
+# TypeScript incremental build artifacts
+*.tsbuildinfo

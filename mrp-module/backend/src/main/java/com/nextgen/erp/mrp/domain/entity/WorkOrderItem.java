@@ -43,4 +43,31 @@ public class WorkOrderItem {
 
     @Column(name = "standard_rate", precision = 15, scale = 4)
     private BigDecimal standardRate;
+
+    public UUID getId() { return id; }
+    public void setId(UUID id) { this.id = id; }
+
+    public WorkOrder getWorkOrder() { return workOrder; }
+    public void setWorkOrder(WorkOrder workOrder) { this.workOrder = workOrder; }
+
+    public String getItemCode() { return itemCode; }
+    public void setItemCode(String itemCode) { this.itemCode = itemCode; }
+
+    public String getItemName() { return itemName; }
+    public void setItemName(String itemName) { this.itemName = itemName; }
+
+    public BigDecimal getRequiredQty() { return requiredQty; }
+    public void setRequiredQty(BigDecimal requiredQty) { this.requiredQty = requiredQty; }
+
+    public BigDecimal getTransferredQty() { return transferredQty; }
+    public void setTransferredQty(BigDecimal transferredQty) { this.transferredQty = transferredQty; }
+
+    public BigDecimal getActualConsumedQty() { return actualConsumedQty; }
+    public void setActualConsumedQty(BigDecimal actualConsumedQty) { this.actualConsumedQty = actualConsumedQty; }
+
+    public String getUom() { return uom; }
+    public void setUom(String uom) { this.uom = uom; }
+
+    public BigDecimal getStandardRate() { return standardRate; }
+    public void setStandardRate(BigDecimal standardRate) { this.standardRate = standardRate; }
 }

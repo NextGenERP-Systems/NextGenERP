@@ -23,6 +23,9 @@ public class WorkOrder {
     @Column(name = "parent_wo_id", length = 100)
     private String parentWoId;
 
+    @Column(name = "production_plan_id", length = 100)
+    private String productionPlanId;
+
     @Column(name = "production_item", nullable = false, length = 100)
     private String productionItem;
 
@@ -53,6 +56,12 @@ public class WorkOrder {
     @Column(name = "planned_end_date", nullable = false)
     private ZonedDateTime plannedEndDate;
 
+    @Column(name = "actual_start_date")
+    private ZonedDateTime actualStartDate;
+
+    @Column(name = "actual_end_date")
+    private ZonedDateTime actualEndDate;
+
     @Column(name = "status", nullable = false, length = 50)
     private String status;
 
@@ -75,6 +84,82 @@ public class WorkOrder {
     @Builder.Default
     private List<WorkOrderItem> items = new ArrayList<>();
 
+    @OneToMany(mappedBy = "workOrder", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<WorkOrderOperation> operations = new ArrayList<>();
+
     @Column(name = "created_at", insertable = false, updatable = false)
     private ZonedDateTime createdAt;
+
+    public String getWorkOrderId() { return workOrderId; }
+    public void setWorkOrderId(String workOrderId) { this.workOrderId = workOrderId; }
+
+    public String getParentWoId() { return parentWoId; }
+    public void setParentWoId(String parentWoId) { this.parentWoId = parentWoId; }
+
+    public String getProductionPlanId() { return productionPlanId; }
+    public void setProductionPlanId(String productionPlanId) { this.productionPlanId = productionPlanId; }
+
+    public ZonedDateTime getActualStartDate() { return actualStartDate; }
+    public void setActualStartDate(ZonedDateTime actualStartDate) { this.actualStartDate = actualStartDate; }
+
+    public ZonedDateTime getActualEndDate() { return actualEndDate; }
+    public void setActualEndDate(ZonedDateTime actualEndDate) { this.actualEndDate = actualEndDate; }
+
+    public String getProductionItem() { return productionItem; }
+    public void setProductionItem(String productionItem) { this.productionItem = productionItem; }
+
+    public String getItemName() { return itemName; }
+    public void setItemName(String itemName) { this.itemName = itemName; }
+
+    public String getBomNo() { return bomNo; }
+    public void setBomNo(String bomNo) { this.bomNo = bomNo; }
+
+    public BigDecimal getQtyToProduce() { return qtyToProduce; }
+    public void setQtyToProduce(BigDecimal qtyToProduce) { this.qtyToProduce = qtyToProduce; }
+
+    public BigDecimal getProducedQty() { return producedQty; }
+    public void setProducedQty(BigDecimal producedQty) { this.producedQty = producedQty; }
+
+    public String getSourceWarehouse() { return sourceWarehouse; }
+    public void setSourceWarehouse(String sourceWarehouse) { this.sourceWarehouse = sourceWarehouse; }
+
+    public String getWipWarehouse() { return wipWarehouse; }
+    public void setWipWarehouse(String wipWarehouse) { this.wipWarehouse = wipWarehouse; }
+
+    public String getFgWarehouse() { return fgWarehouse; }
+    public void setFgWarehouse(String fgWarehouse) { this.fgWarehouse = fgWarehouse; }
+
+    public ZonedDateTime getPlannedStartDate() { return plannedStartDate; }
+    public void setPlannedStartDate(ZonedDateTime plannedStartDate) { this.plannedStartDate = plannedStartDate; }
+
+    public ZonedDateTime getPlannedEndDate() { return plannedEndDate; }
+    public void setPlannedEndDate(ZonedDateTime plannedEndDate) { this.plannedEndDate = plannedEndDate; }
+
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
+
+    public BigDecimal getPlannedMaterialCost() { return plannedMaterialCost; }
+    public void setPlannedMaterialCost(BigDecimal plannedMaterialCost) { this.plannedMaterialCost = plannedMaterialCost; }
+
+    public BigDecimal getActualMaterialCost() { return actualMaterialCost; }
+    public void setActualMaterialCost(BigDecimal actualMaterialCost) { this.actualMaterialCost = actualMaterialCost; }
+
+    public BigDecimal getPlannedOperatingCost() { return plannedOperatingCost; }
+    public void setPlannedOperatingCost(BigDecimal plannedOperatingCost) { this.plannedOperatingCost = plannedOperatingCost; }
+
+    public BigDecimal getActualOperatingCost() { return actualOperatingCost; }
+    public void setActualOperatingCost(BigDecimal actualOperatingCost) { this.actualOperatingCost = actualOperatingCost; }
+
+    public Integer getVersion() { return version; }
+    public void setVersion(Integer version) { this.version = version; }
+
+    public List<WorkOrderItem> getItems() { return items; }
+    public void setItems(List<WorkOrderItem> items) { this.items = items; }
+
+    public List<WorkOrderOperation> getOperations() { return operations; }
+    public void setOperations(List<WorkOrderOperation> operations) { this.operations = operations; }
+
+    public ZonedDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(ZonedDateTime createdAt) { this.createdAt = createdAt; }
 }

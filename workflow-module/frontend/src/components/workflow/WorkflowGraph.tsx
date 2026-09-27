@@ -208,7 +208,7 @@ export default function WorkflowGraph({
 
       {/* Instruction Toast Overlay */}
       <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-xs border border-slate-200 shadow-2xs px-3 py-1.5 rounded-lg text-xs text-slate-600 flex items-center gap-2 pointer-events-none">
-        <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
+        <Sparkles className="w-3.5 h-3.5 text-blue-500" />
         <span>Drag nodes to reposition. Connect nodes to create transitions. Click edges to view/edit SpEL rules.</span>
       </div>
 
@@ -218,7 +218,7 @@ export default function WorkflowGraph({
           <div className="bg-white rounded-2xl p-6 max-w-md w-full border border-slate-200 shadow-xl space-y-5 animate-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="font-bold text-slate-800 flex items-center gap-2 text-base">
-                <Play className="w-4 h-4 text-indigo-600" />
+                <Play className="w-4 h-4 text-blue-600" />
                 Create New Transition
               </h3>
               <button 
@@ -245,7 +245,7 @@ export default function WorkflowGraph({
                   placeholder="e.g. Approve, Reject, Submit"
                   value={actionName}
                   onChange={(e) => setActionName(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                   required
                 />
               </div>
@@ -260,7 +260,7 @@ export default function WorkflowGraph({
                   placeholder="e.g. Manager, Admin, Auditor"
                   value={allowedRole}
                   onChange={(e) => setAllowedRole(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                   required
                 />
               </div>
@@ -293,7 +293,7 @@ export default function WorkflowGraph({
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-4 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                  className="px-4 py-2 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center gap-1.5 disabled:opacity-50"
                 >
                   {isSubmitting ? "Creating..." : "Save Transition"}
                 </button>
@@ -328,7 +328,7 @@ export default function WorkflowGraph({
 
               <div className="flex justify-between py-1 border-b border-slate-100">
                 <span className="text-slate-500 font-medium">Allowed Role:</span>
-                <span className="font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">{selectedEdge.allowedRole}</span>
+                <span className="font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded">{selectedEdge.allowedRole}</span>
               </div>
 
               <div className="space-y-1.5 pt-2">

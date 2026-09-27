@@ -156,3 +156,36 @@ INSERT INTO mrp_quality_inspection (inspection_id, work_order_id, inspection_typ
 INSERT INTO mrp_downtime_entry (downtime_id, workstation_id, operator_employee_id, category, start_time, end_time, downtime_in_mins, remarks) VALUES
 ('DT-2026-001', 'WS-CNC-01', 'EMP-101', 'TOOLING', CURRENT_TIMESTAMP - INTERVAL '1 day', CURRENT_TIMESTAMP - INTERVAL '22 hours', 120.00, 'Replaced worn tungsten carbide end-mill bit');
 
+-- 11. MOCK STOCK LEDGER ENTRIES
+INSERT INTO mrp_mock_stock_ledger (item_code, warehouse_id, actual_qty, valuation_rate, voucher_type, voucher_no) VALUES
+('RAW-CF-SHEET', 'WH-STORES', 50.0000, 150.0000, 'Stock Entry', 'STE-2026-001'),
+('RAW-TITANIUM-BOLT', 'WH-STORES', 100.0000, 25.0000, 'Stock Entry', 'STE-2026-001'),
+('RAW-BLDC-MOTOR', 'WH-STORES', 30.0000, 180.0000, 'Stock Entry', 'STE-2026-001'),
+('RAW-ESC-60A', 'WH-STORES', 15.0000, 75.0000, 'Stock Entry', 'STE-2026-001'),
+('RAW-BATTERY-PACK', 'WH-STORES', 5.0000, 850.0000, 'Stock Entry', 'STE-2026-001'),
+('RAW-FLIGHT-CTRL', 'WH-STORES', 8.0000, 320.0000, 'Stock Entry', 'STE-2026-001');
+
+-- 12. DEMAND FORECAST & MASTER PRODUCTION SCHEDULE (MPS)
+INSERT INTO mrp_sales_forecast (forecast_id, item_code, period_start_date, period_end_date, forecast_qty, confidence_score) VALUES
+('FC-2026-Q4', 'EV-DRONE-X1', CURRENT_DATE, CURRENT_DATE + INTERVAL '30 days', 50.0000, 95.00)
+ON CONFLICT (forecast_id) DO NOTHING;
+
+INSERT INTO mrp_master_production_schedule (mps_id, item_code, bom_no, schedule_date, planned_qty, source_type, status) VALUES
+('MPS-2026-001', 'EV-DRONE-X1', 'BOM-EV-DRONE-001', CURRENT_DATE + INTERVAL '7 days', 20.0000, 'FORECAST', 'SUBMITTED')
+ON CONFLICT (mps_id) DO NOTHING;
+
+-- 13. BY-PRODUCTS & ITEM ALTERNATIVES
+INSERT INTO mrp_bom_secondary_item (bom_no, item_code, item_name, qty, uom, valuation_rate) VALUES
+('BOM-CHASSIS-001', 'RAW-CF-SHEET', 'Carbon Fiber Offcut Scrap', 0.5000, 'SqM', 20.0000);
+
+-- Alternative Item mapping: RAW-ESC-60A can be substituted by RAW-BLDC-MOTOR in fallback tests
+INSERT INTO mrp_item_alternative (item_code, alternative_item_code, two_way) VALUES
+('RAW-ESC-60A', 'RAW-FLIGHT-CTRL', false);
+
+-- 14. SUBCONTRACT ORDER
+INSERT INTO mrp_subcontract_order (subcontract_id, work_order_id, supplier_id, item_code, qty, service_cost, status) VALUES
+('SUB-2026-001', 'WO-2026-0001', 'SUP-AERO-TECH', 'DRONE-PROP-SUB', 5.0000, 250.0000, 'SUBMITTED')
+ON CONFLICT (subcontract_id) DO NOTHING;
+
+
+

@@ -46,7 +46,7 @@ export function Sidebar() {
         {/* ERPNext Header Banner */}
         <div className="h-12 px-3 border-b border-gray-200 bg-[#f8f8f8] flex items-center">
           <Link href="/workflows" className="flex items-center gap-2.5 group w-full">
-            <div className="w-7 h-7 rounded bg-indigo-100/80 flex items-center justify-center text-indigo-600 shadow-2xs">
+            <div className="w-7 h-7 rounded bg-blue-100/80 flex items-center justify-center text-blue-600 shadow-2xs">
               <GitPullRequest className="w-4 h-4" />
             </div>
             <div className="flex flex-col min-w-0">
@@ -78,11 +78,11 @@ export function Sidebar() {
                   className={cn(
                     "flex items-center gap-2.5 px-2.5 py-1.5 rounded-md transition-colors text-[13px]",
                     isItemActive
-                      ? "bg-gray-200/90 text-gray-900 font-semibold"
+                      ? "bg-blue-50 text-blue-700 font-semibold"
                       : "text-gray-700 hover:bg-gray-200/60 hover:text-gray-900"
                   )}
                 >
-                  <Icon className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                  <Icon className={cn("w-4 h-4 flex-shrink-0", isItemActive ? "text-blue-600" : "text-gray-500")} />
                   <span className="truncate">{item.title}</span>
                 </Link>
               );
@@ -101,7 +101,12 @@ export function Sidebar() {
                 <Link
                   key={sub.title}
                   href={sub.href}
-                  className="block px-2 py-1 rounded text-gray-600 hover:text-gray-900 hover:bg-gray-200/60 truncate"
+                  className={cn(
+                    "block px-2 py-1 rounded truncate",
+                    pathname === sub.href
+                      ? "bg-blue-50 text-blue-700 font-semibold"
+                      : "text-gray-600 hover:text-gray-900 hover:bg-gray-200/60"
+                  )}
                 >
                   {sub.title}
                 </Link>
@@ -118,7 +123,7 @@ export function Sidebar() {
         ) : currentUser ? (
           <div className="relative group/user">
             <div className="flex items-center gap-2.5 cursor-pointer rounded hover:bg-gray-200/50 p-1 -mx-1">
-              <div className="w-7 h-7 rounded-full bg-indigo-100 flex items-center justify-center text-xs font-semibold text-indigo-700">
+              <div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center text-xs font-semibold text-blue-700">
                 {currentUser.username.charAt(0).toUpperCase()}
               </div>
               <div className="flex flex-col min-w-0 flex-1">
@@ -140,7 +145,7 @@ export function Sidebar() {
                   <button 
                     key={u.id}
                     onClick={() => setCurrentUser(u)}
-                    className="w-full text-left px-3 py-1.5 text-[12px] text-gray-700 hover:bg-indigo-50 hover:text-indigo-700"
+                    className="w-full text-left px-3 py-1.5 text-[12px] text-gray-700 hover:bg-blue-50 hover:text-blue-700"
                   >
                     {u.username} <span className="text-[10px] text-gray-400">({u.roles[0]?.roleName})</span>
                   </button>

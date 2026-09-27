@@ -101,8 +101,8 @@ export interface WorkflowHistory {
 
 const isServer = typeof window === 'undefined';
 export const API_URL = isServer
-  ? process.env.INTERNAL_API_URL || "http://workflow_backend:8081/api/v1"
-  : process.env.NEXT_PUBLIC_API_URL || "http://localhost:8082/api/v1";
+  ? process.env.INTERNAL_API_URL || "http://workflow_backend:8082/api/v1"
+  : process.env.NEXT_PUBLIC_API_URL || "/api/v1";
 
 async function apiClient<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const url = endpoint.startsWith("http") ? endpoint : `${API_URL}${endpoint}`;
@@ -344,6 +344,12 @@ export function createMasterState(state: Partial<MasterState>): Promise<MasterSt
   return apiClient<MasterState>(`/master-states`, {
     method: "POST",
     body: JSON.stringify(state),
+  });
+}
+
+export function deleteMasterState(id: string): Promise<void> {
+  return apiClient<void>(`/master-states/${id}`, {
+    method: "DELETE",
   });
 }
 

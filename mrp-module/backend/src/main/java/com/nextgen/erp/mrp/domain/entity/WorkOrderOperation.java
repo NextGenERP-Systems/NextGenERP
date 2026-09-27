@@ -20,6 +20,7 @@ public class WorkOrderOperation {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "work_order_id", nullable = false)
+    @com.fasterxml.jackson.annotation.JsonIgnore
     private WorkOrder workOrder;
 
     @Column(name = "sequence_no", nullable = false)
@@ -39,4 +40,28 @@ public class WorkOrderOperation {
 
     @Column(name = "status", nullable = false, length = 50)
     private String status;
+
+    public UUID getId() { return id; }
+    public void setId(UUID id) { this.id = id; }
+
+    public WorkOrder getWorkOrder() { return workOrder; }
+    public void setWorkOrder(WorkOrder workOrder) { this.workOrder = workOrder; }
+
+    public Integer getSequenceNo() { return sequenceNo; }
+    public void setSequenceNo(Integer sequenceNo) { this.sequenceNo = sequenceNo; }
+
+    public String getOperationId() { return operationId; }
+    public void setOperationId(String operationId) { this.operationId = operationId; }
+
+    public String getWorkstationId() { return workstationId; }
+    public void setWorkstationId(String workstationId) { this.workstationId = workstationId; }
+
+    public BigDecimal getTimeInMins() { return timeInMins; }
+    public void setTimeInMins(BigDecimal timeInMins) { this.timeInMins = timeInMins; }
+
+    public BigDecimal getCompletedQty() { return completedQty; }
+    public void setCompletedQty(BigDecimal completedQty) { this.completedQty = completedQty; }
+
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
 }

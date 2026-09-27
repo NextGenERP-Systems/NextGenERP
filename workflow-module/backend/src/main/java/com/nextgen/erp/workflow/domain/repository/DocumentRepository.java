@@ -40,4 +40,11 @@ public interface DocumentRepository extends JpaRepository<Document, UUID> {
     boolean existsByCurrentStateId(UUID currentStateId);
 
     boolean existsByWorkflowId(UUID workflowId);
+
+    @Query("SELECT d.status, COUNT(d) FROM Document d WHERE d.status IS NOT NULL GROUP BY d.status")
+    List<Object[]> countDocumentsByStatus();
+
+    @Query("SELECT d.workflowId, COUNT(d) FROM Document d WHERE d.workflowId IS NOT NULL AND LOWER(d.status) NOT IN ('approved', 'rejected') GROUP BY d.workflowId")
+    List<Object[]> countPendingByWorkflow();
 }
+

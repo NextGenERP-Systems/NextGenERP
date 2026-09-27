@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { api, JobCard } from '@/lib/api';
 import { Timer, CheckCircle, Plus } from 'lucide-react';
 
@@ -10,6 +10,9 @@ export default function JobCardsPage() {
   const [consumeQty, setConsumeQty] = useState<number>(1);
   const [activeWoId, setActiveWoId] = useState<string>('WO-2026-0001');
   const [statusMsg, setStatusMsg] = useState<string>('');
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
 
   useEffect(() => {
     async function load() {
@@ -19,8 +22,8 @@ export default function JobCardsPage() {
     load();
   }, []);
 
-  const handleComplete = async (id: string) => {
-    await api.completeJobCard(id, 2);
+  const handleComplete = async (id: string, scrapQty?: number, scrapReason?: string) => {
+    await api.completeJobCard(id, 2, scrapQty, scrapReason);
     const updated = await api.getJobCards();
     setJobCards(updated);
     setStatusMsg(`Job Card ${id} updated cleanly!`);
@@ -31,6 +34,14 @@ export default function JobCardsPage() {
     setStatusMsg(`Logged ${consumeQty} units of ${consumeItemCode} against ${activeWoId}`);
   };
 
+  const filteredJobCards = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    return jobCards.filter((jc) => !term || [jc.jobCardId, jc.workOrderId, jc.operationId, jc.status]
+      .some((value) => value?.toLowerCase().includes(term)));
+  }, [jobCards, search]);
+  const pageCount = Math.max(1, Math.ceil(filteredJobCards.length / pageSize));
+  const pagedJobCards = filteredJobCards.slice((page - 1) * pageSize, page * pageSize);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -39,7 +50,7 @@ export default function JobCardsPage() {
             <Timer className="w-6 h-6 text-blue-600" />
             Shop Floor Job Cards (Tablet/Mobile Execution)
           </h1>
-          <p className="text-sm text-gray-500">Large-button touch UI optimized for shop floor workers, timer logs, and real-time consumption logging</p>
+          <p className="text-sm text-gray-500">Large-button touch UI optimized for shop floor workers, timer logs, scrap tracking, and real-time consumption logging</p>
         </div>
       </div>
 
@@ -50,55 +61,102 @@ export default function JobCardsPage() {
         </div>
       )}
 
-      {/* Real-time Material Consumption Modal / Panel */}
-      <div className="glass-card p-5 rounded-xl border border-gray-200 space-y-4">
-        <h2 className="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-2">
-          <Plus className="w-4 h-4 text-blue-600" />
-          Real-Time Material Consumption & Over-Consumption Logger
-        </h2>
+      {/* Real-time Material Consumption & Scrap Logger */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="glass-card p-5 rounded-xl border border-gray-200 space-y-4 shadow-xs">
+          <h2 className="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-2">
+            <Plus className="w-4 h-4 text-blue-600" />
+            Real-Time Material Consumption Logger
+          </h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-3 text-xs">
-          <div>
-            <label className="block text-gray-600 mb-1 font-medium">Target Work Order</label>
-            <input 
-              type="text" 
-              value={activeWoId} 
-              onChange={e => setActiveWoId(e.target.value)}
-              className="w-full bg-slate-50 border border-gray-200 rounded-lg p-2.5 text-gray-900 font-mono focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-            />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+            <div>
+              <label className="block text-gray-600 mb-1 font-medium">Target Work Order</label>
+              <input 
+                type="text" 
+                value={activeWoId} 
+                onChange={e => setActiveWoId(e.target.value)}
+                className="w-full bg-slate-50 border border-gray-200 rounded-lg p-2 text-gray-900 font-mono focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-gray-600 mb-1 font-medium">Material Item Code</label>
+              <input 
+                type="text" 
+                value={consumeItemCode} 
+                onChange={e => setConsumeItemCode(e.target.value)}
+                className="w-full bg-slate-50 border border-gray-200 rounded-lg p-2 text-gray-900 font-mono focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-gray-600 mb-1 font-medium">Quantity Consumed</label>
+              <input 
+                type="number" 
+                value={consumeQty} 
+                onChange={e => setConsumeQty(Number(e.target.value))}
+                className="w-full bg-slate-50 border border-gray-200 rounded-lg p-2 text-gray-900 font-mono focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+              />
+            </div>
           </div>
-          <div>
-            <label className="block text-gray-600 mb-1 font-medium">Material Item Code</label>
-            <input 
-              type="text" 
-              value={consumeItemCode} 
-              onChange={e => setConsumeItemCode(e.target.value)}
-              className="w-full bg-slate-50 border border-gray-200 rounded-lg p-2.5 text-gray-900 font-mono focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-            />
+          <button 
+            onClick={handleLogConsumption}
+            className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-all flex items-center justify-center gap-2 text-xs shadow-xs"
+          >
+            <Plus className="w-4 h-4" /> Log Real-Time Material Consumption
+          </button>
+        </div>
+
+        <div className="glass-card p-5 rounded-xl border border-gray-200 space-y-4 shadow-xs">
+          <h2 className="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-2 text-rose-700">
+            <Plus className="w-4 h-4 text-rose-600" />
+            Shop Floor Scrap & Waste Logger
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+            <div>
+              <label className="block text-gray-600 mb-1 font-medium">Work Order</label>
+              <input 
+                type="text" 
+                value={activeWoId} 
+                onChange={e => setActiveWoId(e.target.value)}
+                className="w-full bg-slate-50 border border-gray-200 rounded-lg p-2 text-gray-900 font-mono"
+              />
+            </div>
+            <div>
+              <label className="block text-gray-600 mb-1 font-medium">Scrapped Item</label>
+              <input 
+                type="text" 
+                value={consumeItemCode} 
+                onChange={e => setConsumeItemCode(e.target.value)}
+                className="w-full bg-slate-50 border border-gray-200 rounded-lg p-2 text-gray-900 font-mono"
+              />
+            </div>
+            <div>
+              <label className="block text-gray-600 mb-1 font-medium">Scrap Qty</label>
+              <input 
+                type="number" 
+                defaultValue={1} 
+                className="w-full bg-slate-50 border border-gray-200 rounded-lg p-2 text-gray-900 font-mono"
+              />
+            </div>
           </div>
-          <div>
-            <label className="block text-gray-600 mb-1 font-medium">Quantity Consumed</label>
-            <input 
-              type="number" 
-              value={consumeQty} 
-              onChange={e => setConsumeQty(Number(e.target.value))}
-              className="w-full bg-slate-50 border border-gray-200 rounded-lg p-2.5 text-gray-900 font-mono focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-            />
-          </div>
-          <div className="flex items-end">
-            <button 
-              onClick={handleLogConsumption}
-              className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-all flex items-center justify-center gap-2 text-xs shadow-xs"
-            >
-              <Plus className="w-4 h-4" /> Log Real-Time Material
-            </button>
-          </div>
+          <button 
+            onClick={async () => {
+              await api.logScrap({ workOrderId: activeWoId, itemCode: consumeItemCode, scrapQty: 1, uom: 'Nos', financialValuation: 150.0 });
+              setStatusMsg(`Logged 1 unit scrap for ${consumeItemCode} against ${activeWoId}`);
+            }}
+            className="w-full py-2 bg-rose-600 hover:bg-rose-700 text-white font-semibold rounded-lg transition-all flex items-center justify-center gap-2 text-xs shadow-xs"
+          >
+            <Plus className="w-4 h-4" /> Record Material Scrap Event
+          </button>
         </div>
       </div>
 
+
       {/* Job Card Execution List (Tablet Cards) */}
+      <div className="flex items-center gap-3"><input value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); }} placeholder="Search Job Cards, Work Orders, operations, or status..." className="w-full max-w-md rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500" /><span className="text-xs text-gray-500">{filteredJobCards.length} cards</span></div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {jobCards.map((jc) => (
+        {pagedJobCards.map((jc) => (
           <div key={jc.jobCardId} className="glass-card p-6 rounded-2xl border border-gray-200 space-y-4 shadow-xs">
             <div className="flex items-center justify-between">
               <span className="text-sm font-mono font-bold text-blue-600">{jc.jobCardId}</span>
@@ -122,6 +180,12 @@ export default function JobCardsPage() {
               <div className="text-gray-500">Logged Time: {jc.totalTimeInMins} mins</div>
             </div>
 
+            {jc.scrapQuantity && jc.scrapQuantity > 0 ? (
+              <div className="p-2 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-800 font-mono">
+                Scrap Recorded: <strong>{jc.scrapQuantity}</strong> units ({jc.scrapReason || 'Uncategorized'})
+              </div>
+            ) : null}
+
             <div className="flex gap-2 pt-2">
               <button 
                 onClick={() => handleComplete(jc.jobCardId)}
@@ -134,6 +198,7 @@ export default function JobCardsPage() {
           </div>
         ))}
       </div>
+      {pageCount > 1 && <div className="flex items-center justify-between text-xs text-gray-500"><span>Page {page} of {pageCount}</span><div className="flex gap-2"><button disabled={page === 1} onClick={() => setPage((current) => current - 1)} className="rounded border border-gray-200 bg-white px-3 py-1.5 disabled:opacity-40">Previous</button><button disabled={page === pageCount} onClick={() => setPage((current) => current + 1)} className="rounded border border-gray-200 bg-white px-3 py-1.5 disabled:opacity-40">Next</button></div></div>}
     </div>
   );
 }

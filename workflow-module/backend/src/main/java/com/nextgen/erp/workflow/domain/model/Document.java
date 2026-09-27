@@ -13,7 +13,12 @@ import java.time.OffsetDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "documents")
+@Table(name = "documents", indexes = {
+    @Index(name = "idx_doc_workflow_id", columnList = "workflow_id"),
+    @Index(name = "idx_doc_current_state_id", columnList = "current_state_id"),
+    @Index(name = "idx_doc_document_type", columnList = "document_type"),
+    @Index(name = "idx_doc_owner_username", columnList = "owner_username")
+})
 @Data
 @Builder
 @NoArgsConstructor
