@@ -11,10 +11,14 @@ import {
   Sparkles,
   GitMerge,
   Package,
+  Landmark,
+  Factory,
+  FolderKanban,
+  Boxes,
 } from "lucide-react";
 
 interface AppSwitcherProps {
-  currentModule?: "sales" | "hrm" | "workflow" | "stock";
+  currentModule?: "sales" | "hrm" | "workflow" | "stock" | "accounts" | "projects" | "mrp";
 }
 
 export function AppSwitcher({ currentModule = "sales" }: AppSwitcherProps) {
@@ -38,7 +42,7 @@ export function AppSwitcher({ currentModule = "sales" }: AppSwitcherProps) {
       description: "Quotations, Sales Orders, Commissions & POS",
       icon: ShoppingBag,
       href: "/sales",
-      color: "bg-emerald-500",
+      color: "bg-blue-600",
       badge: "Commercial",
       active: currentModule === "sales",
     },
@@ -53,24 +57,53 @@ export function AppSwitcher({ currentModule = "sales" }: AppSwitcherProps) {
       active: currentModule === "workflow",
     },
     {
-      id: "stock",
-      name: "Stock & Inventory 360",
-      description: "Double-Entry Ledger, Bins, FIFO/Avg & Serials",
-      icon: Package,
-      href: "http://localhost:3003/stock",
-      color: "bg-blue-600",
-      badge: "Supply Chain",
-      active: currentModule === ("stock" as any),
-    },
-    {
       id: "hrm",
       name: "HRM & People Ops",
       description: "Employee 360, Payroll Engine, Appraisals & Claims",
       icon: Users,
-      href: "http://localhost:3001/hrm",
+      href: "/hrm",
       color: "bg-indigo-500",
       badge: "Enterprise HR",
       active: currentModule === "hrm",
+    },
+    {
+      id: "accounts",
+      name: "Finance & Accounts",
+      description: "Double-Entry GL, Chart of Accounts, Invoices & Taxes",
+      icon: Landmark,
+      color: "bg-emerald-600",
+      badge: "Financials",
+      active: currentModule === "accounts",
+    },
+    {
+      id: "projects",
+      name: "Projects & Tasks",
+      description: "Agile Kanban, Timesheets, Sprints & Gantt",
+      icon: FolderKanban,
+      href: "/projects",
+      color: "bg-violet-600",
+      badge: "Operations",
+      active: currentModule === "projects",
+    },
+    {
+      id: "mrp",
+      name: "Manufacturing MRP",
+      description: "BOMs, Work Orders, Operations & Routing",
+      icon: Factory,
+      href: "/mrp",
+      color: "bg-rose-600",
+      badge: "Manufacturing",
+      active: currentModule === "mrp",
+    },
+    {
+      id: "stock",
+      name: "Stock & Inventory 360",
+      description: "Double-Entry Ledger, Bins, FIFO/Avg & Serials",
+      icon: Boxes,
+      href: "/stock",
+      color: "bg-teal-600",
+      badge: "Supply Chain",
+      active: currentModule === "stock",
     },
   ];
 

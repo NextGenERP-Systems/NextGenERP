@@ -318,6 +318,8 @@ CREATE TABLE IF NOT EXISTS sales_orders (
     billing_status billing_status_enum NOT NULL DEFAULT 'NOT_BILLED',
     
     quotation_id UUID REFERENCES quotations(id),
+    blanket_order_id UUID,
+    blanket_order_number VARCHAR(50),
     currency VARCHAR(3) NOT NULL DEFAULT 'INR',
     conversion_rate DECIMAL(12, 6) DEFAULT 1.000000,
     selling_price_list_id UUID REFERENCES price_lists(id),
@@ -344,6 +346,8 @@ CREATE TABLE IF NOT EXISTS sales_orders (
     payment_terms_template VARCHAR(100),
     terms_and_conditions TEXT,
     
+    sales_partner_id UUID REFERENCES sales_partners(id),
+    sales_partner_name VARCHAR(150),
     amount_eligible_for_commission DECIMAL(15, 2) DEFAULT 0.00,
     commission_rate DECIMAL(5, 2) DEFAULT 0.00,
     total_commission DECIMAL(15, 2) DEFAULT 0.00,
@@ -391,6 +395,7 @@ CREATE TABLE IF NOT EXISTS sales_order_items (
     billed_amt DECIMAL(15, 2) DEFAULT 0.00,
     picked_qty DECIMAL(15, 4) DEFAULT 0.0000,
     delivered_by_supplier BOOLEAN DEFAULT FALSE,
+    supplier VARCHAR(150),
     grant_commission BOOLEAN DEFAULT TRUE,
     prevdoc_quotation_item_id UUID
 );
@@ -481,6 +486,8 @@ CREATE TABLE IF NOT EXISTS opportunities (
     probability DECIMAL(5, 2) DEFAULT 50.00, -- 0-100%
     expected_closing_date DATE,
     sales_stage VARCHAR(100) DEFAULT 'Discovery',
+    sales_person VARCHAR(150),
+    lost_reason VARCHAR(255),
     contact_email VARCHAR(150),
     contact_phone VARCHAR(50),
     notes TEXT,
@@ -497,6 +504,9 @@ CREATE TABLE IF NOT EXISTS delivery_notes (
     customer_name VARCHAR(150) NOT NULL,
     posting_date DATE NOT NULL DEFAULT CURRENT_DATE,
     status VARCHAR(50) NOT NULL DEFAULT 'SUBMITTED', -- DRAFT, SUBMITTED, COMPLETED, CANCELLED
+    is_return BOOLEAN NOT NULL DEFAULT FALSE,
+    return_against_id UUID REFERENCES delivery_notes(id) ON DELETE SET NULL,
+    return_against_number VARCHAR(100),
     carrier VARCHAR(100),
     tracking_number VARCHAR(100),
     shipping_address TEXT,
@@ -532,6 +542,10 @@ CREATE TABLE IF NOT EXISTS sales_invoices (
     posting_date DATE NOT NULL DEFAULT CURRENT_DATE,
     due_date DATE NOT NULL,
     status VARCHAR(50) NOT NULL DEFAULT 'UNPAID', -- DRAFT, UNPAID, PARTLY_PAID, PAID, OVERDUE, CANCELLED
+    is_return BOOLEAN NOT NULL DEFAULT FALSE,
+    return_against_id UUID REFERENCES sales_invoices(id) ON DELETE SET NULL,
+    return_against_number VARCHAR(100),
+    allocated_advance_amount DECIMAL(15, 2) NOT NULL DEFAULT 0.00,
     currency VARCHAR(10) DEFAULT 'INR',
     conversion_rate DECIMAL(10, 4) DEFAULT 1.0000,
     net_total DECIMAL(15, 2) NOT NULL DEFAULT 0.00,
@@ -539,6 +553,10 @@ CREATE TABLE IF NOT EXISTS sales_invoices (
     grand_total DECIMAL(15, 2) NOT NULL DEFAULT 0.00,
     paid_amount DECIMAL(15, 2) NOT NULL DEFAULT 0.00,
     outstanding_amount DECIMAL(15, 2) NOT NULL DEFAULT 0.00,
+    sales_partner_id UUID REFERENCES sales_partners(id),
+    sales_partner_name VARCHAR(150),
+    commission_rate DECIMAL(5, 2) DEFAULT 0.00,
+    total_commission DECIMAL(15, 2) DEFAULT 0.00,
     payment_terms VARCHAR(100) DEFAULT 'Payment due upon receipt',
     notes TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -567,6 +585,8 @@ CREATE TABLE IF NOT EXISTS payment_entries (
     customer_id UUID NOT NULL REFERENCES customers(id),
     sales_invoice_id UUID REFERENCES sales_invoices(id) ON DELETE SET NULL,
     sales_order_id UUID REFERENCES sales_orders(id) ON DELETE SET NULL,
+    is_advance BOOLEAN NOT NULL DEFAULT FALSE,
+    allocated_amount DECIMAL(15, 2) NOT NULL DEFAULT 0.00,
     posting_date DATE NOT NULL DEFAULT CURRENT_DATE,
     paid_amount DECIMAL(15, 2) NOT NULL,
     reference_no VARCHAR(100),
@@ -688,9 +708,22 @@ CREATE TABLE IF NOT EXISTS sales_partners (
     territory VARCHAR(100) DEFAULT 'Global',
     total_allocated_amount DECIMAL(15, 2) DEFAULT 0.00,
     total_commission_earned DECIMAL(15, 2) DEFAULT 0.00,
+    total_commission_paid DECIMAL(15, 2) DEFAULT 0.00,
     disabled BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS sales_partner_payouts (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    payout_number VARCHAR(50) NOT NULL UNIQUE,
+    sales_partner_id UUID NOT NULL REFERENCES sales_partners(id) ON DELETE CASCADE,
+    sales_partner_name VARCHAR(150) NOT NULL,
+    posting_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    amount DECIMAL(15, 2) NOT NULL,
+    reference_note VARCHAR(255),
+    payment_mode VARCHAR(50) DEFAULT 'Bank Transfer',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS sales_persons (
@@ -709,11 +742,187 @@ CREATE TABLE IF NOT EXISTS sales_persons (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS suppliers (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    supplier_name VARCHAR(150) NOT NULL UNIQUE,
+    supplier_group VARCHAR(100) DEFAULT 'Distributor',
+    country VARCHAR(100) DEFAULT 'India',
+    currency VARCHAR(3) DEFAULT 'INR',
+    contact_person VARCHAR(100),
+    email VARCHAR(150),
+    phone VARCHAR(50),
+    payment_terms VARCHAR(100) DEFAULT 'Net 30 Days',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS purchase_requisitions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    requisition_number VARCHAR(50) NOT NULL UNIQUE,
+    sales_order_id UUID REFERENCES sales_orders(id) ON DELETE SET NULL,
+    sales_order_number VARCHAR(50),
+    customer_id UUID REFERENCES customers(id) ON DELETE SET NULL,
+    customer_name VARCHAR(150),
+    shipping_address TEXT,
+    supplier_name VARCHAR(150) NOT NULL,
+    requisition_type VARCHAR(50) DEFAULT 'DROP_SHIP',
+    status VARCHAR(50) NOT NULL DEFAULT 'DRAFT',
+    transaction_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    required_date DATE,
+    total_qty DECIMAL(15, 4) DEFAULT 0.0000,
+    net_total DECIMAL(15, 2) DEFAULT 0.00,
+    notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS purchase_requisition_items (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    purchase_requisition_id UUID NOT NULL REFERENCES purchase_requisitions(id) ON DELETE CASCADE,
+    sales_order_item_id UUID,
+    item_id UUID REFERENCES items(id),
+    item_code VARCHAR(100) NOT NULL,
+    item_name VARCHAR(255) NOT NULL,
+    qty DECIMAL(15, 4) NOT NULL,
+    rate DECIMAL(15, 2) NOT NULL,
+    amount DECIMAL(15, 2) NOT NULL,
+    uom VARCHAR(50) DEFAULT 'Nos',
+    supplier_name VARCHAR(150)
+);
+
 CREATE INDEX IF NOT EXISTS idx_blanket_orders_customer ON blanket_orders(customer_id);
 CREATE INDEX IF NOT EXISTS idx_blanket_order_items_bo ON blanket_order_items(blanket_order_id);
 CREATE INDEX IF NOT EXISTS idx_sales_partners_type ON sales_partners(partner_type);
+CREATE INDEX IF NOT EXISTS idx_sales_partner_payouts_sp ON sales_partner_payouts(sales_partner_id);
 CREATE INDEX IF NOT EXISTS idx_sales_persons_name ON sales_persons(sales_person_name);
+CREATE INDEX IF NOT EXISTS idx_purchase_requisitions_so ON purchase_requisitions(sales_order_id);
+CREATE INDEX IF NOT EXISTS idx_purchase_requisitions_status ON purchase_requisitions(status);
 
+
+-- 19. Maintenance Contracts (AMC)
+CREATE TABLE IF NOT EXISTS maintenance_contracts (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    contract_number VARCHAR(50) NOT NULL UNIQUE,
+    customer_id UUID REFERENCES customers(id) ON DELETE SET NULL,
+    customer_name VARCHAR(150) NOT NULL,
+    contract_type VARCHAR(50) DEFAULT 'AMC',
+    status VARCHAR(50) NOT NULL DEFAULT 'DRAFT',
+    start_date DATE NOT NULL,
+    end_date DATE NOT NULL,
+    total_amount DECIMAL(15, 2) DEFAULT 0.00,
+    invoiced_amount DECIMAL(15, 2) DEFAULT 0.00,
+    terms_and_conditions TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS maintenance_contract_items (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    maintenance_contract_id UUID NOT NULL REFERENCES maintenance_contracts(id) ON DELETE CASCADE,
+    item_id UUID REFERENCES items(id),
+    item_code VARCHAR(100) NOT NULL,
+    item_name VARCHAR(255) NOT NULL,
+    serial_no VARCHAR(100),
+    start_date DATE NOT NULL,
+    end_date DATE NOT NULL,
+    periodicity VARCHAR(50) DEFAULT 'QUARTERLY',
+    no_of_visits INT DEFAULT 4,
+    rate DECIMAL(15, 2) NOT NULL DEFAULT 0.00,
+    amount DECIMAL(15, 2) NOT NULL DEFAULT 0.00
+);
+
+-- 20. Maintenance Visits (Service Reports)
+CREATE TABLE IF NOT EXISTS maintenance_visits (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    visit_number VARCHAR(50) NOT NULL UNIQUE,
+    customer_id UUID REFERENCES customers(id) ON DELETE SET NULL,
+    customer_name VARCHAR(150) NOT NULL,
+    maintenance_contract_id UUID REFERENCES maintenance_contracts(id) ON DELETE SET NULL,
+    maintenance_type VARCHAR(50) NOT NULL DEFAULT 'PREVENTIVE_MAINTENANCE',
+    visit_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    service_person VARCHAR(150) NOT NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'SCHEDULED',
+    customer_feedback VARCHAR(50),
+    completion_notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS maintenance_visit_items (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    maintenance_visit_id UUID NOT NULL REFERENCES maintenance_visits(id) ON DELETE CASCADE,
+    item_code VARCHAR(100) NOT NULL,
+    item_name VARCHAR(255) NOT NULL,
+    serial_no VARCHAR(100),
+    work_done TEXT,
+    action_taken TEXT,
+    parts_replaced TEXT
+);
+
+-- 21. Warranty Claims
+CREATE TABLE IF NOT EXISTS warranty_claims (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    claim_number VARCHAR(50) NOT NULL UNIQUE,
+    customer_id UUID REFERENCES customers(id) ON DELETE SET NULL,
+    customer_name VARCHAR(150) NOT NULL,
+    item_code VARCHAR(100) NOT NULL,
+    item_name VARCHAR(255) NOT NULL,
+    serial_no VARCHAR(100),
+    complaint_description TEXT NOT NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'OPEN',
+    resolution_type VARCHAR(50) DEFAULT 'REPAIR',
+    resolution_notes TEXT,
+    reported_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    resolved_date DATE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_maintenance_contracts_cust ON maintenance_contracts(customer_id);
+CREATE INDEX IF NOT EXISTS idx_maintenance_contracts_status ON maintenance_contracts(status);
+CREATE INDEX IF NOT EXISTS idx_maintenance_visits_contract ON maintenance_visits(maintenance_contract_id);
+CREATE INDEX IF NOT EXISTS idx_maintenance_visits_cust ON maintenance_visits(customer_id);
+CREATE INDEX IF NOT EXISTS idx_warranty_claims_cust ON warranty_claims(customer_id);
+CREATE INDEX IF NOT EXISTS idx_warranty_claims_status ON warranty_claims(status);
+
+-- 22. Payment Terms Templates & Milestone Schedules
+CREATE TABLE IF NOT EXISTS payment_terms_templates (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    template_name VARCHAR(150) NOT NULL UNIQUE,
+    description TEXT,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS payment_terms_template_items (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    template_id UUID NOT NULL REFERENCES payment_terms_templates(id) ON DELETE CASCADE,
+    payment_term_name VARCHAR(150) NOT NULL,
+    invoice_portion DECIMAL(5, 2) NOT NULL,
+    credit_days INT NOT NULL DEFAULT 0,
+    credit_months INT NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS payment_schedules (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    voucher_type VARCHAR(50) NOT NULL, -- SALES_ORDER, QUOTATION, SALES_INVOICE
+    voucher_id UUID NOT NULL,
+    payment_term VARCHAR(150) NOT NULL,
+    description TEXT,
+    due_date DATE NOT NULL,
+    invoice_portion DECIMAL(5, 2) NOT NULL,
+    payment_amount DECIMAL(15, 2) NOT NULL DEFAULT 0.00,
+    paid_amount DECIMAL(15, 2) NOT NULL DEFAULT 0.00,
+    outstanding_amount DECIMAL(15, 2) NOT NULL DEFAULT 0.00,
+    status VARCHAR(50) NOT NULL DEFAULT 'UNPAID', -- UNPAID, INVOICED, PARTIALLY_PAID, PAID
+    sales_invoice_id UUID REFERENCES sales_invoices(id) ON DELETE SET NULL,
+    sales_invoice_number VARCHAR(100),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_payment_schedules_voucher ON payment_schedules(voucher_type, voucher_id);
+CREATE INDEX IF NOT EXISTS idx_payment_schedules_status ON payment_schedules(status);
 
 -- Indexes for High-Performance Queries
 CREATE INDEX IF NOT EXISTS idx_customers_code ON customers(customer_code);
@@ -723,12 +932,84 @@ CREATE INDEX IF NOT EXISTS idx_quotations_status ON quotations(status);
 CREATE INDEX IF NOT EXISTS idx_sales_orders_customer ON sales_orders(customer_id);
 CREATE INDEX IF NOT EXISTS idx_sales_orders_status ON sales_orders(status);
 CREATE INDEX IF NOT EXISTS idx_sales_orders_date ON sales_orders(transaction_date);
+CREATE INDEX IF NOT EXISTS idx_sales_orders_blanket_order ON sales_orders(blanket_order_id);
 CREATE INDEX IF NOT EXISTS idx_so_items_order ON sales_order_items(sales_order_id);
 CREATE INDEX IF NOT EXISTS idx_taxes_voucher ON sales_taxes_and_charges(voucher_type, voucher_id);
 CREATE INDEX IF NOT EXISTS idx_dn_sales_order ON delivery_notes(sales_order_id);
 CREATE INDEX IF NOT EXISTS idx_si_sales_order ON sales_invoices(sales_order_id);
-CREATE INDEX IF NOT EXISTS idx_si_customer ON sales_invoices(customer_id);
-CREATE INDEX IF NOT EXISTS idx_payments_invoice ON payment_entries(sales_invoice_id);
 CREATE INDEX IF NOT EXISTS idx_leads_status ON leads(status);
 CREATE INDEX IF NOT EXISTS idx_opp_status ON opportunities(status);
+
+-- 24. Packing Slips & Warehouse Shipment Packaging (Sprint 8)
+CREATE TABLE IF NOT EXISTS packing_slips (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    packing_slip_number VARCHAR(100) NOT NULL UNIQUE,
+    delivery_note_id UUID NOT NULL REFERENCES delivery_notes(id) ON DELETE CASCADE,
+    delivery_note_number VARCHAR(100) NOT NULL,
+    from_package_no INT NOT NULL DEFAULT 1,
+    to_package_no INT NOT NULL DEFAULT 1,
+    package_type VARCHAR(50) NOT NULL DEFAULT 'Carton', -- Box, Carton, Pallet, Wooden Crate, Drum
+    net_weight_pkg DECIMAL(12, 3) NOT NULL DEFAULT 0.000,
+    gross_weight_pkg DECIMAL(12, 3) NOT NULL DEFAULT 0.000,
+    weight_uom VARCHAR(20) NOT NULL DEFAULT 'Kg',
+    letter_of_credit VARCHAR(100),
+    shipping_mark TEXT,
+    status VARCHAR(50) NOT NULL DEFAULT 'DRAFT', -- DRAFT, PACKED, SHIPPED, CANCELLED
+    notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS packing_slip_items (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    packing_slip_id UUID NOT NULL REFERENCES packing_slips(id) ON DELETE CASCADE,
+    delivery_note_item_id UUID,
+    item_code VARCHAR(100) NOT NULL,
+    item_name VARCHAR(255) NOT NULL,
+    qty DECIMAL(12, 2) NOT NULL DEFAULT 1.00,
+    net_weight DECIMAL(12, 3) NOT NULL DEFAULT 0.000,
+    weight_uom VARCHAR(20) NOT NULL DEFAULT 'Kg',
+    product_bundle_item_code VARCHAR(100)
+);
+
+CREATE INDEX IF NOT EXISTS idx_packing_slips_dn ON packing_slips(delivery_note_id);
+CREATE INDEX IF NOT EXISTS idx_packing_slips_status ON packing_slips(status);
+CREATE INDEX IF NOT EXISTS idx_packing_slip_items_ps ON packing_slip_items(packing_slip_id);
+
+-- 25. Sales Team Multi-Person Allocations & Commission Splits (Sprint 9)
+CREATE TABLE IF NOT EXISTS sales_team_members (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    voucher_type VARCHAR(50) NOT NULL, -- SALES_ORDER, SALES_INVOICE, QUOTATION
+    voucher_id UUID NOT NULL,
+    sales_person_id UUID NOT NULL REFERENCES sales_persons(id) ON DELETE CASCADE,
+    sales_person_name VARCHAR(150) NOT NULL,
+    allocated_percentage DECIMAL(5, 2) NOT NULL DEFAULT 100.00,
+    allocated_amount DECIMAL(15, 2) NOT NULL DEFAULT 0.00,
+    commission_rate DECIMAL(5, 2) NOT NULL DEFAULT 0.00,
+    incentives DECIMAL(15, 2) NOT NULL DEFAULT 0.00,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_sales_team_voucher ON sales_team_members(voucher_type, voucher_id);
+CREATE INDEX IF NOT EXISTS idx_sales_team_person ON sales_team_members(sales_person_id);
+
+-- 26. Sales Targets & Variance Analytics (Sprint 10)
+CREATE TABLE IF NOT EXISTS sales_targets (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    target_type VARCHAR(50) NOT NULL, -- SALES_PERSON, TERRITORY
+    target_ref_id UUID NOT NULL,
+    target_ref_name VARCHAR(150) NOT NULL,
+    fiscal_year VARCHAR(20) NOT NULL DEFAULT '2026',
+    period VARCHAR(20) NOT NULL DEFAULT 'ANNUAL', -- MONTHLY, QUARTERLY, ANNUAL
+    item_group_id UUID REFERENCES item_groups(id) ON DELETE SET NULL,
+    item_group_name VARCHAR(100),
+    target_amount DECIMAL(15, 2) NOT NULL DEFAULT 0.00,
+    target_qty DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_sales_targets_type ON sales_targets(target_type, target_ref_id);
+CREATE INDEX IF NOT EXISTS idx_sales_targets_year ON sales_targets(fiscal_year);
 

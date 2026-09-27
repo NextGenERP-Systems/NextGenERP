@@ -21,6 +21,9 @@ public class DeliveryNoteDto {
     private String customerName;
     private LocalDate postingDate;
     private DeliveryNoteStatus status;
+    private Boolean isReturn;
+    private UUID returnAgainstId;
+    private String returnAgainstNumber;
     private String carrier;
     private String trackingNumber;
     private String shippingAddress;

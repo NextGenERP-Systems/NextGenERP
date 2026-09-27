@@ -96,6 +96,8 @@ public class LeadOpportunityService {
                 .probability(request.getProbability() != null ? request.getProbability() : new java.math.BigDecimal("50.00"))
                 .expectedClosingDate(request.getExpectedClosingDate())
                 .salesStage(request.getSalesStage() != null ? request.getSalesStage() : "Discovery")
+                .salesPerson(request.getSalesPerson())
+                .lostReason(request.getLostReason())
                 .contactEmail(request.getContactEmail())
                 .contactPhone(request.getContactPhone())
                 .notes(request.getNotes())
@@ -108,11 +110,19 @@ public class LeadOpportunityService {
 
     @Transactional
     public OpportunityDto updateOpportunityStatus(UUID id, OpportunityStatus status, String stage) {
+        return updateOpportunityStatus(id, status, stage, null);
+    }
+
+    @Transactional
+    public OpportunityDto updateOpportunityStatus(UUID id, OpportunityStatus status, String stage, String lostReason) {
         Opportunity opp = opportunityRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Opportunity not found with id: " + id));
         opp.setStatus(status);
         if (stage != null && !stage.isBlank()) {
             opp.setSalesStage(stage);
+        }
+        if (lostReason != null && !lostReason.isBlank()) {
+            opp.setLostReason(lostReason);
         }
         opp.setUpdatedAt(OffsetDateTime.now());
         return toOpportunityDto(opportunityRepository.save(opp));
@@ -223,6 +233,8 @@ public class LeadOpportunityService {
                 .probability(opp.getProbability())
                 .expectedClosingDate(opp.getExpectedClosingDate())
                 .salesStage(opp.getSalesStage())
+                .salesPerson(opp.getSalesPerson())
+                .lostReason(opp.getLostReason())
                 .contactEmail(opp.getContactEmail())
                 .contactPhone(opp.getContactPhone())
                 .notes(opp.getNotes())

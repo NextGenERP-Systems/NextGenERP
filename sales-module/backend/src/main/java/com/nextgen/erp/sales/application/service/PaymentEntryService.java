@@ -46,6 +46,10 @@ public class PaymentEntryService {
 
         String paymentNumber = generatePaymentNumber();
         BigDecimal paidAmount = request.getPaidAmount();
+        boolean isAdvance = request.getSalesOrderId() != null && request.getSalesInvoiceId() == null;
+        if (Boolean.TRUE.equals(request.getIsAdvance())) {
+            isAdvance = true;
+        }
 
         PaymentEntry payment = PaymentEntry.builder()
                 .paymentNumber(paymentNumber)
@@ -54,6 +58,8 @@ public class PaymentEntryService {
                 .customer(customer)
                 .salesInvoiceId(request.getSalesInvoiceId())
                 .salesOrderId(request.getSalesOrderId())
+                .isAdvance(isAdvance)
+                .allocatedAmount(BigDecimal.ZERO)
                 .postingDate(request.getPostingDate() != null ? request.getPostingDate() : LocalDate.now())
                 .paidAmount(paidAmount)
                 .referenceNo(request.getReferenceNo())
@@ -172,6 +178,13 @@ public class PaymentEntryService {
         return String.format("PAY-%d-%04d", LocalDate.now().getYear(), count);
     }
 
+    @Transactional(readOnly = true)
+    public List<PaymentEntryDto> getPaymentsBySalesOrderId(UUID salesOrderId) {
+        return paymentEntryRepository.findBySalesOrderId(salesOrderId).stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
+    }
+
     public PaymentEntryDto toDto(PaymentEntry payment) {
         BigDecimal amount = payment.getPaidAmount() != null ? payment.getPaidAmount() : BigDecimal.ZERO;
         String inWords = NumberToWordsConverter.convert(amount, "INR");
@@ -185,6 +198,8 @@ public class PaymentEntryService {
                 .customerName(payment.getCustomer() != null ? payment.getCustomer().getCustomerName() : null)
                 .salesInvoiceId(payment.getSalesInvoiceId())
                 .salesOrderId(payment.getSalesOrderId())
+                .isAdvance(payment.getIsAdvance())
+                .allocatedAmount(payment.getAllocatedAmount())
                 .postingDate(payment.getPostingDate())
                 .paidAmount(amount)
                 .inWords(inWords)

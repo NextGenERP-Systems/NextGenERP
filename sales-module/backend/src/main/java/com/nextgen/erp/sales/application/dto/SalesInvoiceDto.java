@@ -23,6 +23,10 @@ public class SalesInvoiceDto {
     private LocalDate postingDate;
     private LocalDate dueDate;
     private SalesInvoiceStatus status;
+    private Boolean isReturn;
+    private UUID returnAgainstId;
+    private String returnAgainstNumber;
+    private BigDecimal allocatedAdvanceAmount;
     private String currency;
     private BigDecimal conversionRate;
     private BigDecimal netTotal;
@@ -32,6 +36,10 @@ public class SalesInvoiceDto {
     private String inWords;
     private BigDecimal paidAmount;
     private BigDecimal outstandingAmount;
+    private UUID salesPartnerId;
+    private String salesPartnerName;
+    private BigDecimal commissionRate;
+    private BigDecimal totalCommission;
     private String paymentTerms;
     private String notes;
     @Builder.Default

@@ -23,6 +23,8 @@ public class OpportunityDto {
     private BigDecimal probability;
     private LocalDate expectedClosingDate;
     private String salesStage;
+    private String salesPerson;
+    private String lostReason;
     private String contactEmail;
     private String contactPhone;
     private String notes;

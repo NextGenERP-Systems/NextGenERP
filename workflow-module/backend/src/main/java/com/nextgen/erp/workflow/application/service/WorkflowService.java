@@ -6,6 +6,7 @@ import com.nextgen.erp.workflow.domain.model.WorkflowTransition;
 import com.nextgen.erp.workflow.domain.repository.WorkflowRepository;
 import com.nextgen.erp.workflow.domain.repository.WorkflowStateRepository;
 import com.nextgen.erp.workflow.domain.repository.DocumentRepository;
+import com.nextgen.erp.workflow.domain.repository.WorkflowTransitionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

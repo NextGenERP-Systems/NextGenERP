@@ -34,6 +34,12 @@ public class PaymentEntryController {
         return ResponseEntity.ok(paymentEntryService.getPaymentById(id));
     }
 
+    @GetMapping("/order/{salesOrderId}")
+    @Operation(summary = "Get payment and advance entries for a specific Sales Order")
+    public ResponseEntity<List<PaymentEntryDto>> getPaymentsBySalesOrder(@PathVariable UUID salesOrderId) {
+        return ResponseEntity.ok(paymentEntryService.getPaymentsBySalesOrderId(salesOrderId));
+    }
+
     @PostMapping
     @Operation(summary = "Record customer payment / receipt")
     public ResponseEntity<PaymentEntryDto> recordPayment(@Valid @RequestBody PaymentEntryCreateRequest request) {

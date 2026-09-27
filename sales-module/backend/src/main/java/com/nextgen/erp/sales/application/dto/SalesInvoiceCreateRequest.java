@@ -15,6 +15,9 @@ import java.util.UUID;
 public class SalesInvoiceCreateRequest {
     private UUID salesOrderId;
     private UUID deliveryNoteId;
+    private Boolean isReturn;
+    private UUID returnAgainstId;
+    private String returnAgainstNumber;
     @NotNull(message = "Customer ID is required")
     private UUID customerId;
     private LocalDate postingDate;
@@ -23,6 +26,9 @@ public class SalesInvoiceCreateRequest {
     private BigDecimal conversionRate;
     private String paymentTerms;
     private String notes;
+    private UUID salesPartnerId;
+    private String salesPartnerName;
+    private BigDecimal commissionRate;
 
     @NotEmpty(message = "Items list cannot be empty")
     private List<ItemEntry> items;

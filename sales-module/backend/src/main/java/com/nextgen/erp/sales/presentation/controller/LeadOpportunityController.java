@@ -75,12 +75,13 @@ public class LeadOpportunityController {
     }
 
     @PatchMapping("/api/v1/opportunities/{id}/status")
-    @Operation(summary = "Update opportunity status and sales stage")
+    @Operation(summary = "Update opportunity status, sales stage, and optional lost reason")
     public ResponseEntity<OpportunityDto> updateOpportunityStatus(
             @PathVariable UUID id,
             @RequestParam OpportunityStatus status,
-            @RequestParam(required = false) String stage) {
-        return ResponseEntity.ok(service.updateOpportunityStatus(id, status, stage));
+            @RequestParam(required = false) String stage,
+            @RequestParam(required = false) String lostReason) {
+        return ResponseEntity.ok(service.updateOpportunityStatus(id, status, stage, lostReason));
     }
 
     @PostMapping("/api/v1/opportunities/{id}/convert-to-quotation")

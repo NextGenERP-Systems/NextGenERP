@@ -87,7 +87,7 @@ export interface Customer360Dashboard {
   customerLedger: GlEntry[];
 }
 
-export type BlanketOrderStatus = 'DRAFT' | 'ACTIVE' | 'EXPIRED' | 'CLOSED';
+export type BlanketOrderStatus = 'DRAFT' | 'ACTIVE' | 'PARTIALLY_ORDERED' | 'COMPLETED' | 'EXPIRED' | 'CLOSED';
 
 export interface BlanketOrderItem {
   id?: string;
@@ -110,6 +110,10 @@ export interface BlanketOrder {
   company?: string;
   status: BlanketOrderStatus;
   termsAndConditions?: string;
+  totalQty?: number;
+  totalOrderedQty?: number;
+  totalRemainingQty?: number;
+  fulfillmentPercentage?: number;
   items: BlanketOrderItem[];
   createdAt?: string;
 }
@@ -126,7 +130,21 @@ export interface SalesPartner {
   territory?: string;
   totalAllocatedAmount: number;
   totalCommissionEarned: number;
+  totalCommissionPaid?: number;
+  balanceOutstanding?: number;
   disabled?: boolean;
+  createdAt?: string;
+}
+
+export interface SalesPartnerPayout {
+  id: string;
+  payoutNumber: string;
+  salesPartnerId: string;
+  salesPartnerName: string;
+  postingDate: string;
+  amount: number;
+  referenceNote?: string;
+  paymentMode: string;
   createdAt?: string;
 }
 
@@ -411,6 +429,7 @@ export interface SalesOrderItem {
   billedAmt: number;
   pickedQty: number;
   deliveredBySupplier?: boolean;
+  supplier?: string;
   grantCommission?: boolean;
 }
 
@@ -425,14 +444,61 @@ export interface StockReservation {
   createdAt?: string;
 }
 
+export type PurchaseRequisitionStatus = 'DRAFT' | 'SUBMITTED' | 'ORDERED' | 'DELIVERED' | 'CANCELLED';
+
+export interface PurchaseRequisitionItem {
+  id?: string;
+  salesOrderItemId?: string;
+  itemId?: string;
+  itemCode: string;
+  itemName: string;
+  qty: number;
+  rate: number;
+  amount: number;
+  uom?: string;
+  supplierName?: string;
+}
+
+export interface PurchaseRequisition {
+  id: string;
+  requisitionNumber: string;
+  salesOrderId?: string;
+  salesOrderNumber?: string;
+  customerId?: string;
+  customerName?: string;
+  shippingAddress?: string;
+  supplierName: string;
+  requisitionType: string;
+  status: PurchaseRequisitionStatus;
+  transactionDate: string;
+  requiredDate?: string;
+  totalQty: number;
+  netTotal: number;
+  notes?: string;
+  items: PurchaseRequisitionItem[];
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export type PaymentScheduleStatus = 'UNPAID' | 'INVOICED' | 'PAID';
+
 export interface PaymentSchedule {
   id?: string;
+  voucherType?: string;
+  voucherId?: string;
   paymentTerm: string;
+  description?: string;
   dueDate: string;
   invoicePortion: number;
   paymentAmount: number;
-  outstanding: number;
+  outstanding?: number;
+  outstandingAmount?: number;
   paidAmount: number;
+  status?: PaymentScheduleStatus;
+  salesInvoiceId?: string;
+  salesInvoiceNumber?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface SalesOrder {
@@ -449,6 +515,8 @@ export interface SalesOrder {
   deliveryStatus: DeliveryStatus;
   billingStatus: BillingStatus;
   quotationId?: string;
+  blanketOrderId?: string;
+  blanketOrderNumber?: string;
   currency: string;
   conversionRate: number;
   totalQty: number;
@@ -471,6 +539,8 @@ export interface SalesOrder {
   skipDeliveryNote: boolean;
   paymentTermsTemplate?: string;
   termsAndConditions?: string;
+  salesPartnerId?: string;
+  salesPartnerName?: string;
   amountEligibleForCommission: number;
   commissionRate: number;
   totalCommission: number;
@@ -497,7 +567,7 @@ export interface SalesAnalyticsSummary {
 
 // --- CRM & Pre-Sales ---
 export type LeadStatus = 'OPEN' | 'CONTACTED' | 'QUALIFIED' | 'LOST';
-export type OpportunityStatus = 'QUALIFICATION' | 'PROPOSAL' | 'NEGOTIATION' | 'WON' | 'LOST';
+export type OpportunityStatus = 'PROSPECTING' | 'QUALIFICATION' | 'PROPOSAL' | 'NEGOTIATION' | 'WON' | 'LOST';
 
 export interface Lead {
   id: string;
@@ -525,6 +595,8 @@ export interface Opportunity {
   probability: number;
   expectedClosingDate?: string;
   salesStage: string;
+  salesPerson?: string;
+  lostReason?: string;
   contactEmail?: string;
   contactPhone?: string;
   notes?: string;
@@ -556,6 +628,9 @@ export interface DeliveryNote {
   customerName: string;
   postingDate: string;
   status: DeliveryNoteStatus;
+  isReturn?: boolean;
+  returnAgainstId?: string;
+  returnAgainstNumber?: string;
   carrier?: string;
   trackingNumber?: string;
   shippingAddress?: string;
@@ -587,12 +662,17 @@ export interface SalesInvoice {
   id: string;
   invoiceNumber: string;
   salesOrderId?: string;
+  salesOrderNumber?: string;
   deliveryNoteId?: string;
   customerId: string;
   customerName: string;
   postingDate: string;
   dueDate: string;
   status: SalesInvoiceStatus;
+  isReturn?: boolean;
+  returnAgainstId?: string;
+  returnAgainstNumber?: string;
+  allocatedAdvanceAmount?: number;
   currency: string;
   conversionRate?: number;
   netTotal: number;
@@ -602,6 +682,10 @@ export interface SalesInvoice {
   inWords?: string;
   paidAmount: number;
   outstandingAmount: number;
+  salesPartnerId?: string;
+  salesPartnerName?: string;
+  commissionRate?: number;
+  totalCommission?: number;
   paymentTerms?: string;
   notes?: string;
   items: SalesInvoiceItem[];
@@ -624,6 +708,8 @@ export interface PaymentEntry {
   customerName: string;
   salesInvoiceId?: string;
   salesOrderId?: string;
+  isAdvance?: boolean;
+  allocatedAmount?: number;
   postingDate: string;
   paidAmount: number;
   inWords?: string;
@@ -800,4 +886,243 @@ export interface SalesCommissionSummary {
   totalPayout: number;
 }
 
+// -------------------------------------------------------------
+// Maintenance & Warranty Contracts (AMC) Types
+// -------------------------------------------------------------
+export type MaintenanceContractStatus = 'DRAFT' | 'ACTIVE' | 'EXPIRED' | 'CANCELLED';
 
+export interface MaintenanceContractItem {
+  id?: string;
+  itemId?: string;
+  itemCode: string;
+  itemName: string;
+  serialNo?: string;
+  startDate: string;
+  endDate: string;
+  periodicity: string;
+  noOfVisits: number;
+  rate: number;
+  amount: number;
+}
+
+export interface MaintenanceContract {
+  id: string;
+  contractNumber: string;
+  customerId: string;
+  customerName: string;
+  contractType: string;
+  status: MaintenanceContractStatus;
+  startDate: string;
+  endDate: string;
+  totalAmount: number;
+  invoicedAmount: number;
+  termsAndConditions?: string;
+  items: MaintenanceContractItem[];
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export type MaintenanceVisitType = 'PREVENTIVE_MAINTENANCE' | 'BREAKDOWN' | 'WARRANTY_CHECK';
+export type MaintenanceVisitStatus = 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+
+export interface MaintenanceVisitItem {
+  id?: string;
+  itemCode: string;
+  itemName: string;
+  serialNo?: string;
+  workDone?: string;
+  actionTaken?: string;
+  partsReplaced?: string;
+}
+
+export interface MaintenanceVisit {
+  id: string;
+  visitNumber: string;
+  customerId: string;
+  customerName: string;
+  maintenanceContractId?: string;
+  maintenanceType: MaintenanceVisitType;
+  visitDate: string;
+  servicePerson: string;
+  status: MaintenanceVisitStatus;
+  customerFeedback?: string;
+  completionNotes?: string;
+  items: MaintenanceVisitItem[];
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export type WarrantyClaimStatus = 'OPEN' | 'IN_INSPECTION' | 'RESOLVED' | 'REJECTED' | 'CLOSED';
+
+export interface WarrantyClaim {
+  id: string;
+  claimNumber: string;
+  customerId: string;
+  customerName: string;
+  itemCode: string;
+  itemName: string;
+  serialNo?: string;
+  complaintDescription: string;
+  status: WarrantyClaimStatus;
+  resolutionType?: string;
+  resolutionNotes?: string;
+  reportedDate: string;
+  resolvedDate?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface PaymentTermsTemplateItem {
+  id?: string;
+  paymentTermName: string;
+  invoicePortion: number; // e.g. 30.00
+  creditDays?: number;
+  creditMonths?: number;
+}
+
+export interface PaymentTermsTemplate {
+  id: string;
+  templateName: string;
+  description?: string;
+  isActive: boolean;
+  items: PaymentTermsTemplateItem[];
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface PaymentTermsTemplateCreateRequest {
+  templateName: string;
+  description?: string;
+  items: {
+    paymentTermName: string;
+    invoicePortion: number;
+    creditDays?: number;
+    creditMonths?: number;
+  }[];
+}
+
+// --- Packing Slips & Warehouse Shipment Packaging (Sprint 8) ---
+export type PackingSlipStatus = 'DRAFT' | 'PACKED' | 'SHIPPED' | 'CANCELLED';
+
+export interface PackingSlipItem {
+  id?: string;
+  deliveryNoteItemId?: string;
+  itemCode: string;
+  itemName: string;
+  qty: number;
+  netWeight: number;
+  weightUom?: string;
+  productBundleItemCode?: string;
+}
+
+export interface PackingSlip {
+  id: string;
+  packingSlipNumber: string;
+  deliveryNoteId: string;
+  deliveryNoteNumber: string;
+  fromPackageNo: number;
+  toPackageNo: number;
+  totalPackages?: number;
+  packageType: string;
+  netWeightPkg: number;
+  grossWeightPkg: number;
+  weightUom: string;
+  letterOfCredit?: string;
+  shippingMark?: string;
+  status: PackingSlipStatus;
+  notes?: string;
+  items: PackingSlipItem[];
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface PackingSlipCreateRequest {
+  deliveryNoteId: string;
+  fromPackageNo?: number;
+  toPackageNo?: number;
+  packageType?: string;
+  netWeightPkg?: number;
+  grossWeightPkg?: number;
+  weightUom?: string;
+  letterOfCredit?: string;
+  shippingMark?: string;
+  notes?: string;
+  items: {
+    deliveryNoteItemId?: string;
+    itemCode: string;
+    itemName: string;
+    qty: number;
+    netWeight?: number;
+    weightUom?: string;
+    productBundleItemCode?: string;
+  }[];
+}
+
+// --- Sales Team Multi-Allocation (Sprint 9) ---
+export interface SalesTeamMember {
+  id?: string;
+  voucherType?: string;
+  voucherId?: string;
+  salesPersonId?: string;
+  salesPersonName: string;
+  allocatedPercentage: number;
+  allocatedAmount: number;
+  commissionRate: number;
+  incentives: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface SalesTeamSaveRequest {
+  grandTotal?: number;
+  members: {
+    salesPersonId: string;
+    salesPersonName?: string;
+    allocatedPercentage: number;
+    commissionRate?: number;
+  }[];
+}
+
+// --- Sales Targets & Target Variance Analytics (Sprint 10) ---
+export type TargetType = 'SALES_PERSON' | 'TERRITORY';
+
+export interface SalesTarget {
+  id: string;
+  targetType: TargetType;
+  targetRefId: string;
+  targetRefName: string;
+  fiscalYear: string;
+  period: string; // MONTHLY, QUARTERLY, ANNUAL
+  itemGroupId?: string;
+  itemGroupName?: string;
+  targetAmount: number;
+  targetQty: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface SalesTargetCreateRequest {
+  targetType: TargetType;
+  targetRefId: string;
+  targetRefName?: string;
+  fiscalYear?: string;
+  period?: string;
+  itemGroupId?: string;
+  itemGroupName?: string;
+  targetAmount: number;
+  targetQty?: number;
+}
+
+export interface TargetVarianceReport {
+  targetRefId: string;
+  targetRefName: string;
+  targetType: TargetType;
+  fiscalYear: string;
+  period: string;
+  targetAmount: number;
+  achievedAmount: number;
+  varianceAmount: number;
+  percentageAchieved: number;
+  pacingStatus: 'EXCEEDED' | 'ON_TRACK' | 'AT_RISK' | 'BEHIND';
+  totalDealsBooked: number;
+}

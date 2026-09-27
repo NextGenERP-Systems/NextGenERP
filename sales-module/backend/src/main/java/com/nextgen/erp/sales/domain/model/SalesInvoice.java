@@ -50,6 +50,20 @@ public class SalesInvoice {
     @Builder.Default
     private SalesInvoiceStatus status = SalesInvoiceStatus.UNPAID;
 
+    @Column(name = "is_return", nullable = false)
+    @Builder.Default
+    private Boolean isReturn = false;
+
+    @Column(name = "return_against_id")
+    private UUID returnAgainstId;
+
+    @Column(name = "return_against_number", length = 100)
+    private String returnAgainstNumber;
+
+    @Column(name = "allocated_advance_amount", precision = 15, scale = 2)
+    @Builder.Default
+    private BigDecimal allocatedAdvanceAmount = BigDecimal.ZERO;
+
     @Column(length = 10)
     @Builder.Default
     private String currency = "INR";
@@ -77,6 +91,20 @@ public class SalesInvoice {
     @Column(name = "outstanding_amount", precision = 15, scale = 2)
     @Builder.Default
     private BigDecimal outstandingAmount = BigDecimal.ZERO;
+
+    @Column(name = "sales_partner_id")
+    private UUID salesPartnerId;
+
+    @Column(name = "sales_partner_name", length = 150)
+    private String salesPartnerName;
+
+    @Column(name = "commission_rate", precision = 5, scale = 2)
+    @Builder.Default
+    private BigDecimal commissionRate = BigDecimal.ZERO;
+
+    @Column(name = "total_commission", precision = 15, scale = 2)
+    @Builder.Default
+    private BigDecimal totalCommission = BigDecimal.ZERO;
 
     @Column(name = "payment_terms", length = 100)
     @Builder.Default

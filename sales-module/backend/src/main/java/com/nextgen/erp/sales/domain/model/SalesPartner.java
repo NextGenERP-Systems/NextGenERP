@@ -56,6 +56,10 @@ public class SalesPartner {
     @Builder.Default
     private BigDecimal totalCommissionEarned = BigDecimal.ZERO;
 
+    @Column(name = "total_commission_paid", precision = 15, scale = 2)
+    @Builder.Default
+    private BigDecimal totalCommissionPaid = BigDecimal.ZERO;
+
     @Column(name = "disabled")
     @Builder.Default
     private Boolean disabled = false;
@@ -67,4 +71,37 @@ public class SalesPartner {
     @Column(name = "updated_at")
     @Builder.Default
     private OffsetDateTime updatedAt = OffsetDateTime.now();
+
+    public void allocateCommission(BigDecimal salesAmount, BigDecimal commissionAmount) {
+        if (salesAmount != null) {
+            this.totalAllocatedAmount = (this.totalAllocatedAmount != null ? this.totalAllocatedAmount : BigDecimal.ZERO).add(salesAmount);
+        }
+        if (commissionAmount != null) {
+            this.totalCommissionEarned = (this.totalCommissionEarned != null ? this.totalCommissionEarned : BigDecimal.ZERO).add(commissionAmount);
+        }
+        this.updatedAt = OffsetDateTime.now();
+    }
+
+    public void revertCommission(BigDecimal salesAmount, BigDecimal commissionAmount) {
+        if (salesAmount != null) {
+            this.totalAllocatedAmount = (this.totalAllocatedAmount != null ? this.totalAllocatedAmount : BigDecimal.ZERO).subtract(salesAmount);
+            if (this.totalAllocatedAmount.compareTo(BigDecimal.ZERO) < 0) {
+                this.totalAllocatedAmount = BigDecimal.ZERO;
+            }
+        }
+        if (commissionAmount != null) {
+            this.totalCommissionEarned = (this.totalCommissionEarned != null ? this.totalCommissionEarned : BigDecimal.ZERO).subtract(commissionAmount);
+            if (this.totalCommissionEarned.compareTo(BigDecimal.ZERO) < 0) {
+                this.totalCommissionEarned = BigDecimal.ZERO;
+            }
+        }
+        this.updatedAt = OffsetDateTime.now();
+    }
+
+    public void recordPayout(BigDecimal payoutAmount) {
+        if (payoutAmount != null) {
+            this.totalCommissionPaid = (this.totalCommissionPaid != null ? this.totalCommissionPaid : BigDecimal.ZERO).add(payoutAmount);
+        }
+        this.updatedAt = OffsetDateTime.now();
+    }
 }

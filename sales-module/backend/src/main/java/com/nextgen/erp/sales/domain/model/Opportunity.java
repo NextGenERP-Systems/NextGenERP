@@ -57,6 +57,12 @@ public class Opportunity {
     @Builder.Default
     private String salesStage = "Discovery";
 
+    @Column(name = "sales_person", length = 150)
+    private String salesPerson;
+
+    @Column(name = "lost_reason", length = 255)
+    private String lostReason;
+
     @Column(name = "contact_email", length = 150)
     private String contactEmail;
 

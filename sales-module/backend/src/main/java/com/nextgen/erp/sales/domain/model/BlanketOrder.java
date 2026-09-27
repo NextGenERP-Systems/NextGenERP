@@ -3,6 +3,7 @@ package com.nextgen.erp.sales.domain.model;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -62,9 +63,38 @@ public class BlanketOrder {
     @Builder.Default
     private OffsetDateTime updatedAt = OffsetDateTime.now();
 
+    public void recalculateFulfillment() {
+        if (this.status == BlanketOrderStatus.CLOSED) {
+            return;
+        }
+        if (this.toDate != null && this.toDate.isBefore(LocalDate.now())) {
+            this.status = BlanketOrderStatus.EXPIRED;
+            return;
+        }
+        if (this.items == null || this.items.isEmpty()) {
+            return;
+        }
+        BigDecimal totalQty = BigDecimal.ZERO;
+        BigDecimal totalOrdered = BigDecimal.ZERO;
+        for (BlanketOrderItem item : this.items) {
+            totalQty = totalQty.add(item.getQty() != null ? item.getQty() : BigDecimal.ZERO);
+            totalOrdered = totalOrdered.add(item.getOrderedQty() != null ? item.getOrderedQty() : BigDecimal.ZERO);
+        }
+        if (totalQty.compareTo(BigDecimal.ZERO) > 0 && totalOrdered.compareTo(totalQty) >= 0) {
+            this.status = BlanketOrderStatus.COMPLETED;
+        } else if (totalOrdered.compareTo(BigDecimal.ZERO) > 0) {
+            this.status = BlanketOrderStatus.PARTIALLY_ORDERED;
+        } else {
+            this.status = BlanketOrderStatus.ACTIVE;
+        }
+        this.updatedAt = OffsetDateTime.now();
+    }
+
     public enum BlanketOrderStatus {
         DRAFT,
         ACTIVE,
+        PARTIALLY_ORDERED,
+        COMPLETED,
         EXPIRED,
         CLOSED
     }

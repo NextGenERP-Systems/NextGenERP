@@ -2,6 +2,8 @@ package com.nextgen.erp.sales.presentation.controller;
 
 import com.nextgen.erp.sales.application.dto.SalesPartnerCreateRequest;
 import com.nextgen.erp.sales.application.dto.SalesPartnerDto;
+import com.nextgen.erp.sales.application.dto.SalesPartnerPayoutCreateRequest;
+import com.nextgen.erp.sales.application.dto.SalesPartnerPayoutDto;
 import com.nextgen.erp.sales.application.service.SalesPartnerService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -45,5 +47,27 @@ public class SalesPartnerController {
     @Operation(summary = "Toggle active/disabled status of a sales partner")
     public ResponseEntity<SalesPartnerDto> toggleStatus(@PathVariable UUID id) {
         return ResponseEntity.ok(salesPartnerService.toggleStatus(id));
+    }
+
+    @GetMapping("/payouts")
+    @Operation(summary = "Get all sales partner payouts")
+    public ResponseEntity<List<SalesPartnerPayoutDto>> getAllPayouts() {
+        return ResponseEntity.ok(salesPartnerService.getAllPayouts());
+    }
+
+    @GetMapping("/{id}/payouts")
+    @Operation(summary = "Get commission payouts for a specific partner")
+    public ResponseEntity<List<SalesPartnerPayoutDto>> getPayoutsByPartner(@PathVariable UUID id) {
+        return ResponseEntity.ok(salesPartnerService.getPayoutsByPartner(id));
+    }
+
+    @PostMapping("/{id}/payouts")
+    @Operation(summary = "Record a commission payout settlement to a partner")
+    public ResponseEntity<SalesPartnerPayoutDto> createPayout(
+            @PathVariable UUID id,
+            @Valid @RequestBody SalesPartnerPayoutCreateRequest request) {
+        request.setSalesPartnerId(id);
+        SalesPartnerPayoutDto payout = salesPartnerService.createPayout(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(payout);
     }
 }

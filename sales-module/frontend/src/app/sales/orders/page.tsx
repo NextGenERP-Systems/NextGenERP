@@ -36,11 +36,13 @@ import {
   getCustomers,
   getQuotations,
   getItems,
+  getBlanketOrders,
+  getSalesPartners,
   createSalesOrder,
   submitSalesOrder,
   cancelSalesOrder,
 } from "@/lib/api";
-import { SalesOrder, Customer, Quotation, CatalogItem } from "@/types/sales";
+import { SalesOrder, Customer, Quotation, CatalogItem, BlanketOrder, SalesPartner } from "@/types/sales";
 import { PrintDocumentModal } from "@/components/ui/PrintDocumentModal";
 import Link from "next/link";
 
@@ -66,26 +68,43 @@ function SalesOrdersContent() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState("");
   const [selectedQuotation, setSelectedQuotation] = useState("");
+  const [blanketOrders, setBlanketOrders] = useState<BlanketOrder[]>([]);
+  const [selectedBlanketOrder, setSelectedBlanketOrder] = useState("");
+  const [salesPartners, setSalesPartners] = useState<SalesPartner[]>([]);
+  const [selectedSalesPartner, setSelectedSalesPartner] = useState("");
+  const [commissionRateInput, setCommissionRateInput] = useState("");
   const [orderType, setOrderType] = useState("SALES");
   const [deliveryDate, setDeliveryDate] = useState("");
   const [poNo, setPoNo] = useState("");
   const [orderItems, setOrderItems] = useState<
-    { itemId: string; itemCode: string; itemName: string; qty: number; rate: number }[]
+    {
+      itemId: string;
+      itemCode: string;
+      itemName: string;
+      qty: number;
+      rate: number;
+      deliveredBySupplier?: boolean;
+      supplier?: string;
+    }[]
   >([]);
 
   const loadOrders = async () => {
     setLoading(true);
     try {
-      const [ordData, custData, qtnData, itemData] = await Promise.all([
+      const [ordData, custData, qtnData, itemData, boData, spData] = await Promise.all([
         getSalesOrders(),
         getCustomers(),
         getQuotations(),
         getItems(),
+        getBlanketOrders(),
+        getSalesPartners(),
       ]);
       setOrders(ordData || []);
       setCustomers(custData || []);
       setQuotations(qtnData || []);
       setCatalogItems(itemData || []);
+      setBlanketOrders(boData || []);
+      setSalesPartners(spData || []);
 
       if (ordData && ordData.length > 0 && !selectedOrder) {
         setSelectedOrder(ordData[0]);
@@ -94,10 +113,29 @@ function SalesOrdersContent() {
       // Check URL parameters for connections
       const qCustId = searchParams.get("customerId");
       const qQtnId = searchParams.get("quotationId");
+      const qBlanketId = searchParams.get("blanketOrderId");
       const qOpen = searchParams.get("open");
 
       if (qCustId) {
         setSelectedCustomer(qCustId);
+      }
+      if (qBlanketId) {
+        setSelectedBlanketOrder(qBlanketId);
+        const matchedBo = (boData || []).find((b) => b.id === qBlanketId);
+        if (matchedBo) {
+          setSelectedCustomer(matchedBo.customerId);
+          if (matchedBo.items && matchedBo.items.length > 0) {
+            setOrderItems(
+              matchedBo.items.map((i) => ({
+                itemId: i.itemId || "",
+                itemCode: i.itemCode,
+                itemName: i.itemName,
+                qty: Math.max(1, (i.qty || 0) - (i.orderedQty || 0)),
+                rate: i.rate,
+              }))
+            );
+          }
+        }
       }
       if (qQtnId) {
         setSelectedQuotation(qQtnId);
@@ -117,7 +155,7 @@ function SalesOrdersContent() {
           }
         }
       }
-      if (qOpen === "true" || qCustId || qQtnId) {
+      if (qOpen === "true" || qCustId || qQtnId || qBlanketId) {
         setIsCreateOpen(true);
       }
     } catch (err) {
@@ -131,6 +169,59 @@ function SalesOrdersContent() {
     loadOrders();
   }, [searchParams]);
 
+  // Handle Customer Selection -> Auto-fill default Sales Partner if configured
+  const handleCustomerSelect = (custId: string) => {
+    setSelectedCustomer(custId);
+    if (!custId) return;
+    const cust = customers.find((c) => c.id === custId);
+    if (cust && cust.defaultSalesPartner) {
+      const sp = salesPartners.find((p) => p.partnerName === cust.defaultSalesPartner);
+      if (sp) {
+        setSelectedSalesPartner(sp.id);
+        setCommissionRateInput(sp.commissionRate ? sp.commissionRate.toString() : "5.0");
+      }
+    }
+  };
+
+  const handlePartnerSelect = (partnerId: string) => {
+    setSelectedSalesPartner(partnerId);
+    if (!partnerId) {
+      setCommissionRateInput("0");
+      return;
+    }
+    const sp = salesPartners.find((p) => p.id === partnerId);
+    if (sp) {
+      setCommissionRateInput(sp.commissionRate ? sp.commissionRate.toString() : "5.0");
+    }
+  };
+
+  // Handle Blanket Order Selection in Create Modal -> Auto-fill Customer and Items with contract rates
+  const handleBlanketOrderSelect = (boId: string) => {
+    setSelectedBlanketOrder(boId);
+    if (!boId) return;
+
+    const bo = blanketOrders.find((b) => b.id === boId);
+    if (bo) {
+      setSelectedCustomer(bo.customerId);
+      if (bo.items && bo.items.length > 0) {
+        setOrderItems(
+          bo.items.map((i) => {
+            const cat = catalogItems.find((c) => c.itemCode === i.itemCode);
+            return {
+              itemId: i.itemId || "",
+              itemCode: i.itemCode,
+              itemName: i.itemName,
+              qty: Math.max(1, (i.qty || 0) - (i.orderedQty || 0)),
+              rate: i.rate,
+              deliveredBySupplier: cat?.deliveredBySupplier || false,
+              supplier: cat?.defaultSupplier || "",
+            };
+          })
+        );
+      }
+    }
+  };
+
   // Handle Quotation Selection in Create Modal -> Auto-fill Customer and Items
   const handleQuotationSelect = (qtnId: string) => {
     setSelectedQuotation(qtnId);
@@ -141,13 +232,18 @@ function SalesOrdersContent() {
       setSelectedCustomer(qtn.customerId);
       if (qtn.items && qtn.items.length > 0) {
         setOrderItems(
-          qtn.items.map((i) => ({
-            itemId: i.itemId || "",
-            itemCode: i.itemCode,
-            itemName: i.itemName,
-            qty: i.qty,
-            rate: i.rate,
-          }))
+          qtn.items.map((i) => {
+            const cat = catalogItems.find((c) => c.itemCode === i.itemCode);
+            return {
+              itemId: i.itemId || "",
+              itemCode: i.itemCode,
+              itemName: i.itemName,
+              qty: i.qty,
+              rate: i.rate,
+              deliveredBySupplier: cat?.deliveredBySupplier || false,
+              supplier: cat?.defaultSupplier || "",
+            };
+          })
         );
       }
     }
@@ -164,6 +260,8 @@ function SalesOrdersContent() {
         itemName: defaultItem.itemName,
         qty: 1,
         rate: defaultItem.standardRate,
+        deliveredBySupplier: defaultItem.deliveredBySupplier || false,
+        supplier: defaultItem.defaultSupplier || "",
       },
     ]);
   };
@@ -178,6 +276,8 @@ function SalesOrdersContent() {
       itemCode: itm.itemCode,
       itemName: itm.itemName,
       rate: itm.standardRate,
+      deliveredBySupplier: itm.deliveredBySupplier || false,
+      supplier: itm.defaultSupplier || "",
     };
     setOrderItems(updated);
   };
@@ -205,6 +305,8 @@ function SalesOrdersContent() {
             itemName: i.itemName,
             qty: i.qty,
             rate: i.rate,
+            deliveredBySupplier: Boolean(i.deliveredBySupplier),
+            supplier: i.supplier || undefined,
           }))
         : [
             {
@@ -212,6 +314,7 @@ function SalesOrdersContent() {
               itemName: "NextGen Cloud ERP Enterprise License",
               qty: 1,
               rate: 12000,
+              deliveredBySupplier: false,
             },
           ];
 
@@ -219,6 +322,9 @@ function SalesOrdersContent() {
       const created = await createSalesOrder({
         customerId: selectedCustomer,
         quotationId: selectedQuotation || undefined,
+        blanketOrderId: selectedBlanketOrder || undefined,
+        salesPartnerId: selectedSalesPartner || undefined,
+        commissionRate: Number(commissionRateInput) || 0,
         orderType,
         deliveryDate: deliveryDate || new Date(Date.now() + 14 * 86400000).toISOString().split("T")[0],
         poNo: poNo || `PO-${Math.floor(1000 + Math.random() * 9000)}`,
@@ -344,6 +450,8 @@ function SalesOrdersContent() {
                     itemName: catalogItems[0].itemName,
                     qty: 1,
                     rate: catalogItems[0].standardRate,
+                    deliveredBySupplier: catalogItems[0].deliveredBySupplier || false,
+                    supplier: catalogItems[0].defaultSupplier || "",
                   },
                 ]);
               }
@@ -431,6 +539,32 @@ function SalesOrdersContent() {
                       >
                         <span>{order.orderNumber}</span>
                       </Link>
+                      {order.blanketOrderNumber && (
+                        <div className="mt-0.5">
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                            Contract: {order.blanketOrderNumber}
+                          </span>
+                        </div>
+                      )}
+                      {order.salesPartnerName && (
+                        <div className="mt-0.5">
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            Partner: {order.salesPartnerName} ({order.commissionRate}%)
+                          </span>
+                        </div>
+                      )}
+                      {order.items?.some((i) => i.deliveredBySupplier) && (
+                        <div className="mt-0.5">
+                          <Link
+                            href={`/sales/drop-ship?salesOrderId=${order.id}`}
+                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100 transition-colors"
+                            title="Drop Ship direct by supplier - view requisitions"
+                          >
+                            <Truck className="h-2.5 w-2.5" />
+                            <span>Drop Ship</span>
+                          </Link>
+                        </div>
+                      )}
                     </td>
                     <td className="py-3.5 px-4 font-semibold text-slate-900">
                       <Link href={`/sales/orders/${order.orderNumber}`} className="hover:text-blue-600">
@@ -443,8 +577,13 @@ function SalesOrdersContent() {
                     <td className="py-3.5 px-4 font-mono text-slate-700 font-semibold">
                       {formatDate(order.deliveryDate)}
                     </td>
-                    <td className="py-3.5 px-4 text-right font-mono font-bold text-slate-900">
-                      {formatCurrency(order.grandTotal)}
+                    <td className="py-3.5 px-4 text-right font-mono text-slate-900">
+                      <div className="font-bold">{formatCurrency(order.grandTotal)}</div>
+                      {order.advancePaid !== undefined && order.advancePaid > 0 && (
+                        <div className="text-[10px] text-indigo-600 font-semibold">
+                          Adv: {formatCurrency(order.advancePaid)}
+                        </div>
+                      )}
                     </td>
                     <td className="py-3.5 px-4 text-center font-mono">
                       <span className="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded font-bold text-[11px]">
@@ -460,13 +599,25 @@ function SalesOrdersContent() {
                       <StatusBadge status={order.status} />
                     </td>
                     <td className="py-3.5 px-4 text-right">
-                      <Link
-                        href={`/sales/orders/${order.orderNumber}`}
-                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-100 group-hover:bg-purple-600 text-slate-700 group-hover:text-white text-xs font-semibold transition-all shadow-2xs"
-                      >
-                        <span>View</span>
-                        <span>→</span>
-                      </Link>
+                      <div className="flex items-center justify-end gap-1.5">
+                        {order.status !== "CANCELLED" && (
+                          <Link
+                            href={`/sales/payments?salesOrderId=${order.id}&open=true`}
+                            title="Record Advance Payment against this Order"
+                            className="inline-flex items-center gap-1 px-2 py-1 rounded bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-[11px] font-semibold transition-all"
+                          >
+                            <CreditCard className="h-3 w-3" />
+                            <span>Advance</span>
+                          </Link>
+                        )}
+                        <Link
+                          href={`/sales/orders/${order.orderNumber}`}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-slate-100 hover:bg-purple-600 text-slate-700 hover:text-white text-xs font-semibold transition-all shadow-2xs"
+                        >
+                          <span>View</span>
+                          <span>→</span>
+                        </Link>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -491,7 +642,7 @@ function SalesOrdersContent() {
             </div>
 
             <form onSubmit={handleCreateSubmit} className="space-y-4 text-xs">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {/* Customer Picker */}
                 <div className="space-y-1">
                   <label className="font-semibold text-slate-700 flex items-center gap-1">
@@ -501,7 +652,7 @@ function SalesOrdersContent() {
                   <select
                     required
                     value={selectedCustomer}
-                    onChange={(e) => setSelectedCustomer(e.target.value)}
+                    onChange={(e) => handleCustomerSelect(e.target.value)}
                     className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs font-medium"
                   >
                     <option value="">Select Customer Master...</option>
@@ -510,6 +661,28 @@ function SalesOrdersContent() {
                         {c.customerName} ({c.customerCode})
                       </option>
                     ))}
+                  </select>
+                </div>
+
+                {/* Blanket Order Picker */}
+                <div className="space-y-1">
+                  <label className="font-semibold text-slate-700 flex items-center gap-1">
+                    <Layers className="h-3.5 w-3.5 text-indigo-600" />
+                    <span>Blanket Order Agreement</span>
+                  </label>
+                  <select
+                    value={selectedBlanketOrder}
+                    onChange={(e) => handleBlanketOrderSelect(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs"
+                  >
+                    <option value="">None / Standard Order</option>
+                    {blanketOrders
+                      .filter((bo) => bo.status === "ACTIVE" || bo.status === "PARTIALLY_ORDERED")
+                      .map((bo) => (
+                        <option key={bo.id} value={bo.id}>
+                          {bo.blanketOrderNumber} - {bo.customerName}
+                        </option>
+                      ))}
                   </select>
                 </div>
 
@@ -531,6 +704,45 @@ function SalesOrdersContent() {
                       </option>
                     ))}
                   </select>
+                </div>
+              </div>
+
+              {/* Sales Partner & Commission Rate */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50/60 p-2.5 rounded-xl border border-slate-200">
+                <div className="space-y-1">
+                  <label className="font-semibold text-slate-700 flex items-center gap-1">
+                    <Users className="h-3.5 w-3.5 text-emerald-600" />
+                    <span>Sales Partner (Optional)</span>
+                  </label>
+                  <select
+                    value={selectedSalesPartner}
+                    onChange={(e) => handlePartnerSelect(e.target.value)}
+                    className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs"
+                  >
+                    <option value="">None / Direct Sale</option>
+                    {salesPartners
+                      .filter((p) => !p.disabled)
+                      .map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.partnerName} ({p.commissionRate}%)
+                        </option>
+                      ))}
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="font-semibold text-slate-700 flex items-center gap-1">
+                    <CreditCard className="h-3.5 w-3.5 text-emerald-600" />
+                    <span>Commission Rate (%)</span>
+                  </label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    placeholder="e.g. 5.0"
+                    value={commissionRateInput}
+                    onChange={(e) => setCommissionRateInput(e.target.value)}
+                    className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs font-mono"
+                  />
                 </div>
               </div>
 
@@ -575,60 +787,98 @@ function SalesOrdersContent() {
                 ) : (
                   <div className="space-y-2">
                     {orderItems.map((item, idx) => (
-                      <div key={idx} className="grid grid-cols-12 gap-2 items-center bg-white p-2.5 rounded-lg border border-slate-200">
-                        <div className="col-span-5 space-y-0.5">
-                          <label className="text-[10px] text-slate-400">Item</label>
-                          <select
-                            value={item.itemCode}
-                            onChange={(e) => handleItemChange(idx, e.target.value)}
-                            className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-xs"
-                          >
-                            {catalogItems.map((ci) => (
-                              <option key={ci.id} value={ci.itemCode}>
-                                {ci.itemName} ({ci.itemCode})
-                              </option>
-                            ))}
-                          </select>
+                      <div key={idx} className="bg-white p-2.5 rounded-lg border border-slate-200 space-y-2">
+                        <div className="grid grid-cols-12 gap-2 items-center">
+                          <div className="col-span-5 space-y-0.5">
+                            <label className="text-[10px] text-slate-400">Item</label>
+                            <select
+                              value={item.itemCode}
+                              onChange={(e) => handleItemChange(idx, e.target.value)}
+                              className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-xs"
+                            >
+                              {catalogItems.map((ci) => (
+                                <option key={ci.id} value={ci.itemCode}>
+                                  {ci.itemName} ({ci.itemCode})
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="col-span-2 space-y-0.5">
+                            <label className="text-[10px] text-slate-400">Qty</label>
+                            <input
+                              type="number"
+                              min="1"
+                              value={item.qty}
+                              onChange={(e) => {
+                                const updated = [...orderItems];
+                                updated[idx].qty = Number(e.target.value) || 1;
+                                setOrderItems(updated);
+                              }}
+                              className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-xs text-center font-mono"
+                            />
+                          </div>
+                          <div className="col-span-2 space-y-0.5">
+                            <label className="text-[10px] text-slate-400">Rate (₹)</label>
+                            <input
+                              type="number"
+                              value={item.rate}
+                              onChange={(e) => {
+                                const updated = [...orderItems];
+                                updated[idx].rate = Number(e.target.value) || 0;
+                                setOrderItems(updated);
+                              }}
+                              className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-xs text-right font-mono"
+                            />
+                          </div>
+                          <div className="col-span-2 space-y-0.5 text-right font-mono font-bold text-slate-800">
+                            <label className="text-[10px] text-slate-400 block">Amount</label>
+                            <div className="pt-1">₹{(item.qty * item.rate).toLocaleString()}</div>
+                          </div>
+                          <div className="col-span-1 text-center pt-3">
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveItem(idx)}
+                              className="text-slate-400 hover:text-rose-600"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
                         </div>
-                        <div className="col-span-2 space-y-0.5">
-                          <label className="text-[10px] text-slate-400">Qty</label>
-                          <input
-                            type="number"
-                            min="1"
-                            value={item.qty}
-                            onChange={(e) => {
-                              const updated = [...orderItems];
-                              updated[idx].qty = Number(e.target.value) || 1;
-                              setOrderItems(updated);
-                            }}
-                            className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-xs text-center font-mono"
-                          />
-                        </div>
-                        <div className="col-span-2 space-y-0.5">
-                          <label className="text-[10px] text-slate-400">Rate (₹)</label>
-                          <input
-                            type="number"
-                            value={item.rate}
-                            onChange={(e) => {
-                              const updated = [...orderItems];
-                              updated[idx].rate = Number(e.target.value) || 0;
-                              setOrderItems(updated);
-                            }}
-                            className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-xs text-right font-mono"
-                          />
-                        </div>
-                        <div className="col-span-2 space-y-0.5 text-right font-mono font-bold text-slate-800">
-                          <label className="text-[10px] text-slate-400 block">Amount</label>
-                          <div className="pt-1">₹{(item.qty * item.rate).toLocaleString()}</div>
-                        </div>
-                        <div className="col-span-1 text-center pt-3">
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveItem(idx)}
-                            className="text-slate-400 hover:text-rose-600"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
+
+                        {/* Drop Ship Configuration */}
+                        <div className="flex items-center gap-3 pt-1.5 border-t border-slate-100 text-[11px]">
+                          <label className="flex items-center gap-1.5 cursor-pointer text-slate-700">
+                            <input
+                              type="checkbox"
+                              checked={Boolean(item.deliveredBySupplier)}
+                              onChange={(e) => {
+                                const updated = [...orderItems];
+                                updated[idx].deliveredBySupplier = e.target.checked;
+                                setOrderItems(updated);
+                              }}
+                              className="rounded text-purple-600 focus:ring-purple-500 h-3.5 w-3.5"
+                            />
+                            <span className="font-medium text-slate-700 flex items-center gap-1">
+                              <Truck className="h-3 w-3 text-purple-600" />
+                              <span>Drop Ship (Supplier delivers directly to Customer)</span>
+                            </span>
+                          </label>
+                          {item.deliveredBySupplier && (
+                            <div className="flex items-center gap-1.5 ml-auto">
+                              <span className="text-slate-500 text-[10px] font-semibold">Supplier:</span>
+                              <input
+                                type="text"
+                                placeholder="e.g. Apex Tech Hardware Ltd"
+                                value={item.supplier || ""}
+                                onChange={(e) => {
+                                  const updated = [...orderItems];
+                                  updated[idx].supplier = e.target.value;
+                                  setOrderItems(updated);
+                                }}
+                                className="bg-purple-50/40 border border-purple-200 rounded px-2 py-0.5 text-xs w-48 font-medium placeholder:text-slate-400"
+                              />
+                            </div>
+                          )}
                         </div>
                       </div>
                     ))}

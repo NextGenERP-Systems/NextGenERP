@@ -35,6 +35,13 @@ public class DeliveryNoteService {
     }
 
     @Transactional(readOnly = true)
+    public List<DeliveryNoteDto> getAllReturns() {
+        return deliveryNoteRepository.findByIsReturnTrue().stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
     public DeliveryNoteDto getDeliveryNoteById(UUID id) {
         DeliveryNote dn = deliveryNoteRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Delivery Note not found with id: " + id));
@@ -46,7 +53,8 @@ public class DeliveryNoteService {
         Customer customer = customerRepository.findById(request.getCustomerId())
                 .orElseThrow(() -> new IllegalArgumentException("Customer not found: " + request.getCustomerId()));
 
-        String dnNumber = generateDeliveryNoteNumber();
+        boolean isReturn = Boolean.TRUE.equals(request.getIsReturn());
+        String dnNumber = isReturn ? generateReturnDeliveryNoteNumber() : generateDeliveryNoteNumber();
 
         DeliveryNote deliveryNote = DeliveryNote.builder()
                 .deliveryNoteNumber(dnNumber)
@@ -55,6 +63,9 @@ public class DeliveryNoteService {
                 .customerName(customer.getCustomerName())
                 .postingDate(request.getPostingDate() != null ? request.getPostingDate() : LocalDate.now())
                 .status(DeliveryNoteStatus.SUBMITTED)
+                .isReturn(isReturn)
+                .returnAgainstId(request.getReturnAgainstId())
+                .returnAgainstNumber(request.getReturnAgainstNumber())
                 .carrier(request.getCarrier())
                 .trackingNumber(request.getTrackingNumber())
                 .shippingAddress(request.getShippingAddress())
@@ -138,6 +149,54 @@ public class DeliveryNoteService {
     }
 
     @Transactional
+    public DeliveryNoteDto createDeliveryReturn(UUID originalDeliveryNoteId, DeliveryNoteCreateRequest customRequest) {
+        DeliveryNote orig = deliveryNoteRepository.findById(originalDeliveryNoteId)
+                .orElseThrow(() -> new IllegalArgumentException("Original Delivery Note not found: " + originalDeliveryNoteId));
+
+        if (orig.getStatus() == DeliveryNoteStatus.CANCELLED) {
+            throw new IllegalStateException("Cannot create return against cancelled Delivery Note: " + orig.getDeliveryNoteNumber());
+        }
+
+        if (Boolean.TRUE.equals(orig.getIsReturn())) {
+            throw new IllegalStateException("Cannot create return against another return Delivery Note: " + orig.getDeliveryNoteNumber());
+        }
+
+        List<DeliveryNoteCreateRequest.ItemEntry> itemsToReturn = new ArrayList<>();
+        if (customRequest != null && customRequest.getItems() != null && !customRequest.getItems().isEmpty()) {
+            itemsToReturn = customRequest.getItems();
+        } else {
+            for (DeliveryNoteItem item : orig.getItems()) {
+                itemsToReturn.add(DeliveryNoteCreateRequest.ItemEntry.builder()
+                        .salesOrderItemId(item.getSalesOrderItemId())
+                        .itemId(item.getItem() != null ? item.getItem().getId() : null)
+                        .itemCode(item.getItemCode())
+                        .itemName(item.getItemName())
+                        .qty(item.getQty())
+                        .uom(item.getUom())
+                        .rate(item.getRate())
+                        .warehouse(item.getWarehouse())
+                        .build());
+            }
+        }
+
+        DeliveryNoteCreateRequest request = DeliveryNoteCreateRequest.builder()
+                .salesOrderId(orig.getSalesOrderId())
+                .customerId(orig.getCustomer().getId())
+                .postingDate(customRequest != null && customRequest.getPostingDate() != null ? customRequest.getPostingDate() : LocalDate.now())
+                .carrier(orig.getCarrier())
+                .trackingNumber(orig.getTrackingNumber())
+                .shippingAddress(orig.getShippingAddress())
+                .notes("Sales Return against Delivery Note " + orig.getDeliveryNoteNumber() + (customRequest != null && customRequest.getNotes() != null ? " - " + customRequest.getNotes() : ""))
+                .isReturn(true)
+                .returnAgainstId(orig.getId())
+                .returnAgainstNumber(orig.getDeliveryNoteNumber())
+                .items(itemsToReturn)
+                .build();
+
+        return createDeliveryNote(request);
+    }
+
+    @Transactional
     public void updateParentSalesOrderFulfilment(UUID salesOrderId) {
         SalesOrder so = salesOrderRepository.findById(salesOrderId).orElse(null);
         if (so == null) return;
@@ -150,8 +209,16 @@ public class DeliveryNoteService {
         BigDecimal totalDeliveredQty = BigDecimal.ZERO;
         for (DeliveryNote dn : activeNotes) {
             for (DeliveryNoteItem item : dn.getItems()) {
-                totalDeliveredQty = totalDeliveredQty.add(item.getQty());
+                if (Boolean.TRUE.equals(dn.getIsReturn())) {
+                    totalDeliveredQty = totalDeliveredQty.subtract(item.getQty());
+                } else {
+                    totalDeliveredQty = totalDeliveredQty.add(item.getQty());
+                }
             }
+        }
+
+        if (totalDeliveredQty.compareTo(BigDecimal.ZERO) < 0) {
+            totalDeliveredQty = BigDecimal.ZERO;
         }
 
         BigDecimal totalOrderQty = so.getItems().stream()
@@ -181,10 +248,12 @@ public class DeliveryNoteService {
         // Check overall Sales Order status
         if (so.getDeliveryStatus() == DeliveryStatus.FULLY_DELIVERED && so.getBillingStatus() == BillingStatus.FULLY_BILLED) {
             so.setStatus(SalesOrderStatus.COMPLETED);
-        } else if (so.getDeliveryStatus() == DeliveryStatus.FULLY_DELIVERED && so.getBillingStatus() == BillingStatus.NOT_BILLED) {
+        } else if (so.getDeliveryStatus() == DeliveryStatus.FULLY_DELIVERED && so.getBillingStatus() != BillingStatus.FULLY_BILLED) {
             so.setStatus(SalesOrderStatus.TO_BILL);
-        } else if (so.getDeliveryStatus() == DeliveryStatus.NOT_DELIVERED && so.getBillingStatus() == BillingStatus.FULLY_BILLED) {
+        } else if (so.getDeliveryStatus() != DeliveryStatus.FULLY_DELIVERED && so.getBillingStatus() == BillingStatus.FULLY_BILLED) {
             so.setStatus(SalesOrderStatus.TO_DELIVER);
+        } else {
+            so.setStatus(SalesOrderStatus.TO_DELIVER_AND_BILL);
         }
 
         salesOrderRepository.save(so);
@@ -194,6 +263,11 @@ public class DeliveryNoteService {
     private String generateDeliveryNoteNumber() {
         long count = deliveryNoteRepository.count() + 1;
         return String.format("DN-%d-%04d", LocalDate.now().getYear(), count);
+    }
+
+    private String generateReturnDeliveryNoteNumber() {
+        long count = deliveryNoteRepository.findByIsReturnTrue().size() + 1;
+        return String.format("DN-RET-%d-%04d", LocalDate.now().getYear(), count);
     }
 
     public DeliveryNoteDto toDto(DeliveryNote dn) {
@@ -223,6 +297,9 @@ public class DeliveryNoteService {
                 .customerName(dn.getCustomerName())
                 .postingDate(dn.getPostingDate())
                 .status(dn.getStatus())
+                .isReturn(dn.getIsReturn())
+                .returnAgainstId(dn.getReturnAgainstId())
+                .returnAgainstNumber(dn.getReturnAgainstNumber())
                 .carrier(dn.getCarrier())
                 .trackingNumber(dn.getTrackingNumber())
                 .shippingAddress(dn.getShippingAddress())

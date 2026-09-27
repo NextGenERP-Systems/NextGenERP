@@ -44,6 +44,16 @@ public class DeliveryNote {
     @Builder.Default
     private DeliveryNoteStatus status = DeliveryNoteStatus.SUBMITTED;
 
+    @Column(name = "is_return", nullable = false)
+    @Builder.Default
+    private Boolean isReturn = false;
+
+    @Column(name = "return_against_id")
+    private UUID returnAgainstId;
+
+    @Column(name = "return_against_number", length = 100)
+    private String returnAgainstNumber;
+
     @Column(length = 100)
     private String carrier;
 

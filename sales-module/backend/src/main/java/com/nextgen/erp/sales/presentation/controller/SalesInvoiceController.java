@@ -28,6 +28,12 @@ public class SalesInvoiceController {
         return ResponseEntity.ok(salesInvoiceService.getAllSalesInvoices());
     }
 
+    @GetMapping("/credit-notes")
+    @Operation(summary = "Get all Credit Notes (Sales Returns)")
+    public ResponseEntity<List<SalesInvoiceDto>> getAllCreditNotes() {
+        return ResponseEntity.ok(salesInvoiceService.getAllCreditNotes());
+    }
+
     @GetMapping("/{id}")
     @Operation(summary = "Get sales invoice by ID")
     public ResponseEntity<SalesInvoiceDto> getSalesInvoiceById(@PathVariable UUID id) {
@@ -50,6 +56,14 @@ public class SalesInvoiceController {
     @Operation(summary = "Generate sales invoice from an existing Delivery Note")
     public ResponseEntity<SalesInvoiceDto> makeFromDeliveryNote(@PathVariable UUID deliveryNoteId) {
         return ResponseEntity.status(HttpStatus.CREATED).body(salesInvoiceService.makeFromDeliveryNote(deliveryNoteId));
+    }
+
+    @PostMapping("/{id}/create-credit-note")
+    @Operation(summary = "Generate Credit Note (Sales Return) against an existing Sales Invoice")
+    public ResponseEntity<SalesInvoiceDto> createCreditNote(
+            @PathVariable UUID id,
+            @RequestBody(required = false) SalesInvoiceCreateRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(salesInvoiceService.createCreditNote(id, request));
     }
 
     @PostMapping("/{id}/cancel")

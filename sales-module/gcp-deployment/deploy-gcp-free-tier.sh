@@ -97,7 +97,7 @@ services:
     environment:
       POSTGRES_DB: nextgen_erp
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres_secure_2026
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme_set_db_password}
     ports:
       - "5432:5432"
     volumes:
@@ -115,7 +115,7 @@ services:
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/nextgen_erp
       SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: postgres_secure_2026
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-changeme_set_db_password}
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
     ports:
       - "8080:8080"

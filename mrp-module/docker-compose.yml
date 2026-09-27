@@ -7,7 +7,7 @@ services:
     environment:
       POSTGRES_DB: nextgen_mrp
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
     ports:
       - "5435:5432"
     volumes:
@@ -28,11 +28,12 @@ services:
     ports:
       - "8085:8085"
     environment:
-      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:postgresql://host.docker.internal:5433/nextgen_mrp}
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:postgresql://mrp-postgres:5432/nextgen_mrp}
       SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:-postgres}
       SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-postgres}
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+    depends_on:
+      mrp-postgres:
+        condition: service_healthy
 
 
   mrp-frontend:

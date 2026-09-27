@@ -17,8 +17,17 @@ import {
   User,
   Package,
   Home,
+  Zap,
+  ArrowRight,
 } from "lucide-react";
-import { getBlanketOrders, createBlanketOrder, closeBlanketOrder, getCustomers, getCatalogItems } from "@/lib/api";
+import {
+  getBlanketOrders,
+  createBlanketOrder,
+  closeBlanketOrder,
+  createReleaseOrderFromBlanket,
+  getCustomers,
+  getCatalogItems,
+} from "@/lib/api";
 import { BlanketOrder, Customer, CatalogItem } from "@/types/sales";
 import Link from "next/link";
 
@@ -92,6 +101,31 @@ function BlanketOrdersContent() {
       loadData();
     } catch (err: any) {
       alert("Failed to close blanket order: " + (err.message || err));
+    }
+  };
+
+  const handleQuickReleaseOrder = async (bo: BlanketOrder) => {
+    if (bo.status === "CLOSED" || bo.status === "EXPIRED") {
+      alert("Cannot release an order against a " + bo.status + " contract agreement.");
+      return;
+    }
+    const hasRemaining = bo.items.some((i) => (i.remainingQty || 0) > 0);
+    if (!hasRemaining) {
+      alert("All contractual quantities for " + bo.blanketOrderNumber + " have already been 100% fulfilled.");
+      return;
+    }
+
+    if (!confirm(`Generate Release Sales Order against Contract ${bo.blanketOrderNumber} for ${bo.customerName} with locked contract rates?`)) {
+      return;
+    }
+
+    try {
+      const order = await createReleaseOrderFromBlanket(bo.id);
+      setActionSuccess(`Release Sales Order ${order.orderNumber} generated successfully against ${bo.blanketOrderNumber}!`);
+      setTimeout(() => setActionSuccess(null), 5000);
+      loadData();
+    } catch (err: any) {
+      alert("Failed to create release order: " + (err.message || err));
     }
   };
 
@@ -202,98 +236,158 @@ function BlanketOrdersContent() {
           ) : filteredOrders.length === 0 ? (
             <div className="col-span-2 p-8 text-center text-xs text-slate-400">No blanket orders found.</div>
           ) : (
-            filteredOrders.map((bo) => (
-              <div
-                key={bo.id}
-                className="bg-white rounded-xl border border-slate-200 p-5 space-y-4 hover:border-indigo-300 hover:shadow-sm transition-all"
-              >
-                <div className="flex items-start justify-between">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-xs font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded">
-                        {bo.blanketOrderNumber}
-                      </span>
-                      <span
-                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
-                          bo.status === "ACTIVE"
-                            ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                            : "bg-slate-100 text-slate-700 border-slate-200"
-                        }`}
-                      >
-                        {bo.status}
-                      </span>
-                    </div>
-                    <h3 className="font-bold text-slate-900 text-sm mt-1">{bo.customerName}</h3>
-                  </div>
+            filteredOrders.map((bo) => {
+              const totalQty = bo.items.reduce((s, i) => s + (i.qty || 0), 0);
+              const totalOrdered = bo.items.reduce((s, i) => s + (i.orderedQty || 0), 0);
+              const totalRemaining = Math.max(0, totalQty - totalOrdered);
+              const fulfillmentPct = totalQty > 0 ? Math.min(100, Math.round((totalOrdered / totalQty) * 100)) : 0;
+              const isClosedOrExpired = bo.status === "CLOSED" || bo.status === "EXPIRED";
 
-                  <div className="text-right text-[11px] text-slate-500 font-mono">
-                    <div>Valid: {bo.fromDate}</div>
-                    <div>To: {bo.toDate}</div>
-                  </div>
-                </div>
-
-                {/* Items & Consumption Progress */}
-                <div className="space-y-3 pt-2 border-t border-slate-100">
-                  {bo.items.map((item) => {
-                    const progressPercent = Math.min(
-                      100,
-                      Math.round(((item.orderedQty || 0) / (item.qty || 1)) * 100)
-                    );
-                    return (
-                      <div key={item.id} className="bg-slate-50 p-3 rounded-lg border border-slate-200 space-y-2">
-                        <div className="flex items-center justify-between text-xs">
-                          <div>
-                            <span className="font-semibold text-slate-800">{item.itemName}</span>
-                            <span className="text-[10px] text-slate-400 font-mono ml-1.5">({item.itemCode})</span>
-                          </div>
-                          <span className="font-mono font-bold text-indigo-700">₹{Number(item.rate).toLocaleString()} / unit</span>
-                        </div>
-
-                        {/* Progress Bar */}
-                        <div className="space-y-1">
-                          <div className="flex justify-between text-[10px] text-slate-500">
-                            <span>Ordered: {item.orderedQty} / {item.qty} units</span>
-                            <span className="font-semibold">{progressPercent}% Consumed</span>
-                          </div>
-                          <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
-                            <div
-                              className={`h-full transition-all rounded-full ${
-                                progressPercent >= 100 ? "bg-amber-500" : "bg-indigo-600"
-                              }`}
-                              style={{ width: `${progressPercent}%` }}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* Footer Controls */}
-                <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
-                  <span className="text-[11px] text-slate-400 italic line-clamp-1">{bo.termsAndConditions}</span>
-                  <div className="flex items-center gap-2">
-                    {bo.status === "ACTIVE" && (
-                      <>
-                        <Link
-                          href={`/sales/orders?customerId=${bo.customerId}&open=true`}
-                          className="px-2.5 py-1 rounded bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200 text-[11px] font-semibold flex items-center gap-1"
+              return (
+                <div
+                  key={bo.id}
+                  className="bg-white rounded-xl border border-slate-200 p-5 space-y-4 hover:border-indigo-300 hover:shadow-sm transition-all"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-mono text-xs font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200/60">
+                          {bo.blanketOrderNumber}
+                        </span>
+                        <span
+                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
+                            bo.status === "ACTIVE"
+                              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                              : bo.status === "PARTIALLY_ORDERED"
+                              ? "bg-blue-50 text-blue-700 border-blue-200"
+                              : bo.status === "COMPLETED"
+                              ? "bg-purple-50 text-purple-700 border-purple-200"
+                              : bo.status === "EXPIRED"
+                              ? "bg-amber-50 text-amber-700 border-amber-200"
+                              : "bg-slate-100 text-slate-700 border-slate-200"
+                          }`}
                         >
-                          <ShoppingBag className="h-3 w-3" />
-                          <span>+ Sales Order</span>
-                        </Link>
+                          {bo.status.replace("_", " ")}
+                        </span>
+                        <span className="text-[10px] font-mono text-slate-500 font-semibold">
+                          {fulfillmentPct}% Fulfilled
+                        </span>
+                      </div>
+                      <h3 className="font-bold text-slate-900 text-sm mt-1.5">{bo.customerName}</h3>
+                    </div>
+
+                    <div className="text-right text-[11px] text-slate-500 font-mono">
+                      <div>From: {bo.fromDate}</div>
+                      <div>To: {bo.toDate}</div>
+                    </div>
+                  </div>
+
+                  {/* Overall Agreement Consumption Progress */}
+                  <div className="space-y-1 bg-slate-50/70 p-2.5 rounded-lg border border-slate-200">
+                    <div className="flex justify-between text-[11px] text-slate-600">
+                      <span>Contract Total: <strong className="text-slate-900 font-mono">{totalQty}</strong> units</span>
+                      <span>Ordered: <strong className="text-indigo-700 font-mono">{totalOrdered}</strong> | Remaining: <strong className="text-emerald-700 font-mono">{totalRemaining}</strong></span>
+                    </div>
+                    <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full transition-all rounded-full ${
+                          fulfillmentPct >= 100
+                            ? "bg-purple-600"
+                            : fulfillmentPct > 0
+                            ? "bg-blue-600"
+                            : "bg-emerald-500"
+                        }`}
+                        style={{ width: `${fulfillmentPct}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Items & Consumption Progress */}
+                  <div className="space-y-2.5 pt-1">
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Contractual Item Quantities</div>
+                    {bo.items.map((item) => {
+                      const itemProgress = Math.min(
+                        100,
+                        Math.round(((item.orderedQty || 0) / (item.qty || 1)) * 100)
+                      );
+                      const itemRemaining = Math.max(0, (item.qty || 0) - (item.orderedQty || 0));
+
+                      return (
+                        <div key={item.id} className="bg-slate-50/50 p-2.5 rounded-lg border border-slate-200 space-y-1.5">
+                          <div className="flex items-center justify-between text-xs">
+                            <div>
+                              <span className="font-semibold text-slate-800">{item.itemName}</span>
+                              <span className="text-[10px] text-slate-400 font-mono ml-1.5">({item.itemCode})</span>
+                            </div>
+                            <span className="font-mono font-bold text-indigo-700">₹{Number(item.rate).toLocaleString()} / unit</span>
+                          </div>
+
+                          {/* Progress Bar */}
+                          <div className="space-y-0.5">
+                            <div className="flex justify-between text-[10px] text-slate-500">
+                              <span>Ordered: {item.orderedQty || 0} / {item.qty} units (Remaining: {itemRemaining})</span>
+                              <span className="font-semibold">{itemProgress}%</span>
+                            </div>
+                            <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
+                              <div
+                                className={`h-full transition-all rounded-full ${
+                                  itemProgress >= 100 ? "bg-purple-600" : "bg-indigo-600"
+                                }`}
+                                style={{ width: `${itemProgress}%` }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Footer Controls */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-2 border-t border-slate-100 text-xs">
+                    <span className="text-[11px] text-slate-400 italic line-clamp-1">{bo.termsAndConditions}</span>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <Link
+                        href={`/sales/orders?searchTerm=${encodeURIComponent(bo.blanketOrderNumber)}`}
+                        className="px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-semibold transition-colors"
+                        title="View all release orders against this agreement"
+                      >
+                        Orders
+                      </Link>
+
+                      {!isClosedOrExpired && totalRemaining > 0 && (
+                        <>
+                          <button
+                            onClick={() => handleQuickReleaseOrder(bo)}
+                            className="px-2.5 py-1 rounded bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-semibold flex items-center gap-1 shadow-2xs transition-colors"
+                            title="Instantly generate and confirm release Sales Order for remaining quantities"
+                          >
+                            <Zap className="h-3 w-3" />
+                            <span>Quick Release</span>
+                          </button>
+                          <Link
+                            href={`/sales/orders?blanketOrderId=${bo.id}&open=true`}
+                            className="px-2.5 py-1 rounded bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200 text-[11px] font-semibold flex items-center gap-1 transition-colors"
+                            title="Customize quantities before generating Release Order"
+                          >
+                            <ShoppingBag className="h-3 w-3" />
+                            <span>Customize</span>
+                          </Link>
+                        </>
+                      )}
+
+                      {!isClosedOrExpired && (
                         <button
                           onClick={() => handleClose(bo.id, bo.blanketOrderNumber)}
-                          className="px-2 py-1 rounded text-slate-500 hover:text-rose-600 text-[11px]"
+                          className="px-2 py-1 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50 text-[11px] transition-colors"
                         >
                           Close
                         </button>
-                      </>
-                    )}
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </div>

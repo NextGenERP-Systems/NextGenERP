@@ -20,6 +20,7 @@ import {
   User,
   ShoppingBag,
   Home,
+  RotateCcw,
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -28,6 +29,7 @@ import {
   getSalesOrders,
   getItems,
   createDeliveryNote,
+  createDeliveryReturn,
   makeInvoiceFromDelivery,
 } from "@/lib/api";
 import { DeliveryNote, Customer, SalesOrder, CatalogItem } from "@/types/sales";
@@ -55,6 +57,14 @@ function DeliveryNotesContent() {
   const [shippingAddress, setShippingAddress] = useState("");
   const [notes, setNotes] = useState("");
   const [deliveryItems, setDeliveryItems] = useState<
+    { itemCode: string; itemName: string; qty: number; rate: number; uom: string; warehouse: string }[]
+  >([]);
+
+  // Return Modal State
+  const [isReturnOpen, setIsReturnOpen] = useState(false);
+  const [returnNote, setReturnNote] = useState<DeliveryNote | null>(null);
+  const [returnReason, setReturnReason] = useState("");
+  const [returnItems, setReturnItems] = useState<
     { itemCode: string; itemName: string; qty: number; rate: number; uom: string; warehouse: string }[]
   >([]);
 
@@ -177,6 +187,65 @@ function DeliveryNotesContent() {
       loadData();
     } catch (err: any) {
       alert(err.message || "Failed to create invoice");
+    }
+  };
+
+  const openReturnModal = (dn: DeliveryNote) => {
+    setReturnNote(dn);
+    setReturnReason(`Return against Delivery Note ${dn.deliveryNoteNumber}`);
+    if (dn.items && dn.items.length > 0) {
+      setReturnItems(
+        dn.items.map((i) => ({
+          itemCode: i.itemCode,
+          itemName: i.itemName,
+          qty: i.qty,
+          rate: i.rate || 0,
+          uom: i.uom || "Nos",
+          warehouse: i.warehouse || "Stores - Default",
+        }))
+      );
+    } else {
+      setReturnItems([
+        {
+          itemCode: "ERP-CLOUD-ENT",
+          itemName: "Return Item",
+          qty: dn.totalQty || 1,
+          rate: 0,
+          uom: "Nos",
+          warehouse: "Stores - Default",
+        },
+      ]);
+    }
+    setIsReturnOpen(true);
+  };
+
+  const handleReturnQtyChange = (idx: number, qty: number) => {
+    const updated = [...returnItems];
+    updated[idx] = { ...updated[idx], qty: Math.max(1, qty) };
+    setReturnItems(updated);
+  };
+
+  const handleCreateReturnSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!returnNote) return;
+
+    try {
+      await createDeliveryReturn(returnNote.id, {
+        customerId: returnNote.customerId,
+        salesOrderId: returnNote.salesOrderId,
+        carrier: returnNote.carrier,
+        trackingNumber: `RET-${returnNote.trackingNumber || "TRK"}`,
+        shippingAddress: returnNote.shippingAddress,
+        notes: returnReason,
+        items: returnItems,
+      });
+
+      setIsReturnOpen(false);
+      setActionSuccess(`Delivery Return processed for ${returnNote.deliveryNoteNumber}! Sales Order delivery status recalculated.`);
+      setTimeout(() => setActionSuccess(null), 4000);
+      loadData();
+    } catch (err: any) {
+      alert("Failed to process delivery return: " + (err.message || err));
     }
   };
 
@@ -361,7 +430,21 @@ function DeliveryNotesContent() {
               ) : (
                 filteredNotes.map((dn) => (
                   <tr key={dn.id} className="hover:bg-slate-50/75 transition-colors">
-                    <td className="py-3 px-4 font-semibold text-blue-600 font-mono">{dn.deliveryNoteNumber}</td>
+                    <td className="py-3 px-4 font-semibold text-blue-600 font-mono">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span>{dn.deliveryNoteNumber}</span>
+                        {dn.isReturn && (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-800 border border-purple-200">
+                            <RotateCcw className="h-2.5 w-2.5 mr-0.5" /> Return
+                          </span>
+                        )}
+                      </div>
+                      {dn.returnAgainstNumber && (
+                        <div className="text-[10px] text-slate-400 font-normal">
+                          Against: <span className="font-mono text-slate-600 font-medium">{dn.returnAgainstNumber}</span>
+                        </div>
+                      )}
+                    </td>
                     <td className="py-3 px-4 font-medium text-slate-800">{dn.customerName}</td>
                     <td className="py-3 px-4 text-slate-600 font-mono text-[11px]">{dn.postingDate}</td>
                     <td className="py-3 px-4 text-slate-600">
@@ -386,12 +469,30 @@ function DeliveryNotesContent() {
                       <div className="flex items-center justify-end gap-1.5">
                         <button
                           onClick={() => openPrintModal(dn)}
-                          title="Print Packing Slip"
+                          title="Print Delivery Document"
                           className="p-1.5 text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded border border-slate-200 transition-all"
                         >
                           <Printer className="h-3.5 w-3.5" />
                         </button>
-                        {dn.status !== "CANCELLED" && (
+                        <Link
+                          href={`/sales/packing-slips?search=${encodeURIComponent(dn.deliveryNoteNumber)}`}
+                          title="View / Manage Packing Slips"
+                          className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded border border-indigo-200 transition-all flex items-center gap-1"
+                        >
+                          <Package className="h-3.5 w-3.5" />
+                          <span className="text-[10px] font-semibold hidden md:inline">Packing Slip</span>
+                        </Link>
+                        {!dn.isReturn && dn.status !== "CANCELLED" && (
+                          <button
+                            onClick={() => openReturnModal(dn)}
+                            title="Process Delivery Return"
+                            className="p-1.5 text-purple-600 hover:bg-purple-50 rounded border border-purple-200 transition-all flex items-center gap-1"
+                          >
+                            <RotateCcw className="h-3.5 w-3.5" />
+                            <span className="text-[10px] font-semibold hidden sm:inline">Return</span>
+                          </button>
+                        )}
+                        {!dn.isReturn && dn.status !== "CANCELLED" && (
                           <button
                             onClick={() => handleMakeInvoice(dn.id)}
                             className="px-2 py-1 text-[11px] font-semibold bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 rounded transition-all flex items-center gap-1"
@@ -579,6 +680,93 @@ function DeliveryNotesContent() {
                   className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-sm"
                 >
                   Save Delivery Note
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Process Delivery Return Modal */}
+      {isReturnOpen && returnNote && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-xl max-w-xl w-full p-6 border border-slate-200 space-y-4 animate-in fade-in zoom-in-95 duration-150 my-8">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h2 className="font-bold text-slate-800 text-sm flex items-center gap-2">
+                <RotateCcw className="h-4 w-4 text-purple-600" />
+                <span>Process Sales Return Delivery</span>
+              </h2>
+              <button onClick={() => setIsReturnOpen(false)} className="text-slate-400 hover:text-slate-600">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="bg-purple-50/70 p-3 rounded-xl border border-purple-200 space-y-1 text-xs">
+              <div className="flex justify-between text-slate-600">
+                <span>Original Delivery Note:</span>
+                <span className="font-semibold text-slate-900 font-mono">{returnNote.deliveryNoteNumber}</span>
+              </div>
+              <div className="flex justify-between text-slate-600">
+                <span>Customer:</span>
+                <span className="font-semibold text-slate-900">{returnNote.customerName}</span>
+              </div>
+              <div className="text-[11px] text-purple-700 pt-1 border-t border-purple-200/60">
+                <strong>Warehouse Impact:</strong> Returned items will be received back into stock. Sales Order fulfillment percentage will be deducted and status restored.
+              </div>
+            </div>
+
+            <form onSubmit={handleCreateReturnSubmit} className="space-y-4 text-xs">
+              <div className="space-y-2 border border-slate-200 rounded-xl p-3 bg-slate-50/50">
+                <span className="font-semibold text-slate-800 text-[11px]">Returned Item Quantities</span>
+                <div className="space-y-2">
+                  {returnItems.map((item, idx) => (
+                    <div key={idx} className="grid grid-cols-12 gap-2 items-center bg-white p-2.5 rounded-lg border border-slate-200">
+                      <div className="col-span-7 space-y-0.5">
+                        <label className="text-[10px] text-slate-400">Item</label>
+                        <div className="font-semibold text-slate-800 text-xs truncate">{item.itemName}</div>
+                        <div className="font-mono text-[10px] text-slate-400">{item.itemCode}</div>
+                      </div>
+                      <div className="col-span-5 space-y-0.5">
+                        <label className="text-[10px] text-slate-400">Return Qty ({item.uom})</label>
+                        <input
+                          type="number"
+                          min="1"
+                          value={item.qty}
+                          onChange={(e) => handleReturnQtyChange(idx, Number(e.target.value))}
+                          className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-xs text-center font-mono font-semibold"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="font-semibold text-slate-700">Reason / Return Notes *</label>
+                <input
+                  type="text"
+                  required
+                  value={returnReason}
+                  onChange={(e) => setReturnReason(e.target.value)}
+                  placeholder="e.g., Goods damaged during shipment / rejected upon delivery..."
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setIsReturnOpen(false)}
+                  className="px-4 py-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 font-semibold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-semibold shadow-sm flex items-center gap-1.5"
+                >
+                  <RotateCcw className="h-3.5 w-3.5" />
+                  <span>Submit Delivery Return</span>
                 </button>
               </div>
             </form>

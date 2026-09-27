@@ -32,7 +32,24 @@ import {
   Customer360Dashboard,
   BlanketOrder,
   SalesPartner,
+  SalesPartnerPayout,
   SalesPerson,
+  PurchaseRequisition,
+  PurchaseRequisitionItem,
+  MaintenanceContract,
+  MaintenanceVisit,
+  WarrantyClaim,
+  PaymentTermsTemplate,
+  PaymentTermsTemplateCreateRequest,
+  PaymentSchedule,
+  PackingSlip,
+  PackingSlipCreateRequest,
+  SalesTeamMember,
+  SalesTeamSaveRequest,
+  TargetType,
+  SalesTarget,
+  SalesTargetCreateRequest,
+  TargetVarianceReport,
 } from "@/types/sales";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api/v1";
@@ -1329,7 +1346,8 @@ export async function createSalesOrder(data: any): Promise<SalesOrder> {
     deliveredQty: 0,
     billedAmt: 0,
     pickedQty: 0,
-    deliveredBySupplier: false,
+    deliveredBySupplier: Boolean(i.deliveredBySupplier),
+    supplier: i.supplier || undefined,
     grantCommission: true,
   }));
 
@@ -1350,6 +1368,12 @@ export async function createSalesOrder(data: any): Promise<SalesOrder> {
     deliveryStatus: "NOT_DELIVERED",
     billingStatus: "NOT_BILLED",
     quotationId: data.quotationId,
+    blanketOrderId: data.blanketOrderId,
+    blanketOrderNumber: data.blanketOrderId
+      ? MOCK_BLANKET_ORDERS.find((b) => b.id === data.blanketOrderId)?.blanketOrderNumber
+      : undefined,
+    salesPartnerId: data.salesPartnerId,
+    salesPartnerName: data.salesPartnerName || (data.salesPartnerId ? MOCK_SALES_PARTNERS.find((p) => p.id === data.salesPartnerId)?.partnerName : undefined),
     currency: data.currency || "INR",
     conversionRate: 1.0,
     totalQty: items.reduce((acc: number, item: any) => acc + item.qty, 0),
@@ -1371,8 +1395,8 @@ export async function createSalesOrder(data: any): Promise<SalesOrder> {
     reserveStock: true,
     skipDeliveryNote: false,
     amountEligibleForCommission: netTotal,
-    commissionRate: 5.0,
-    totalCommission: netTotal * 0.05,
+    commissionRate: data.commissionRate !== undefined ? Number(data.commissionRate) : (data.salesPartnerId ? (MOCK_SALES_PARTNERS.find(p => p.id === data.salesPartnerId)?.commissionRate || 5.0) : 0),
+    totalCommission: netTotal * ((data.commissionRate !== undefined ? Number(data.commissionRate) : (data.salesPartnerId ? (MOCK_SALES_PARTNERS.find(p => p.id === data.salesPartnerId)?.commissionRate || 5.0) : 0)) / 100),
     items: items,
     taxes: [
       {
@@ -1405,6 +1429,31 @@ export async function submitSalesOrder(orderId: string): Promise<SalesOrder | nu
     order.status = "TO_DELIVER_AND_BILL";
     order.deliveryStatus = "NOT_DELIVERED";
     order.billingStatus = "NOT_BILLED";
+
+    if (order.blanketOrderId) {
+      const bo = MOCK_BLANKET_ORDERS.find((b) => b.id === order.blanketOrderId);
+      if (bo && bo.items) {
+        for (const item of order.items || []) {
+          const boItem = bo.items.find((bi) => bi.itemCode === item.itemCode);
+          if (boItem) {
+            boItem.orderedQty = (boItem.orderedQty || 0) + item.qty;
+            boItem.remainingQty = Math.max(0, boItem.qty - boItem.orderedQty);
+          }
+        }
+        const allCompleted = bo.items.every((bi) => (bi.remainingQty || 0) <= 0);
+        const anyOrdered = bo.items.some((bi) => (bi.orderedQty || 0) > 0);
+        bo.status = allCompleted ? "COMPLETED" : anyOrdered ? "PARTIALLY_ORDERED" : "ACTIVE";
+      }
+    }
+
+    if (order.salesPartnerId && order.totalCommission) {
+      const sp = MOCK_SALES_PARTNERS.find((p) => p.id === order.salesPartnerId);
+      if (sp) {
+        sp.totalAllocatedAmount = (sp.totalAllocatedAmount || 0) + order.netTotal;
+        sp.totalCommissionEarned = (sp.totalCommissionEarned || 0) + order.totalCommission;
+        sp.balanceOutstanding = Math.max(0, (sp.totalCommissionEarned || 0) - (sp.totalCommissionPaid || 0));
+      }
+    }
   }
   return order || null;
 }
@@ -1418,7 +1467,33 @@ export async function cancelSalesOrder(orderId: string): Promise<SalesOrder | nu
   }
   const order = MOCK_ORDERS.find((o) => o.id === orderId);
   if (order) {
+    const wasSubmitted = order.status !== "DRAFT";
     order.status = "CANCELLED";
+
+    if (order.blanketOrderId && wasSubmitted) {
+      const bo = MOCK_BLANKET_ORDERS.find((b) => b.id === order.blanketOrderId);
+      if (bo && bo.items) {
+        for (const item of order.items || []) {
+          const boItem = bo.items.find((bi) => bi.itemCode === item.itemCode);
+          if (boItem) {
+            boItem.orderedQty = Math.max(0, (boItem.orderedQty || 0) - item.qty);
+            boItem.remainingQty = Math.max(0, boItem.qty - boItem.orderedQty);
+          }
+        }
+        const allCompleted = bo.items.every((bi) => (bi.remainingQty || 0) <= 0);
+        const anyOrdered = bo.items.some((bi) => (bi.orderedQty || 0) > 0);
+        bo.status = allCompleted ? "COMPLETED" : anyOrdered ? "PARTIALLY_ORDERED" : "ACTIVE";
+      }
+    }
+
+    if (order.salesPartnerId && wasSubmitted && order.totalCommission) {
+      const sp = MOCK_SALES_PARTNERS.find((p) => p.id === order.salesPartnerId);
+      if (sp) {
+        sp.totalAllocatedAmount = Math.max(0, (sp.totalAllocatedAmount || 0) - order.netTotal);
+        sp.totalCommissionEarned = Math.max(0, (sp.totalCommissionEarned || 0) - order.totalCommission);
+        sp.balanceOutstanding = Math.max(0, (sp.totalCommissionEarned || 0) - (sp.totalCommissionPaid || 0));
+      }
+    }
   }
   return order || null;
 }
@@ -1471,13 +1546,101 @@ let MOCK_OPPORTUNITIES: Opportunity[] = [
     opportunityType: "Sales",
     status: "PROPOSAL",
     dealSize: 48000,
-    probability: 75,
-    expectedClosingDate: "2026-09-30",
+    probability: 60,
+    expectedClosingDate: "2026-10-15",
     salesStage: "Proposal / Price Quotation",
+    salesPerson: "Priya Sharma",
     contactEmail: "procurement@apexglobal.io",
     contactPhone: "+1 (555) 234-8800",
-    notes: "Custom integration with on-premise telemetry.",
+    notes: "Custom integration with on-premise telemetry and multi-company setup.",
     createdAt: "2026-08-19T11:00:00Z",
+  },
+  {
+    id: "opp-002",
+    title: "Supply Chain WMS Barcode Terminal Fleet",
+    opportunityFrom: "CUSTOMER",
+    partyId: "77777777-7777-7777-7777-777777777703",
+    partyName: "Zenith Logistics Pvt Ltd",
+    opportunityType: "Sales",
+    status: "QUALIFICATION",
+    dealSize: 32000,
+    probability: 30,
+    expectedClosingDate: "2026-10-31",
+    salesStage: "Technical Qualification",
+    salesPerson: "Rahul Verma",
+    contactEmail: "ops@zenithlogistics.in",
+    contactPhone: "+91 98200 12345",
+    notes: "Evaluating Android-based rugged handheld scanners and printer integration.",
+    createdAt: "2026-09-02T09:30:00Z",
+  },
+  {
+    id: "opp-003",
+    title: "Automated POS Terminal Rollout - 12 Retail Outlets",
+    opportunityFrom: "CUSTOMER",
+    partyId: "77777777-7777-7777-7777-777777777702",
+    partyName: "BlueFin Dynamics International",
+    opportunityType: "Sales",
+    status: "NEGOTIATION",
+    dealSize: 75000,
+    probability: 80,
+    expectedClosingDate: "2026-10-05",
+    salesStage: "Commercial Negotiation",
+    salesPerson: "Priya Sharma",
+    contactEmail: "finance@bluefindynamics.com",
+    contactPhone: "+44 20 7946 0912",
+    notes: "Reviewing payment gateway SLA terms and hardware deployment schedule.",
+    createdAt: "2026-08-25T14:15:00Z",
+  },
+  {
+    id: "opp-004",
+    title: "Multi-Branch Cloud MRP Implementation",
+    opportunityFrom: "LEAD",
+    partyName: "NovaTech Industrial Corp",
+    opportunityType: "Manufacturing ERP",
+    status: "PROSPECTING",
+    dealSize: 120000,
+    probability: 15,
+    expectedClosingDate: "2026-11-20",
+    salesStage: "Discovery & Needs Assessment",
+    salesPerson: "Siddharth Rao",
+    contactEmail: "director@novatechind.com",
+    contactPhone: "+1 (555) 789-2233",
+    notes: "Requires multi-level BOM explosion and shop-floor capacity planning.",
+    createdAt: "2026-09-12T16:00:00Z",
+  },
+  {
+    id: "opp-005",
+    title: "Annual Maintenance Contract Upgrade (24/7 SLA)",
+    opportunityFrom: "CUSTOMER",
+    partyId: "77777777-7777-7777-7777-777777777701",
+    partyName: "Apex Global Technologies LLC",
+    opportunityType: "Support AMC",
+    status: "WON",
+    dealSize: 45000,
+    probability: 100,
+    expectedClosingDate: "2026-09-15",
+    salesStage: "Closed Won",
+    salesPerson: "Priya Sharma",
+    contactEmail: "support-contracts@apexglobal.io",
+    notes: "Executed 1-year premium enterprise hardware & support agreement.",
+    createdAt: "2026-07-10T10:00:00Z",
+  },
+  {
+    id: "opp-006",
+    title: "Legacy Accounting System Replacement",
+    opportunityFrom: "LEAD",
+    partyName: "Vanguard Aerospace Systems",
+    opportunityType: "Sales",
+    status: "LOST",
+    dealSize: 90000,
+    probability: 0,
+    expectedClosingDate: "2026-08-30",
+    salesStage: "Closed Lost",
+    salesPerson: "Rahul Verma",
+    lostReason: "Competitor offered multi-year pre-paid discount that customer prioritized.",
+    contactEmail: "it@vanguardaero.com",
+    notes: "Stay in touch for Q1 next fiscal year review.",
+    createdAt: "2026-06-15T08:45:00Z",
   },
 ];
 
@@ -1576,6 +1739,8 @@ export async function createOpportunity(data: any): Promise<Opportunity> {
     probability: Number(data.probability) || 50,
     expectedClosingDate: data.expectedClosingDate || new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0],
     salesStage: data.salesStage || "Qualification",
+    salesPerson: data.salesPerson || "Priya Sharma",
+    lostReason: data.lostReason,
     contactEmail: data.contactEmail,
     contactPhone: data.contactPhone,
     notes: data.notes,
@@ -1585,10 +1750,16 @@ export async function createOpportunity(data: any): Promise<Opportunity> {
   return newOpp;
 }
 
-export async function updateOpportunityStatus(id: string, status: string, stage?: string): Promise<Opportunity> {
+export async function updateOpportunityStatus(
+  id: string,
+  status: string,
+  stage?: string,
+  lostReason?: string
+): Promise<Opportunity> {
   try {
     let url = `${API_BASE}/opportunities/${id}/status?status=${status}`;
     if (stage) url += `&stage=${encodeURIComponent(stage)}`;
+    if (lostReason) url += `&lostReason=${encodeURIComponent(lostReason)}`;
     const res = await fetch(url, {
       method: "PATCH",
       headers: getAuthHeaders(),
@@ -1601,6 +1772,7 @@ export async function updateOpportunityStatus(id: string, status: string, stage?
   if (opp) {
     opp.status = status as OpportunityStatus;
     if (stage) opp.salesStage = stage;
+    if (lostReason) opp.lostReason = lostReason;
   }
   return opp || MOCK_OPPORTUNITIES[0];
 }
@@ -1677,14 +1849,22 @@ export async function createDeliveryNote(data: any): Promise<DeliveryNote> {
 
   const totalAmount = items.reduce((acc: number, item: any) => acc + item.amount, 0);
 
+  const isReturn = Boolean(data.isReturn);
+  const dnNumber = isReturn
+    ? `DN-RET-2026-${Math.floor(1000 + Math.random() * 9000)}`
+    : `DN-2026-${Math.floor(1000 + Math.random() * 9000)}`;
+
   const newDn: DeliveryNote = {
     id: `dn-${Date.now()}`,
-    deliveryNoteNumber: `DN-2026-${Math.floor(1000 + Math.random() * 9000)}`,
+    deliveryNoteNumber: dnNumber,
     salesOrderId: data.salesOrderId,
     customerId: data.customerId,
     customerName: cust ? cust.customerName : "Customer",
     postingDate: data.postingDate || new Date().toISOString().split("T")[0],
     status: "SUBMITTED",
+    isReturn: isReturn,
+    returnAgainstId: data.returnAgainstId,
+    returnAgainstNumber: data.returnAgainstNumber,
     carrier: data.carrier || "Standard Freight Carrier",
     trackingNumber: data.trackingNumber || `TRK-${Math.floor(100000 + Math.random() * 900000)}`,
     shippingAddress: data.shippingAddress || "Client Receiving Dock",
@@ -1697,6 +1877,37 @@ export async function createDeliveryNote(data: any): Promise<DeliveryNote> {
 
   MOCK_DELIVERY_NOTES.unshift(newDn);
   return newDn;
+}
+
+export async function createDeliveryReturn(deliveryNoteId: string, data?: any): Promise<DeliveryNote> {
+  try {
+    const res = await fetch(`${API_BASE}/delivery-notes/${deliveryNoteId}/create-return`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+      body: JSON.stringify(data || {}),
+    });
+    if (res.ok) {
+      const created = await res.json();
+      MOCK_DELIVERY_NOTES.unshift(created);
+      return created;
+    }
+  } catch (err) {
+    console.warn("Backend unavailable, creating delivery return locally", err);
+  }
+
+  const orig = MOCK_DELIVERY_NOTES.find((d) => d.id === deliveryNoteId);
+  return await createDeliveryNote({
+    salesOrderId: orig?.salesOrderId,
+    customerId: orig?.customerId,
+    postingDate: data?.postingDate || new Date().toISOString().split("T")[0],
+    isReturn: true,
+    returnAgainstId: deliveryNoteId,
+    returnAgainstNumber: orig?.deliveryNoteNumber,
+    carrier: orig?.carrier,
+    shippingAddress: orig?.shippingAddress,
+    notes: data?.notes || `Sales Return against ${orig?.deliveryNoteNumber}`,
+    items: data?.items || orig?.items || [],
+  });
 }
 
 export async function makeDeliveryNoteFromOrder(salesOrderId: string): Promise<DeliveryNote> {
@@ -2008,7 +2219,32 @@ export async function createSalesInvoice(data: any): Promise<SalesInvoice> {
   const netTotal = items.reduce((acc: number, item: any) => acc + item.amount, 0);
   const totalTax = netTotal * 0.18;
   const grandTotal = netTotal + totalTax;
-  const invNumber = `SINV-2026-${Math.floor(1000 + Math.random() * 9000)}`;
+  const isReturn = Boolean(data.isReturn);
+  const invNumber = isReturn
+    ? `CRN-2026-${Math.floor(1000 + Math.random() * 9000)}`
+    : `SINV-2026-${Math.floor(1000 + Math.random() * 9000)}`;
+
+  let allocatedAdvance = 0;
+  let paidAmt = 0;
+  let outstandingAmt = grandTotal;
+  let invStatus: SalesInvoice["status"] = "UNPAID";
+
+  if (isReturn) {
+    paidAmt = grandTotal;
+    outstandingAmt = 0;
+    invStatus = "PAID";
+  } else if (data.salesOrderId) {
+    const advances = MOCK_PAYMENTS.filter((p) => p.salesOrderId === data.salesOrderId);
+    const totalAdv = advances.reduce((s, p) => s + (p.paidAmount || 0), 0);
+    const prevAlloc = MOCK_INVOICES.filter(
+      (i) => i.salesOrderId === data.salesOrderId && i.status !== "CANCELLED"
+    ).reduce((s, i) => s + (i.allocatedAdvanceAmount || 0), 0);
+    const avail = Math.max(0, totalAdv - prevAlloc);
+    allocatedAdvance = Math.min(grandTotal, avail);
+    paidAmt = allocatedAdvance;
+    outstandingAmt = grandTotal - allocatedAdvance;
+    invStatus = outstandingAmt <= 0 ? "PAID" : allocatedAdvance > 0 ? "PARTLY_PAID" : "UNPAID";
+  }
 
   const newInv: SalesInvoice = {
     id: `sinv-${Date.now()}`,
@@ -2019,7 +2255,11 @@ export async function createSalesInvoice(data: any): Promise<SalesInvoice> {
     customerName: cust ? cust.customerName : "Customer Account",
     postingDate: data.postingDate || new Date().toISOString().split("T")[0],
     dueDate: data.dueDate || new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0],
-    status: "UNPAID",
+    status: invStatus,
+    isReturn: isReturn,
+    returnAgainstId: data.returnAgainstId,
+    returnAgainstNumber: data.returnAgainstNumber,
+    allocatedAdvanceAmount: allocatedAdvance,
     currency: data.currency || "INR",
     conversionRate: 1.0,
     netTotal: netTotal,
@@ -2027,9 +2267,9 @@ export async function createSalesInvoice(data: any): Promise<SalesInvoice> {
     grandTotal: grandTotal,
     roundedTotal: Math.round(grandTotal),
     inWords: `INR ${Math.round(grandTotal).toLocaleString()} Only`,
-    paidAmount: 0,
-    outstandingAmount: grandTotal,
-    paymentTerms: data.paymentTerms || "Net 30 Days",
+    paidAmount: paidAmt,
+    outstandingAmount: outstandingAmt,
+    paymentTerms: data.paymentTerms || (isReturn ? "Credit Adjustment" : "Net 30 Days"),
     notes: data.notes,
     items: items,
     taxes: [
@@ -2046,75 +2286,177 @@ export async function createSalesInvoice(data: any): Promise<SalesInvoice> {
   };
 
   if (cust) {
-    cust.outstandingBalance = (cust.outstandingBalance || 0) + grandTotal;
+    if (isReturn) {
+      cust.outstandingBalance = Math.max(0, (cust.outstandingBalance || 0) - grandTotal);
+    } else {
+      cust.outstandingBalance = (cust.outstandingBalance || 0) + outstandingAmt;
+    }
     cust.availableCredit = Math.max(0, (cust.creditLimit || 0) - cust.outstandingBalance);
+  }
+
+  if (isReturn && data.returnAgainstId) {
+    const orig = MOCK_INVOICES.find((i) => i.id === data.returnAgainstId);
+    if (orig) {
+      orig.outstandingAmount = Math.max(0, (orig.outstandingAmount || 0) - grandTotal);
+      if (orig.outstandingAmount <= 0) {
+        orig.status = "PAID";
+      }
+    }
   }
 
   // Double-entry GL Posting
   const today = new Date().toISOString().split("T")[0];
-  MOCK_GL_ENTRIES.unshift({
-    id: `gl-${Date.now()}-1`,
-    postingDate: today,
-    voucherType: "Sales Invoice",
-    voucherNo: invNumber,
-    voucherId: newInv.id,
-    account: "1310 - Debtors (Accounts Receivable)",
-    debit: grandTotal,
-    credit: 0,
-    customerId: newInv.customerId,
-    customerName: newInv.customerName,
-    remarks: `Sales Invoice created for ${newInv.customerName}`,
-    cancelled: false,
-    createdAt: new Date().toISOString(),
-  });
-  MOCK_GL_ENTRIES.unshift({
-    id: `gl-${Date.now()}-2`,
-    postingDate: today,
-    voucherType: "Sales Invoice",
-    voucherNo: invNumber,
-    voucherId: newInv.id,
-    account: "4110 - Sales Revenue",
-    debit: 0,
-    credit: netTotal,
-    customerId: newInv.customerId,
-    customerName: newInv.customerName,
-    remarks: `Sales Revenue earned on ${invNumber}`,
-    cancelled: false,
-    createdAt: new Date().toISOString(),
-  });
-  if (totalTax > 0) {
+  if (isReturn) {
+    MOCK_GL_ENTRIES.unshift({
+      id: `gl-${Date.now()}-1`,
+      postingDate: today,
+      voucherType: "Credit Note",
+      voucherNo: invNumber,
+      voucherId: newInv.id,
+      account: "4120 - Sales Returns & Allowances",
+      debit: netTotal,
+      credit: 0,
+      customerId: newInv.customerId,
+      customerName: newInv.customerName,
+      remarks: `Sales Return on Credit Note ${invNumber}`,
+      cancelled: false,
+      createdAt: new Date().toISOString(),
+    });
+    if (totalTax > 0) {
+      MOCK_GL_ENTRIES.unshift({
+        id: `gl-${Date.now()}-2`,
+        postingDate: today,
+        voucherType: "Credit Note",
+        voucherNo: invNumber,
+        voucherId: newInv.id,
+        account: "2210 - Sales Output Tax Liability",
+        debit: totalTax,
+        credit: 0,
+        customerId: newInv.customerId,
+        customerName: newInv.customerName,
+        remarks: `Output GST reversal on Credit Note ${invNumber}`,
+        cancelled: false,
+        createdAt: new Date().toISOString(),
+      });
+    }
     MOCK_GL_ENTRIES.unshift({
       id: `gl-${Date.now()}-3`,
+      postingDate: today,
+      voucherType: "Credit Note",
+      voucherNo: invNumber,
+      voucherId: newInv.id,
+      account: "1310 - Debtors (Accounts Receivable)",
+      debit: 0,
+      credit: grandTotal,
+      customerId: newInv.customerId,
+      customerName: newInv.customerName,
+      remarks: `Customer credit adjustment on Credit Note ${invNumber}`,
+      cancelled: false,
+      createdAt: new Date().toISOString(),
+    });
+  } else {
+    MOCK_GL_ENTRIES.unshift({
+      id: `gl-${Date.now()}-1`,
       postingDate: today,
       voucherType: "Sales Invoice",
       voucherNo: invNumber,
       voucherId: newInv.id,
-      account: "2210 - Sales Output Tax Liability",
-      debit: 0,
-      credit: totalTax,
+      account: "1310 - Debtors (Accounts Receivable)",
+      debit: grandTotal,
+      credit: 0,
       customerId: newInv.customerId,
       customerName: newInv.customerName,
-      remarks: `Output GST payable on ${invNumber}`,
+      remarks: `Sales Invoice created for ${newInv.customerName}`,
       cancelled: false,
       createdAt: new Date().toISOString(),
     });
+    MOCK_GL_ENTRIES.unshift({
+      id: `gl-${Date.now()}-2`,
+      postingDate: today,
+      voucherType: "Sales Invoice",
+      voucherNo: invNumber,
+      voucherId: newInv.id,
+      account: "4110 - Sales Revenue",
+      debit: 0,
+      credit: netTotal,
+      customerId: newInv.customerId,
+      customerName: newInv.customerName,
+      remarks: `Sales Revenue earned on ${invNumber}`,
+      cancelled: false,
+      createdAt: new Date().toISOString(),
+    });
+    if (totalTax > 0) {
+      MOCK_GL_ENTRIES.unshift({
+        id: `gl-${Date.now()}-3`,
+        postingDate: today,
+        voucherType: "Sales Invoice",
+        voucherNo: invNumber,
+        voucherId: newInv.id,
+        account: "2210 - Sales Output Tax Liability",
+        debit: 0,
+        credit: totalTax,
+        customerId: newInv.customerId,
+        customerName: newInv.customerName,
+        remarks: `Output GST payable on ${invNumber}`,
+        cancelled: false,
+        createdAt: new Date().toISOString(),
+      });
+    }
   }
 
   if (data.salesOrderId) {
     const order = MOCK_ORDERS.find((o) => o.id === data.salesOrderId);
     if (order) {
-      order.perBilled = 100;
-      order.billingStatus = "FULLY_BILLED";
-      if (order.deliveryStatus === "FULLY_DELIVERED") {
-        order.status = "COMPLETED";
+      if (isReturn) {
+        order.perBilled = Math.max(0, (order.perBilled || 100) - 50);
+        order.billingStatus = order.perBilled <= 0 ? "NOT_BILLED" : "PARTLY_BILLED";
       } else {
+        order.perBilled = 100;
+        order.billingStatus = "FULLY_BILLED";
+      }
+      if (order.deliveryStatus === "FULLY_DELIVERED" && order.billingStatus === "FULLY_BILLED") {
+        order.status = "COMPLETED";
+      } else if (order.deliveryStatus === "FULLY_DELIVERED") {
+        order.status = "TO_BILL";
+      } else if (order.billingStatus === "FULLY_BILLED") {
         order.status = "TO_DELIVER";
+      } else {
+        order.status = "TO_DELIVER_AND_BILL";
       }
     }
   }
 
   MOCK_INVOICES.unshift(newInv);
   return newInv;
+}
+
+export async function createCreditNote(invoiceId: string, data?: any): Promise<SalesInvoice> {
+  try {
+    const res = await fetch(`${API_BASE}/sales-invoices/${invoiceId}/create-credit-note`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+      body: JSON.stringify(data || {}),
+    });
+    if (res.ok) {
+      const created = await res.json();
+      MOCK_INVOICES.unshift(created);
+      return created;
+    }
+  } catch (err) {
+    console.warn("Backend unavailable, creating credit note locally", err);
+  }
+
+  const orig = MOCK_INVOICES.find((i) => i.id === invoiceId);
+  return await createSalesInvoice({
+    salesOrderId: orig?.salesOrderId,
+    customerId: orig?.customerId,
+    postingDate: data?.postingDate || new Date().toISOString().split("T")[0],
+    isReturn: true,
+    returnAgainstId: invoiceId,
+    returnAgainstNumber: orig?.invoiceNumber,
+    notes: data?.notes || `Credit Note for return against ${orig?.invoiceNumber}`,
+    items: data?.items || orig?.items || [],
+  });
 }
 
 export async function makeInvoiceFromOrder(salesOrderId: string): Promise<SalesInvoice> {
@@ -2325,6 +2667,16 @@ export async function getPayments(): Promise<PaymentEntry[]> {
   return MOCK_PAYMENTS;
 }
 
+export async function getPaymentsBySalesOrderId(salesOrderId: string): Promise<PaymentEntry[]> {
+  try {
+    const res = await fetch(`${API_BASE}/payments/order/${salesOrderId}`, { cache: "no-store", headers: getAuthHeaders() });
+    if (res.ok) return await res.json();
+  } catch (err) {
+    console.warn("Backend unavailable, using fallback mock payments by order", err);
+  }
+  return MOCK_PAYMENTS.filter((p) => p.salesOrderId === salesOrderId);
+}
+
 export async function recordPayment(data: any): Promise<PaymentEntry> {
   try {
     const res = await fetch(`${API_BASE}/payments`, {
@@ -2349,6 +2701,7 @@ export async function recordPayment(data: any): Promise<PaymentEntry> {
   const cust = MOCK_CUSTOMERS.find((c) => c.id === data.customerId);
   const paidAmt = Number(data.paidAmount) || 0;
   const payNumber = `PAY-2026-${Math.floor(1000 + Math.random() * 9000)}`;
+  const isAdvance = Boolean(data.salesOrderId && !data.salesInvoiceId);
 
   const newPay: PaymentEntry = {
     id: `pay-${Date.now()}`,
@@ -2360,6 +2713,8 @@ export async function recordPayment(data: any): Promise<PaymentEntry> {
     customerName: cust ? cust.customerName : "Customer Account",
     salesInvoiceId: data.salesInvoiceId,
     salesOrderId: data.salesOrderId,
+    isAdvance: isAdvance,
+    allocatedAmount: 0,
     postingDate: data.postingDate || new Date().toISOString().split("T")[0],
     paidAmount: paidAmt,
     referenceNo: data.referenceNo || `UTR-${Math.floor(100000 + Math.random() * 900000)}`,
@@ -2374,6 +2729,14 @@ export async function recordPayment(data: any): Promise<PaymentEntry> {
       inv.paidAmount = (inv.paidAmount || 0) + paidAmt;
       inv.outstandingAmount = Math.max(0, inv.grandTotal - inv.paidAmount);
       inv.status = inv.outstandingAmount <= 0 ? "PAID" : "PARTLY_PAID";
+    }
+  }
+
+  // Update Sales Order advance if applicable
+  if (data.salesOrderId) {
+    const order = MOCK_ORDERS.find((o) => o.id === data.salesOrderId);
+    if (order) {
+      order.advancePaid = (order.advancePaid || 0) + paidAmt;
     }
   }
 
@@ -3002,6 +3365,8 @@ let MOCK_SALES_PARTNERS: SalesPartner[] = [
     territory: "North America",
     totalAllocatedAmount: 680000,
     totalCommissionEarned: 51000,
+    totalCommissionPaid: 35000,
+    balanceOutstanding: 16000,
     disabled: false,
     createdAt: "2026-02-10T08:00:00Z",
   },
@@ -3017,6 +3382,8 @@ let MOCK_SALES_PARTNERS: SalesPartner[] = [
     territory: "Asia Pacific",
     totalAllocatedAmount: 420000,
     totalCommissionEarned: 25200,
+    totalCommissionPaid: 20000,
+    balanceOutstanding: 5200,
     disabled: false,
     createdAt: "2026-03-15T11:00:00Z",
   },
@@ -3032,8 +3399,46 @@ let MOCK_SALES_PARTNERS: SalesPartner[] = [
     territory: "Europe - Central",
     totalAllocatedAmount: 290000,
     totalCommissionEarned: 14500,
+    totalCommissionPaid: 10000,
+    balanceOutstanding: 4500,
     disabled: false,
     createdAt: "2026-04-01T09:30:00Z",
+  },
+];
+
+let MOCK_PARTNER_PAYOUTS: SalesPartnerPayout[] = [
+  {
+    id: "payout-001",
+    payoutNumber: "PAYOUT-2026-001",
+    salesPartnerId: "sp-001",
+    salesPartnerName: "Pinnacle Alliance Systems",
+    postingDate: "2026-03-01",
+    amount: 35000,
+    referenceNote: "Q1 Advance Commission Settlement",
+    paymentMode: "Bank Transfer",
+    createdAt: "2026-03-01T12:00:00Z",
+  },
+  {
+    id: "payout-002",
+    payoutNumber: "PAYOUT-2026-002",
+    salesPartnerId: "sp-002",
+    salesPartnerName: "Nexus Tech Distribution APAC",
+    postingDate: "2026-03-10",
+    amount: 20000,
+    referenceNote: "Feb Commission Disbursement",
+    paymentMode: "Bank Transfer",
+    createdAt: "2026-03-10T14:30:00Z",
+  },
+  {
+    id: "payout-003",
+    payoutNumber: "PAYOUT-2026-003",
+    salesPartnerId: "sp-003",
+    salesPartnerName: "EuroCommerce Solutions BV",
+    postingDate: "2026-03-20",
+    amount: 10000,
+    referenceNote: "March Retainer / Commission settlement",
+    paymentMode: "Bank Transfer",
+    createdAt: "2026-03-20T16:00:00Z",
   },
 ];
 
@@ -3151,6 +3556,48 @@ export async function closeBlanketOrder(id: string): Promise<BlanketOrder> {
   return bo || MOCK_BLANKET_ORDERS[0];
 }
 
+export async function createReleaseOrderFromBlanket(id: string): Promise<SalesOrder> {
+  try {
+    const res = await fetch(`${API_BASE}/blanket-orders/${id}/create-release-order`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+    });
+    if (res.ok) {
+      const created = await res.json();
+      MOCK_ORDERS.unshift(created);
+      return created;
+    }
+  } catch (err) {
+    console.warn("Backend unavailable, generating release order locally", err);
+  }
+
+  const bo = MOCK_BLANKET_ORDERS.find((b) => b.id === id);
+  if (!bo) throw new Error("Blanket Order agreement not found");
+
+  const unfulfilledItems = bo.items.filter((i) => (i.remainingQty || 0) > 0);
+  if (unfulfilledItems.length === 0) {
+    throw new Error(`All contractual quantities for ${bo.blanketOrderNumber} have already been fully ordered.`);
+  }
+
+  const payloadItems = unfulfilledItems.map((bi) => ({
+    itemCode: bi.itemCode,
+    itemName: bi.itemName,
+    qty: bi.remainingQty,
+    rate: bi.rate,
+  }));
+
+  const releaseOrder = await createSalesOrder({
+    customerId: bo.customerId,
+    blanketOrderId: bo.id,
+    deliveryDate: bo.toDate,
+    poNo: `REL-${bo.blanketOrderNumber}`,
+    items: payloadItems,
+  });
+
+  await submitSalesOrder(releaseOrder.id);
+  return releaseOrder;
+}
+
 // --- Sales Partners ---
 export async function getSalesPartners(): Promise<SalesPartner[]> {
   try {
@@ -3211,6 +3658,71 @@ export async function toggleSalesPartnerStatus(id: string): Promise<SalesPartner
   const sp = MOCK_SALES_PARTNERS.find((p) => p.id === id);
   if (sp) sp.disabled = !sp.disabled;
   return sp || MOCK_SALES_PARTNERS[0];
+}
+
+// --- Sales Partner Commission Payouts ---
+export async function getSalesPartnerPayouts(partnerId?: string): Promise<SalesPartnerPayout[]> {
+  try {
+    const url = partnerId
+      ? `${API_BASE}/sales-partners/${partnerId}/payouts`
+      : `${API_BASE}/sales-partners/payouts`;
+    const res = await fetch(url, { cache: "no-store", headers: getAuthHeaders() });
+    if (res.ok) return await res.json();
+  } catch (err) {
+    console.warn("Backend unavailable, using local partner payouts", err);
+  }
+  if (partnerId) {
+    return MOCK_PARTNER_PAYOUTS.filter((p) => p.salesPartnerId === partnerId);
+  }
+  return MOCK_PARTNER_PAYOUTS;
+}
+
+export async function createSalesPartnerPayout(data: {
+  salesPartnerId: string;
+  amount: number;
+  postingDate?: string;
+  referenceNote?: string;
+  paymentMode?: string;
+}): Promise<SalesPartnerPayout> {
+  try {
+    const res = await fetch(`${API_BASE}/sales-partners/${data.salesPartnerId}/payouts`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+      body: JSON.stringify(data),
+    });
+    if (res.ok) {
+      const created = await res.json();
+      MOCK_PARTNER_PAYOUTS.unshift(created);
+      const sp = MOCK_SALES_PARTNERS.find((p) => p.id === data.salesPartnerId);
+      if (sp) {
+        sp.totalCommissionPaid = (sp.totalCommissionPaid || 0) + Number(data.amount);
+        sp.balanceOutstanding = Math.max(0, (sp.totalCommissionEarned || 0) - sp.totalCommissionPaid);
+      }
+      return created;
+    }
+  } catch (err) {
+    console.warn("Backend unavailable, creating local partner payout", err);
+  }
+
+  const sp = MOCK_SALES_PARTNERS.find((p) => p.id === data.salesPartnerId);
+  const payout: SalesPartnerPayout = {
+    id: `payout-${Date.now()}`,
+    payoutNumber: `PAYOUT-${Date.now() % 100000}`,
+    salesPartnerId: data.salesPartnerId,
+    salesPartnerName: sp ? sp.partnerName : "Unknown Partner",
+    postingDate: data.postingDate || new Date().toISOString().split("T")[0],
+    amount: Number(data.amount),
+    referenceNote: data.referenceNote || "Commission settlement",
+    paymentMode: data.paymentMode || "Bank Transfer",
+    createdAt: new Date().toISOString(),
+  };
+
+  MOCK_PARTNER_PAYOUTS.unshift(payout);
+  if (sp) {
+    sp.totalCommissionPaid = (sp.totalCommissionPaid || 0) + Number(data.amount);
+    sp.balanceOutstanding = Math.max(0, (sp.totalCommissionEarned || 0) - sp.totalCommissionPaid);
+  }
+  return payout;
 }
 
 // --- Sales Persons ---
@@ -3388,4 +3900,1415 @@ export async function getClientExpenseClaims(customerName?: string): Promise<any
       isBillable: true,
     },
   ].filter((c) => !customerName || c.customerName.toLowerCase().includes(customerName.toLowerCase()));
-}export * from "./workflowApi";
+}
+
+// --- Drop Shipping & Purchase Requisitions ---
+let MOCK_PURCHASE_REQUISITIONS: PurchaseRequisition[] = [
+  {
+    id: "preq-001",
+    requisitionNumber: "PREQ-2026-001",
+    salesOrderId: "11111111-1111-1111-1111-111111111101",
+    salesOrderNumber: "SAL-ORD-2026-001",
+    customerId: "cust-001",
+    customerName: "Acme Industrial Technologies Ltd",
+    shippingAddress: "100 Tech Enterprise Blvd, Suite 400, New York, NY 10001",
+    supplierName: "OmniTech Hardware Supplies",
+    requisitionType: "DROP_SHIP",
+    status: "ORDERED",
+    transactionDate: "2026-09-01",
+    requiredDate: "2026-09-15",
+    totalQty: 5,
+    netTotal: 125000,
+    notes: "Direct supplier delivery to customer factory site",
+    items: [
+      {
+        id: "preq-item-001",
+        itemCode: "IND-ROUTER-X1",
+        itemName: "Industrial Edge IoT Gateway Router",
+        qty: 5,
+        rate: 25000,
+        amount: 125000,
+        uom: "Nos",
+        supplierName: "OmniTech Hardware Supplies",
+      },
+    ],
+    createdAt: "2026-09-01T10:00:00Z",
+  },
+];
+
+export async function getPurchaseRequisitions(salesOrderId?: string): Promise<PurchaseRequisition[]> {
+  try {
+    const url = salesOrderId
+      ? `${API_BASE}/purchase-requisitions/by-order/${salesOrderId}`
+      : `${API_BASE}/purchase-requisitions`;
+    const res = await fetch(url, { cache: "no-store", headers: getAuthHeaders() });
+    if (res.ok) return await res.json();
+  } catch (err) {
+    console.warn("Backend unavailable, using local mock purchase requisitions", err);
+  }
+  if (salesOrderId) {
+    return MOCK_PURCHASE_REQUISITIONS.filter((r) => r.salesOrderId === salesOrderId);
+  }
+  return MOCK_PURCHASE_REQUISITIONS;
+}
+
+export async function createDropShipRequisitionFromSalesOrder(salesOrderId: string): Promise<PurchaseRequisition[]> {
+  try {
+    const res = await fetch(`${API_BASE}/purchase-requisitions/from-sales-order/${salesOrderId}`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+    });
+    if (res.ok) {
+      const created = await res.json();
+      if (Array.isArray(created)) {
+        created.forEach((r) => MOCK_PURCHASE_REQUISITIONS.unshift(r));
+      }
+      return created;
+    }
+  } catch (err) {
+    console.warn("Backend unavailable, generating local drop-ship requisitions", err);
+  }
+
+  const order = MOCK_ORDERS.find((o) => o.id === salesOrderId);
+  if (!order) throw new Error("Sales order not found");
+
+  const dropShipItems = (order.items || []).filter((i) => Boolean(i.deliveredBySupplier));
+  if (dropShipItems.length === 0) {
+    // If none explicitly flagged, create one for demonstration
+    dropShipItems.push(order.items[0]);
+  }
+
+  const newReq: PurchaseRequisition = {
+    id: `preq-${Date.now()}`,
+    requisitionNumber: `PREQ-${Date.now() % 100000}`,
+    salesOrderId: order.id,
+    salesOrderNumber: order.orderNumber,
+    customerId: order.customerId,
+    customerName: order.customerName,
+    shippingAddress: "Customer Primary Receiving Dock, Main Hub",
+    supplierName: dropShipItems[0].supplier || "OmniTech Hardware Supplies",
+    requisitionType: "DROP_SHIP",
+    status: "DRAFT",
+    transactionDate: new Date().toISOString().split("T")[0],
+    requiredDate: order.deliveryDate,
+    totalQty: dropShipItems.reduce((acc, i) => acc + i.qty, 0),
+    netTotal: dropShipItems.reduce((acc, i) => acc + i.qty * i.rate, 0),
+    notes: `Drop Ship Requisition generated for Sales Order ${order.orderNumber}`,
+    items: dropShipItems.map((i, idx) => ({
+      id: `preq-item-${Date.now()}-${idx}`,
+      salesOrderItemId: i.id,
+      itemCode: i.itemCode,
+      itemName: i.itemName,
+      qty: i.qty,
+      rate: i.rate,
+      amount: i.qty * i.rate,
+      uom: i.uom || "Nos",
+      supplierName: i.supplier || "OmniTech Hardware Supplies",
+    })),
+    createdAt: new Date().toISOString(),
+  };
+
+  MOCK_PURCHASE_REQUISITIONS.unshift(newReq);
+  return [newReq];
+}
+
+export async function submitPurchaseRequisition(id: string): Promise<PurchaseRequisition> {
+  try {
+    const res = await fetch(`${API_BASE}/purchase-requisitions/${id}/submit`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+    });
+    if (res.ok) return await res.json();
+  } catch (err) {
+    console.warn("Backend unavailable, updating local requisition status", err);
+  }
+  const req = MOCK_PURCHASE_REQUISITIONS.find((r) => r.id === id);
+  if (req) req.status = "SUBMITTED";
+  return req || MOCK_PURCHASE_REQUISITIONS[0];
+}
+
+export async function orderPurchaseRequisition(id: string): Promise<PurchaseRequisition> {
+  try {
+    const res = await fetch(`${API_BASE}/purchase-requisitions/${id}/order-from-supplier`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+    });
+    if (res.ok) return await res.json();
+  } catch (err) {
+    console.warn("Backend unavailable, updating local requisition status", err);
+  }
+  const req = MOCK_PURCHASE_REQUISITIONS.find((r) => r.id === id);
+  if (req) req.status = "ORDERED";
+  return req || MOCK_PURCHASE_REQUISITIONS[0];
+}
+
+export async function confirmPurchaseRequisitionDelivery(id: string): Promise<PurchaseRequisition> {
+  try {
+    const res = await fetch(`${API_BASE}/purchase-requisitions/${id}/confirm-delivery`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+    });
+    if (res.ok) return await res.json();
+  } catch (err) {
+    console.warn("Backend unavailable, confirming local delivery", err);
+  }
+  const req = MOCK_PURCHASE_REQUISITIONS.find((r) => r.id === id);
+  if (req) {
+    req.status = "DELIVERED";
+    if (req.salesOrderId) {
+      const order = MOCK_ORDERS.find((o) => o.id === req.salesOrderId);
+      if (order) {
+        order.perDelivered = 100;
+        order.deliveryStatus = "FULLY_DELIVERED";
+        if (order.perBilled && order.perBilled >= 100) {
+          order.status = "COMPLETED";
+        }
+      }
+    }
+  }
+  return req || MOCK_PURCHASE_REQUISITIONS[0];
+}
+
+export async function cancelPurchaseRequisition(id: string): Promise<PurchaseRequisition> {
+  try {
+    const res = await fetch(`${API_BASE}/purchase-requisitions/${id}/cancel`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+    });
+    if (res.ok) return await res.json();
+  } catch (err) {
+    console.warn("Backend unavailable, cancelling local requisition", err);
+  }
+  const req = MOCK_PURCHASE_REQUISITIONS.find((r) => r.id === id);
+  if (req) req.status = "CANCELLED";
+  return req || MOCK_PURCHASE_REQUISITIONS[0];
+}
+
+// =============================================================
+// Maintenance & Warranty Contracts (AMC) API & Mock Data
+// =============================================================
+
+export const MOCK_MAINTENANCE_CONTRACTS: MaintenanceContract[] = [
+  {
+    id: "mc-001",
+    contractNumber: "MC-2026-0001",
+    customerId: "77777777-7777-7777-7777-777777777701",
+    customerName: "Apex Global Technologies LLC",
+    contractType: "AMC",
+    status: "ACTIVE",
+    startDate: "2026-01-01",
+    endDate: "2026-12-31",
+    totalAmount: 45000,
+    invoicedAmount: 45000,
+    termsAndConditions: "Standard 24x7 4-hour SLA on-site hardware support with quarterly preventive health checkups.",
+    items: [
+      {
+        id: "mci-001",
+        itemCode: "ERP-SRV-9000",
+        itemName: "NextGen Cloud ERP Enterprise Rack Server",
+        serialNo: "SRV-2026-081",
+        startDate: "2026-01-01",
+        endDate: "2026-12-31",
+        periodicity: "QUARTERLY",
+        noOfVisits: 4,
+        rate: 45000,
+        amount: 45000,
+      },
+    ],
+    createdAt: "2026-01-01T10:00:00Z",
+  },
+  {
+    id: "mc-002",
+    contractNumber: "MC-2026-0002",
+    customerId: "77777777-7777-7777-7777-777777777702",
+    customerName: "BlueFin Dynamics International",
+    contractType: "AMC",
+    status: "ACTIVE",
+    startDate: "2026-03-01",
+    endDate: "2027-02-28",
+    totalAmount: 32000,
+    invoicedAmount: 16000,
+    termsAndConditions: "Semi-annual print-head calibration and optical cleaning. Spare parts billed separately if out of warranty.",
+    items: [
+      {
+        id: "mci-002",
+        itemCode: "PRN-IND-500",
+        itemName: "Industrial Thermal Label Printer",
+        serialNo: "PRN-8821",
+        startDate: "2026-03-01",
+        endDate: "2027-02-28",
+        periodicity: "HALF_YEARLY",
+        noOfVisits: 2,
+        rate: 32000,
+        amount: 32000,
+      },
+    ],
+    createdAt: "2026-03-01T11:30:00Z",
+  },
+  {
+    id: "mc-003",
+    contractNumber: "MC-2026-0003",
+    customerId: "77777777-7777-7777-7777-777777777703",
+    customerName: "Zenith Logistics Pvt Ltd",
+    contractType: "COMPREHENSIVE_AMC",
+    status: "DRAFT",
+    startDate: "2026-06-01",
+    endDate: "2027-05-31",
+    totalAmount: 18000,
+    invoicedAmount: 0,
+    termsAndConditions: "Monthly inspection of 10 handheld scan terminals including lithium battery health checks.",
+    items: [
+      {
+        id: "mci-003",
+        itemCode: "BC-SCAN-X1",
+        itemName: "Barcode Handheld Scanner Terminal",
+        serialNo: "SCN-4410",
+        startDate: "2026-06-01",
+        endDate: "2027-05-31",
+        periodicity: "MONTHLY",
+        noOfVisits: 12,
+        rate: 18000,
+        amount: 18000,
+      },
+    ],
+    createdAt: "2026-05-25T14:15:00Z",
+  },
+];
+
+export const MOCK_MAINTENANCE_VISITS: MaintenanceVisit[] = [
+  {
+    id: "mv-001",
+    visitNumber: "MV-2026-0001",
+    customerId: "77777777-7777-7777-7777-777777777701",
+    customerName: "Apex Global Technologies LLC",
+    maintenanceContractId: "mc-001",
+    maintenanceType: "PREVENTIVE_MAINTENANCE",
+    visitDate: "2026-09-15",
+    servicePerson: "Vikram Patel",
+    status: "COMPLETED",
+    customerFeedback: "Highly Satisfied",
+    completionNotes: "Performed Q3 preventive maintenance checkup. Replaced CPU thermal paste, inspected fan bearings, diagnostic memory test passed 100%.",
+    items: [
+      {
+        id: "mvi-001",
+        itemCode: "ERP-SRV-9000",
+        itemName: "NextGen Cloud ERP Enterprise Rack Server",
+        serialNo: "SRV-2026-081",
+        workDone: "Full chassis dust blow-out, BIOS firmware patched to v2.4, diagnostics run.",
+        actionTaken: "Cleaned and verified normal operating temperature.",
+      },
+    ],
+    createdAt: "2026-09-15T09:00:00Z",
+  },
+  {
+    id: "mv-002",
+    visitNumber: "MV-2026-0002",
+    customerId: "77777777-7777-7777-7777-777777777702",
+    customerName: "BlueFin Dynamics International",
+    maintenanceContractId: "mc-002",
+    maintenanceType: "PREVENTIVE_MAINTENANCE",
+    visitDate: "2026-09-28",
+    servicePerson: "Anand Sharma",
+    status: "SCHEDULED",
+    customerFeedback: undefined,
+    completionNotes: undefined,
+    items: [
+      {
+        id: "mvi-002",
+        itemCode: "PRN-IND-500",
+        itemName: "Industrial Thermal Label Printer",
+        serialNo: "PRN-8821",
+        workDone: "Scheduled semi-annual print-head calibration and feed roller check.",
+      },
+    ],
+    createdAt: "2026-09-20T10:30:00Z",
+  },
+  {
+    id: "mv-003",
+    visitNumber: "MV-2026-0003",
+    customerId: "77777777-7777-7777-7777-777777777701",
+    customerName: "Apex Global Technologies LLC",
+    maintenanceContractId: "mc-001",
+    maintenanceType: "BREAKDOWN",
+    visitDate: "2026-09-24",
+    servicePerson: "Suresh Mehta",
+    status: "IN_PROGRESS",
+    customerFeedback: undefined,
+    completionNotes: "Dual redundant power supply unit PSU-2 showing voltage fluctuation alarms. Investigating field replacement.",
+    items: [
+      {
+        id: "mvi-003",
+        itemCode: "ERP-SRV-9000",
+        itemName: "NextGen Cloud ERP Enterprise Rack Server",
+        serialNo: "SRV-2026-081",
+        workDone: "Voltage diagnostics on 850W titanium power rails.",
+        actionTaken: "Bypassed to primary PSU-1; awaiting replacement hot-swap PSU module.",
+      },
+    ],
+    createdAt: "2026-09-24T08:15:00Z",
+  },
+];
+
+export const MOCK_WARRANTY_CLAIMS: WarrantyClaim[] = [
+  {
+    id: "wc-001",
+    claimNumber: "WC-2026-0001",
+    customerId: "77777777-7777-7777-7777-777777777703",
+    customerName: "Zenith Logistics Pvt Ltd",
+    itemCode: "BC-SCAN-X1",
+    itemName: "Barcode Handheld Scanner Terminal",
+    serialNo: "SCN-4410",
+    complaintDescription: "Laser optic scanning engine fails to read Code128 barcodes at distances beyond 2 meters. Unit is 4 months old.",
+    status: "IN_INSPECTION",
+    resolutionType: "REPAIR",
+    resolutionNotes: "Dispatched to regional service bench for optical diode recalibration.",
+    reportedDate: "2026-09-18",
+    createdAt: "2026-09-18T11:00:00Z",
+  },
+  {
+    id: "wc-002",
+    claimNumber: "WC-2026-0002",
+    customerId: "77777777-7777-7777-7777-777777777702",
+    customerName: "BlueFin Dynamics International",
+    itemCode: "PRN-IND-500",
+    itemName: "Industrial Thermal Label Printer",
+    serialNo: "PRN-8821",
+    complaintDescription: "Label feed gear teeth chipped after 2 weeks of operation, causing continuous feed jams.",
+    status: "RESOLVED",
+    resolutionType: "REPLACEMENT",
+    resolutionNotes: "Replaced complete drive-gear assembly free of charge under warranty. Print tests run cleanly.",
+    reportedDate: "2026-09-10",
+    resolvedDate: "2026-09-14",
+    createdAt: "2026-09-10T14:30:00Z",
+  },
+];
+
+// Contracts API
+export async function getMaintenanceContracts(): Promise<MaintenanceContract[]> {
+  try {
+    const res = await fetch(`${API_BASE}/maintenance/contracts`, { headers: getAuthHeaders() });
+    if (res.ok) return await res.json();
+  } catch (err) {
+    console.warn("Backend unavailable, using mock maintenance contracts", err);
+  }
+  return MOCK_MAINTENANCE_CONTRACTS;
+}
+
+export async function createMaintenanceContract(data: any): Promise<MaintenanceContract> {
+  try {
+    const res = await fetch(`${API_BASE}/maintenance/contracts`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+      body: JSON.stringify(data),
+    });
+    if (res.ok) {
+      const created = await res.json();
+      MOCK_MAINTENANCE_CONTRACTS.unshift(created);
+      return created;
+    }
+  } catch (err) {
+    console.warn("Backend unavailable, storing maintenance contract locally", err);
+  }
+
+  const cust = MOCK_CUSTOMERS.find((c) => c.id === data.customerId);
+  const items = (data.items || []).map((i: any, idx: number) => ({
+    id: `mci-${Date.now()}-${idx}`,
+    itemCode: i.itemCode,
+    itemName: i.itemName,
+    serialNo: i.serialNo || "",
+    startDate: i.startDate || data.startDate,
+    endDate: i.endDate || data.endDate,
+    periodicity: i.periodicity || "QUARTERLY",
+    noOfVisits: Number(i.noOfVisits) || 4,
+    rate: Number(i.rate) || 0,
+    amount: Number(i.rate) || 0,
+  }));
+  const totalAmount = items.reduce((acc: number, item: any) => acc + item.amount, 0);
+
+  const newContract: MaintenanceContract = {
+    id: `mc-${Date.now()}`,
+    contractNumber: `MC-2026-${Math.floor(1000 + Math.random() * 9000)}`,
+    customerId: data.customerId,
+    customerName: cust ? cust.customerName : "Customer Account",
+    contractType: data.contractType || "AMC",
+    status: "DRAFT",
+    startDate: data.startDate,
+    endDate: data.endDate,
+    totalAmount,
+    invoicedAmount: 0,
+    termsAndConditions: data.termsAndConditions || "Standard maintenance agreement.",
+    items,
+    createdAt: new Date().toISOString(),
+  };
+
+  MOCK_MAINTENANCE_CONTRACTS.unshift(newContract);
+  return newContract;
+}
+
+export async function activateMaintenanceContract(id: string): Promise<MaintenanceContract> {
+  try {
+    const res = await fetch(`${API_BASE}/maintenance/contracts/${id}/activate`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+    });
+    if (res.ok) return await res.json();
+  } catch (err) {
+    console.warn("Backend unavailable, activating local contract", err);
+  }
+  const c = MOCK_MAINTENANCE_CONTRACTS.find((item) => item.id === id);
+  if (c) c.status = "ACTIVE";
+  return c || MOCK_MAINTENANCE_CONTRACTS[0];
+}
+
+export async function cancelMaintenanceContract(id: string): Promise<MaintenanceContract> {
+  try {
+    const res = await fetch(`${API_BASE}/maintenance/contracts/${id}/cancel`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+    });
+    if (res.ok) return await res.json();
+  } catch (err) {
+    console.warn("Backend unavailable, cancelling local contract", err);
+  }
+  const c = MOCK_MAINTENANCE_CONTRACTS.find((item) => item.id === id);
+  if (c) c.status = "CANCELLED";
+  return c || MOCK_MAINTENANCE_CONTRACTS[0];
+}
+
+// Visits API
+export async function getMaintenanceVisits(): Promise<MaintenanceVisit[]> {
+  try {
+    const res = await fetch(`${API_BASE}/maintenance/visits`, { headers: getAuthHeaders() });
+    if (res.ok) return await res.json();
+  } catch (err) {
+    console.warn("Backend unavailable, using mock maintenance visits", err);
+  }
+  return MOCK_MAINTENANCE_VISITS;
+}
+
+export async function createMaintenanceVisit(data: any): Promise<MaintenanceVisit> {
+  try {
+    const res = await fetch(`${API_BASE}/maintenance/visits`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+      body: JSON.stringify(data),
+    });
+    if (res.ok) {
+      const created = await res.json();
+      MOCK_MAINTENANCE_VISITS.unshift(created);
+      return created;
+    }
+  } catch (err) {
+    console.warn("Backend unavailable, scheduling visit locally", err);
+  }
+
+  const cust = MOCK_CUSTOMERS.find((c) => c.id === data.customerId);
+  const items = (data.items || []).map((i: any, idx: number) => ({
+    id: `mvi-${Date.now()}-${idx}`,
+    itemCode: i.itemCode,
+    itemName: i.itemName,
+    serialNo: i.serialNo || "",
+    workDone: i.workDone || "",
+    actionTaken: i.actionTaken || "",
+    partsReplaced: i.partsReplaced || "",
+  }));
+
+  const newVisit: MaintenanceVisit = {
+    id: `mv-${Date.now()}`,
+    visitNumber: `MV-2026-${Math.floor(1000 + Math.random() * 9000)}`,
+    customerId: data.customerId,
+    customerName: cust ? cust.customerName : "Customer Account",
+    maintenanceContractId: data.maintenanceContractId || undefined,
+    maintenanceType: data.maintenanceType || "PREVENTIVE_MAINTENANCE",
+    visitDate: data.visitDate || new Date().toISOString().split("T")[0],
+    servicePerson: data.servicePerson || "Field Technician",
+    status: "SCHEDULED",
+    customerFeedback: undefined,
+    completionNotes: data.completionNotes || "",
+    items,
+    createdAt: new Date().toISOString(),
+  };
+
+  MOCK_MAINTENANCE_VISITS.unshift(newVisit);
+  return newVisit;
+}
+
+export async function startMaintenanceVisit(id: string): Promise<MaintenanceVisit> {
+  try {
+    const res = await fetch(`${API_BASE}/maintenance/visits/${id}/start`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+    });
+    if (res.ok) return await res.json();
+  } catch (err) {
+    console.warn("Backend unavailable, updating local visit status", err);
+  }
+  const v = MOCK_MAINTENANCE_VISITS.find((item) => item.id === id);
+  if (v) v.status = "IN_PROGRESS";
+  return v || MOCK_MAINTENANCE_VISITS[0];
+}
+
+export async function completeMaintenanceVisit(id: string, feedback?: string, notes?: string): Promise<MaintenanceVisit> {
+  try {
+    const res = await fetch(`${API_BASE}/maintenance/visits/${id}/complete`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+      body: JSON.stringify({ feedback, notes }),
+    });
+    if (res.ok) return await res.json();
+  } catch (err) {
+    console.warn("Backend unavailable, completing local visit", err);
+  }
+  const v = MOCK_MAINTENANCE_VISITS.find((item) => item.id === id);
+  if (v) {
+    v.status = "COMPLETED";
+    if (feedback) v.customerFeedback = feedback;
+    if (notes) v.completionNotes = notes;
+  }
+  return v || MOCK_MAINTENANCE_VISITS[0];
+}
+
+export async function cancelMaintenanceVisit(id: string): Promise<MaintenanceVisit> {
+  try {
+    const res = await fetch(`${API_BASE}/maintenance/visits/${id}/cancel`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+    });
+    if (res.ok) return await res.json();
+  } catch (err) {
+    console.warn("Backend unavailable, cancelling local visit", err);
+  }
+  const v = MOCK_MAINTENANCE_VISITS.find((item) => item.id === id);
+  if (v) v.status = "CANCELLED";
+  return v || MOCK_MAINTENANCE_VISITS[0];
+}
+
+// Warranty Claims API
+export async function getWarrantyClaims(): Promise<WarrantyClaim[]> {
+  try {
+    const res = await fetch(`${API_BASE}/maintenance/claims`, { headers: getAuthHeaders() });
+    if (res.ok) return await res.json();
+  } catch (err) {
+    console.warn("Backend unavailable, using mock warranty claims", err);
+  }
+  return MOCK_WARRANTY_CLAIMS;
+}
+
+export async function createWarrantyClaim(data: any): Promise<WarrantyClaim> {
+  try {
+    const res = await fetch(`${API_BASE}/maintenance/claims`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+      body: JSON.stringify(data),
+    });
+    if (res.ok) {
+      const created = await res.json();
+      MOCK_WARRANTY_CLAIMS.unshift(created);
+      return created;
+    }
+  } catch (err) {
+    console.warn("Backend unavailable, filing claim locally", err);
+  }
+
+  const cust = MOCK_CUSTOMERS.find((c) => c.id === data.customerId);
+  const newClaim: WarrantyClaim = {
+    id: `wc-${Date.now()}`,
+    claimNumber: `WC-2026-${Math.floor(1000 + Math.random() * 9000)}`,
+    customerId: data.customerId,
+    customerName: cust ? cust.customerName : "Customer Account",
+    itemCode: data.itemCode,
+    itemName: data.itemName,
+    serialNo: data.serialNo || "",
+    complaintDescription: data.complaintDescription,
+    status: "OPEN",
+    resolutionType: data.resolutionType || "REPAIR",
+    reportedDate: new Date().toISOString().split("T")[0],
+    createdAt: new Date().toISOString(),
+  };
+
+  MOCK_WARRANTY_CLAIMS.unshift(newClaim);
+  return newClaim;
+}
+
+export async function resolveWarrantyClaim(id: string, resolutionType: string, notes?: string): Promise<WarrantyClaim> {
+  try {
+    const res = await fetch(`${API_BASE}/maintenance/claims/${id}/resolve`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+      body: JSON.stringify({ resolutionType, notes }),
+    });
+    if (res.ok) return await res.json();
+  } catch (err) {
+    console.warn("Backend unavailable, resolving claim locally", err);
+  }
+  const c = MOCK_WARRANTY_CLAIMS.find((item) => item.id === id);
+  if (c) {
+    c.status = "RESOLVED";
+    c.resolutionType = resolutionType;
+    c.resolutionNotes = notes;
+    c.resolvedDate = new Date().toISOString().split("T")[0];
+  }
+  return c || MOCK_WARRANTY_CLAIMS[0];
+}
+
+export async function closeWarrantyClaim(id: string): Promise<WarrantyClaim> {
+  try {
+    const res = await fetch(`${API_BASE}/maintenance/claims/${id}/close`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+    });
+    if (res.ok) return await res.json();
+  } catch (err) {
+    console.warn("Backend unavailable, closing claim locally", err);
+  }
+  const c = MOCK_WARRANTY_CLAIMS.find((item) => item.id === id);
+  if (c) c.status = "CLOSED";
+  return c || MOCK_WARRANTY_CLAIMS[0];
+}
+
+// ==========================================
+// PAYMENT TERMS TEMPLATES & MILESTONE SCHEDULES
+// ==========================================
+
+const MOCK_PAYMENT_TERMS_TEMPLATES: PaymentTermsTemplate[] = [
+  {
+    id: "ptt-001",
+    templateName: "30-50-20 Milestone Schedule",
+    description: "30% Advance on order, 50% on delivery note, 20% Net 30 Days",
+    isActive: true,
+    items: [
+      { id: "ptti-001", paymentTermName: "30% Advance Deposit", invoicePortion: 30.0, creditDays: 0, creditMonths: 0 },
+      { id: "ptti-002", paymentTermName: "50% Dispatch & Delivery", invoicePortion: 50.0, creditDays: 14, creditMonths: 0 },
+      { id: "ptti-003", paymentTermName: "20% Final Settlement (Net 30)", invoicePortion: 20.0, creditDays: 44, creditMonths: 0 },
+    ],
+    createdAt: "2026-08-01T10:00:00Z",
+  },
+  {
+    id: "ptt-002",
+    templateName: "50-50 Advance & Delivery",
+    description: "50% Advance on contract, 50% on product delivery",
+    isActive: true,
+    items: [
+      { id: "ptti-004", paymentTermName: "50% Advance Booking", invoicePortion: 50.0, creditDays: 0, creditMonths: 0 },
+      { id: "ptti-005", paymentTermName: "50% Upon Delivery (Net 15)", invoicePortion: 50.0, creditDays: 15, creditMonths: 0 },
+    ],
+    createdAt: "2026-08-01T10:00:00Z",
+  },
+  {
+    id: "ptt-003",
+    templateName: "100% Advance",
+    description: "100% payment required prior to dispatch or order fulfillment",
+    isActive: true,
+    items: [
+      { id: "ptti-006", paymentTermName: "Full Advance Payment", invoicePortion: 100.0, creditDays: 0, creditMonths: 0 },
+    ],
+    createdAt: "2026-08-01T10:00:00Z",
+  },
+  {
+    id: "ptt-004",
+    templateName: "Net 30 Days",
+    description: "Standard 30-day post-delivery commercial credit terms",
+    isActive: true,
+    items: [
+      { id: "ptti-007", paymentTermName: "Net 30 Days", invoicePortion: 100.0, creditDays: 30, creditMonths: 0 },
+    ],
+    createdAt: "2026-08-01T10:00:00Z",
+  },
+];
+
+const MOCK_PAYMENT_SCHEDULES: PaymentSchedule[] = [
+  {
+    id: "ps-001",
+    voucherType: "SALES_ORDER",
+    voucherId: "99999999-9999-9999-9999-999999999901",
+    paymentTerm: "30% Advance Deposit",
+    description: "Milestone portion (30.00%) for SAL-ORD-2026-0001",
+    dueDate: "2026-08-22",
+    invoicePortion: 30.0,
+    paymentAmount: 9742.50,
+    paidAmount: 9742.50,
+    outstandingAmount: 0.0,
+    status: "PAID",
+    salesInvoiceId: "inv-9901",
+    salesInvoiceNumber: "ACC-SINV-2026-0001",
+  },
+  {
+    id: "ps-002",
+    voucherType: "SALES_ORDER",
+    voucherId: "99999999-9999-9999-9999-999999999901",
+    paymentTerm: "50% Dispatch & Delivery",
+    description: "Milestone portion (50.00%) for SAL-ORD-2026-0001",
+    dueDate: "2026-09-05",
+    invoicePortion: 50.0,
+    paymentAmount: 16237.50,
+    paidAmount: 0.0,
+    outstandingAmount: 16237.50,
+    status: "UNPAID",
+  },
+  {
+    id: "ps-003",
+    voucherType: "SALES_ORDER",
+    voucherId: "99999999-9999-9999-9999-999999999901",
+    paymentTerm: "20% Final Settlement (Net 30)",
+    description: "Milestone portion (20.00%) for SAL-ORD-2026-0001",
+    dueDate: "2026-10-05",
+    invoicePortion: 20.0,
+    paymentAmount: 6495.00,
+    paidAmount: 0.0,
+    outstandingAmount: 6495.00,
+    status: "UNPAID",
+  },
+];
+
+export async function getPaymentTermsTemplates(): Promise<PaymentTermsTemplate[]> {
+  try {
+    const res = await fetch(`${API_BASE}/payment-terms/templates`, { headers: getAuthHeaders() });
+    if (res.ok) return await res.json();
+  } catch (err) {
+    console.warn("Backend unavailable, using mock payment terms templates", err);
+  }
+  return MOCK_PAYMENT_TERMS_TEMPLATES;
+}
+
+export async function getPaymentTermsTemplateById(id: string): Promise<PaymentTermsTemplate | null> {
+  try {
+    const res = await fetch(`${API_BASE}/payment-terms/templates/${id}`, { headers: getAuthHeaders() });
+    if (res.ok) return await res.json();
+  } catch (err) {
+    console.warn("Backend unavailable, using mock template", err);
+  }
+  return MOCK_PAYMENT_TERMS_TEMPLATES.find((t) => t.id === id) || null;
+}
+
+export async function createPaymentTermsTemplate(data: PaymentTermsTemplateCreateRequest): Promise<PaymentTermsTemplate> {
+  try {
+    const res = await fetch(`${API_BASE}/payment-terms/templates`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+      body: JSON.stringify(data),
+    });
+    if (res.ok) return await res.json();
+  } catch (err) {
+    console.warn("Backend unavailable, creating template locally", err);
+  }
+  const newTemplate: PaymentTermsTemplate = {
+    id: `ptt-${Date.now()}`,
+    templateName: data.templateName,
+    description: data.description,
+    isActive: true,
+    items: data.items.map((it, idx) => ({
+      id: `ptti-${Date.now()}-${idx}`,
+      paymentTermName: it.paymentTermName,
+      invoicePortion: Number(it.invoicePortion),
+      creditDays: it.creditDays || 0,
+      creditMonths: it.creditMonths || 0,
+    })),
+    createdAt: new Date().toISOString(),
+  };
+  MOCK_PAYMENT_TERMS_TEMPLATES.push(newTemplate);
+  return newTemplate;
+}
+
+export async function getPaymentSchedulesForVoucher(voucherType: string, voucherId: string): Promise<PaymentSchedule[]> {
+  try {
+    const res = await fetch(`${API_BASE}/payment-terms/schedules/${voucherType}/${voucherId}`, { headers: getAuthHeaders() });
+    if (res.ok) return await res.json();
+  } catch (err) {
+    console.warn("Backend unavailable, fetching mock payment schedule", err);
+  }
+  return MOCK_PAYMENT_SCHEDULES.filter((s) => s.voucherType === voucherType && s.voucherId === voucherId);
+}
+
+export async function generateOrderPaymentSchedule(salesOrderId: string): Promise<PaymentSchedule[]> {
+  try {
+    const res = await fetch(`${API_BASE}/payment-terms/schedules/generate/sales-order/${salesOrderId}`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+    });
+    if (res.ok) return await res.json();
+  } catch (err) {
+    console.warn("Backend unavailable, generating payment schedule locally", err);
+  }
+
+  const order = MOCK_ORDERS.find((o) => o.id === salesOrderId);
+  const templateName = order?.paymentTermsTemplate || "30-50-20 Milestone Schedule";
+  const template = MOCK_PAYMENT_TERMS_TEMPLATES.find((t) => t.templateName === templateName) || MOCK_PAYMENT_TERMS_TEMPLATES[0];
+
+  for (let i = MOCK_PAYMENT_SCHEDULES.length - 1; i >= 0; i--) {
+    if (MOCK_PAYMENT_SCHEDULES[i].voucherType === "SALES_ORDER" && MOCK_PAYMENT_SCHEDULES[i].voucherId === salesOrderId) {
+      MOCK_PAYMENT_SCHEDULES.splice(i, 1);
+    }
+  }
+
+  const grandTotal = order?.grandTotal || 10000;
+  const baseDate = order?.transactionDate ? new Date(order.transactionDate) : new Date();
+  let allocated = 0;
+  const newSchedules: PaymentSchedule[] = [];
+
+  for (let idx = 0; idx < template.items.length; idx++) {
+    const item = template.items[idx];
+    let amount: number;
+    if (idx === template.items.length - 1) {
+      amount = Math.round((grandTotal - allocated) * 100) / 100;
+    } else {
+      amount = Math.round(((grandTotal * item.invoicePortion) / 100) * 100) / 100;
+      allocated += amount;
+    }
+
+    const dueDate = new Date(baseDate);
+    dueDate.setDate(dueDate.getDate() + (item.creditDays || 0) + (item.creditMonths || 0) * 30);
+
+    const s: PaymentSchedule = {
+      id: `ps-${Date.now()}-${idx}`,
+      voucherType: "SALES_ORDER",
+      voucherId: salesOrderId,
+      paymentTerm: item.paymentTermName,
+      description: `Milestone portion (${item.invoicePortion}%) for ${order?.orderNumber || "Order"}`,
+      dueDate: dueDate.toISOString().split("T")[0],
+      invoicePortion: item.invoicePortion,
+      paymentAmount: amount,
+      paidAmount: 0,
+      outstandingAmount: amount,
+      status: "UNPAID",
+      createdAt: new Date().toISOString(),
+    };
+    newSchedules.push(s);
+    MOCK_PAYMENT_SCHEDULES.push(s);
+  }
+
+  return newSchedules;
+}
+
+export async function invoicePaymentMilestone(salesOrderId: string, scheduleId: string): Promise<SalesInvoice> {
+  try {
+    const res = await fetch(`${API_BASE}/payment-terms/schedules/${salesOrderId}/milestone/${scheduleId}/invoice`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+    });
+    if (res.ok) return await res.json();
+  } catch (err) {
+    console.warn("Backend unavailable, invoicing milestone locally", err);
+  }
+
+  const schedule = MOCK_PAYMENT_SCHEDULES.find((s) => s.id === scheduleId);
+  const order = MOCK_ORDERS.find((o) => o.id === salesOrderId);
+
+  const invoiceNumber = `ACC-SINV-2026-${Math.floor(1000 + Math.random() * 9000)}`;
+  const invId = `inv-${Date.now()}`;
+
+  const newInvoice: SalesInvoice = {
+    id: invId,
+    invoiceNumber,
+    customerId: order?.customerId || "77777777-7777-7777-7777-777777777701",
+    customerName: order?.customerName || "Customer Account",
+    postingDate: new Date().toISOString().split("T")[0],
+    dueDate: schedule?.dueDate || new Date().toISOString().split("T")[0],
+    salesOrderId: salesOrderId,
+    salesOrderNumber: order?.orderNumber,
+    status: "UNPAID",
+    currency: order?.currency || "INR",
+    conversionRate: 1.0,
+    netTotal: schedule?.paymentAmount || 5000,
+    totalTax: 0,
+    grandTotal: schedule?.paymentAmount || 5000,
+    paidAmount: 0,
+    outstandingAmount: schedule?.paymentAmount || 5000,
+    items: [
+      {
+        id: `sii-${Date.now()}`,
+        itemId: "44444444-4444-4444-4444-444444444401",
+        itemCode: "MILESTONE-BILL",
+        itemName: `${schedule?.paymentTerm || "Milestone"} (${schedule?.invoicePortion || 0}%) - ${order?.orderNumber || ""}`,
+        qty: 1,
+        rate: schedule?.paymentAmount || 5000,
+        amount: schedule?.paymentAmount || 5000,
+        incomeAccount: "Sales - Rev",
+      },
+    ],
+    taxes: [],
+    createdAt: new Date().toISOString(),
+  };
+
+  MOCK_INVOICES.unshift(newInvoice);
+
+  if (schedule) {
+    schedule.status = "INVOICED";
+    schedule.salesInvoiceId = invId;
+    schedule.salesInvoiceNumber = invoiceNumber;
+  }
+
+  if (order) {
+    const milestones = MOCK_PAYMENT_SCHEDULES.filter((s) => s.voucherType === "SALES_ORDER" && s.voucherId === salesOrderId);
+    const invoicedSum = milestones
+      .filter((m) => m.status === "INVOICED" || m.status === "PAID")
+      .reduce((sum, m) => sum + m.invoicePortion, 0);
+    order.perBilled = Math.min(100, invoicedSum);
+    if (order.perBilled >= 100) {
+      order.billingStatus = "FULLY_BILLED";
+      if (order.perDelivered >= 100) order.status = "COMPLETED";
+    } else if (order.perBilled > 0) {
+      order.billingStatus = "PARTLY_BILLED";
+    }
+  }
+
+  return newInvoice;
+}
+
+// ==========================================
+// PACKING SLIPS & SHIPMENT PACKAGING (SPRINT 8)
+// ==========================================
+
+let MOCK_PACKING_SLIPS: PackingSlip[] = [
+  {
+    id: "ps-001",
+    packingSlipNumber: "PS-2026-0001",
+    deliveryNoteId: "dn-001",
+    deliveryNoteNumber: "DN-2026-0001",
+    fromPackageNo: 1,
+    toPackageNo: 2,
+    totalPackages: 2,
+    packageType: "Carton",
+    netWeightPkg: 24.500,
+    grossWeightPkg: 27.200,
+    weightUom: "Kg",
+    letterOfCredit: "LC-VANGUARD-2026",
+    shippingMark: "VANGUARD / SAN JOSE / PKG 1-2 / FRAGILE / HANDLE WITH CARE",
+    status: "PACKED",
+    notes: "Cartons 1-2 packed with 4x 2U Edge Server units and foam corner protection inserts.",
+    items: [
+      {
+        id: "psi-001",
+        deliveryNoteItemId: "dni-1",
+        itemCode: "SRV-RACK-2U",
+        itemName: "NextGen Edge Server Appliance 2U",
+        qty: 4,
+        netWeight: 24.500,
+        weightUom: "Kg",
+      },
+    ],
+    createdAt: "2026-08-24T12:30:00Z",
+  },
+];
+
+export async function getPackingSlips(deliveryNoteId?: string): Promise<PackingSlip[]> {
+  try {
+    const url = deliveryNoteId
+      ? `${API_BASE}/packing-slips/delivery-note/${deliveryNoteId}`
+      : `${API_BASE}/packing-slips`;
+    const res = await fetch(url, { headers: getAuthHeaders() });
+    if (res.ok) return await res.json();
+  } catch (err) {
+    console.warn("Backend unavailable, using mock packing slips", err);
+  }
+  if (deliveryNoteId) {
+    return MOCK_PACKING_SLIPS.filter((p) => p.deliveryNoteId === deliveryNoteId);
+  }
+  return MOCK_PACKING_SLIPS;
+}
+
+export async function getPackingSlipById(id: string): Promise<PackingSlip | null> {
+  try {
+    const res = await fetch(`${API_BASE}/packing-slips/${id}`, { headers: getAuthHeaders() });
+    if (res.ok) return await res.json();
+  } catch (err) {
+    console.warn("Backend unavailable, finding mock packing slip", err);
+  }
+  return MOCK_PACKING_SLIPS.find((p) => p.id === id) || null;
+}
+
+export async function createPackingSlip(data: PackingSlipCreateRequest): Promise<PackingSlip> {
+  try {
+    const res = await fetch(`${API_BASE}/packing-slips`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+      body: JSON.stringify(data),
+    });
+    if (res.ok) return await res.json();
+  } catch (err) {
+    console.warn("Backend unavailable, creating packing slip locally", err);
+  }
+
+  const dn = MOCK_DELIVERY_NOTES.find((d) => d.id === data.deliveryNoteId);
+  const fromPkg = data.fromPackageNo || 1;
+  const toPkg = data.toPackageNo || fromPkg;
+  const totalPkgs = toPkg - fromPkg + 1;
+
+  let calculatedNet = 0;
+  for (const it of data.items) {
+    calculatedNet += it.netWeight || 0;
+  }
+  const netWeight = data.netWeightPkg || calculatedNet;
+  const grossWeight = data.grossWeightPkg || Math.round(netWeight * 1.1 * 100) / 100;
+
+  const newSlip: PackingSlip = {
+    id: `ps-${Date.now()}`,
+    packingSlipNumber: `PS-2026-${Math.floor(1000 + Math.random() * 9000)}`,
+    deliveryNoteId: data.deliveryNoteId,
+    deliveryNoteNumber: dn?.deliveryNoteNumber || "DN-2026-XXXX",
+    fromPackageNo: fromPkg,
+    toPackageNo: toPkg,
+    totalPackages: totalPkgs,
+    packageType: data.packageType || "Carton",
+    netWeightPkg: netWeight,
+    grossWeightPkg: grossWeight,
+    weightUom: data.weightUom || "Kg",
+    letterOfCredit: data.letterOfCredit,
+    shippingMark: data.shippingMark,
+    status: "PACKED",
+    notes: data.notes,
+    items: data.items.map((it, idx) => ({
+      id: `psi-${Date.now()}-${idx}`,
+      deliveryNoteItemId: it.deliveryNoteItemId,
+      itemCode: it.itemCode,
+      itemName: it.itemName,
+      qty: it.qty,
+      netWeight: it.netWeight || 0,
+      weightUom: it.weightUom || "Kg",
+      productBundleItemCode: it.productBundleItemCode,
+    })),
+    createdAt: new Date().toISOString(),
+  };
+
+  MOCK_PACKING_SLIPS.unshift(newSlip);
+  return newSlip;
+}
+
+export async function shipPackingSlip(id: string): Promise<PackingSlip> {
+  try {
+    const res = await fetch(`${API_BASE}/packing-slips/${id}/ship`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+    });
+    if (res.ok) return await res.json();
+  } catch (err) {
+    console.warn("Backend unavailable, marking packing slip shipped locally", err);
+  }
+
+  const ps = MOCK_PACKING_SLIPS.find((p) => p.id === id);
+  if (ps) {
+    ps.status = "SHIPPED";
+    ps.updatedAt = new Date().toISOString();
+  }
+  return ps || MOCK_PACKING_SLIPS[0];
+}
+
+export async function deletePackingSlip(id: string): Promise<boolean> {
+  try {
+    const res = await fetch(`${API_BASE}/packing-slips/${id}`, {
+      method: "DELETE",
+      headers: getAuthHeaders(),
+    });
+    if (res.ok) return true;
+  } catch (err) {
+    console.warn("Backend unavailable, deleting packing slip locally", err);
+  }
+
+  MOCK_PACKING_SLIPS = MOCK_PACKING_SLIPS.filter((p) => p.id !== id);
+  return true;
+}
+
+// ==========================================
+// SALES TEAM MULTI-ALLOCATIONS (SPRINT 9)
+// ==========================================
+
+let MOCK_SALES_TEAM_MEMBERS: SalesTeamMember[] = [
+  {
+    id: "stm-001",
+    voucherType: "SALES_ORDER",
+    voucherId: "99999999-9999-9999-9999-999999999901",
+    salesPersonId: "sp-001",
+    salesPersonName: "Alexander Wright",
+    allocatedPercentage: 70.0,
+    allocatedAmount: 22732.50,
+    commissionRate: 5.0,
+    incentives: 1136.63,
+    createdAt: "2026-08-22T10:00:00Z",
+  },
+  {
+    id: "stm-002",
+    voucherType: "SALES_ORDER",
+    voucherId: "99999999-9999-9999-9999-999999999901",
+    salesPersonId: "sp-002",
+    salesPersonName: "Sophia Martinez",
+    allocatedPercentage: 30.0,
+    allocatedAmount: 9742.50,
+    commissionRate: 3.5,
+    incentives: 340.99,
+    createdAt: "2026-08-22T10:00:00Z",
+  },
+];
+
+export async function getSalesTeamForVoucher(
+  voucherType: string,
+  voucherId: string
+): Promise<SalesTeamMember[]> {
+  try {
+    const res = await fetch(`${API_BASE}/sales-team/${voucherType}/${voucherId}`, {
+      headers: getAuthHeaders(),
+    });
+    if (res.ok) return await res.json();
+  } catch (err) {
+    console.warn("Backend unavailable, fetching mock sales team", err);
+  }
+  return MOCK_SALES_TEAM_MEMBERS.filter(
+    (m) => m.voucherType === voucherType && m.voucherId === voucherId
+  );
+}
+
+export async function saveSalesTeamForVoucher(
+  voucherType: string,
+  voucherId: string,
+  grandTotal: number,
+  members: {
+    salesPersonId: string;
+    salesPersonName?: string;
+    allocatedPercentage: number;
+    commissionRate?: number;
+  }[]
+): Promise<SalesTeamMember[]> {
+  try {
+    const res = await fetch(`${API_BASE}/sales-team/${voucherType}/${voucherId}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+      body: JSON.stringify({ grandTotal, members }),
+    });
+    if (res.ok) return await res.json();
+  } catch (err) {
+    console.warn("Backend unavailable, saving sales team locally", err);
+  }
+
+  // Remove existing
+  MOCK_SALES_TEAM_MEMBERS = MOCK_SALES_TEAM_MEMBERS.filter(
+    (m) => !(m.voucherType === voucherType && m.voucherId === voucherId)
+  );
+
+  const newMembers: SalesTeamMember[] = members.map((m, idx) => {
+    const allocatedAmt = Math.round((grandTotal * m.allocatedPercentage) / 100 * 100) / 100;
+    const commRate = m.commissionRate || 5.0;
+    const incentives = Math.round((allocatedAmt * commRate) / 100 * 100) / 100;
+
+    return {
+      id: `stm-${Date.now()}-${idx}`,
+      voucherType,
+      voucherId,
+      salesPersonId: m.salesPersonId,
+      salesPersonName: m.salesPersonName || "Sales Representative",
+      allocatedPercentage: m.allocatedPercentage,
+      allocatedAmount: allocatedAmt,
+      commissionRate: commRate,
+      incentives,
+      createdAt: new Date().toISOString(),
+    };
+  });
+
+  MOCK_SALES_TEAM_MEMBERS.push(...newMembers);
+  return newMembers;
+}
+
+// ==========================================
+// SALES TARGETS & VARIANCE ANALYTICS (SPRINT 10)
+// ==========================================
+
+let MOCK_SALES_TARGETS: SalesTarget[] = [
+  {
+    id: "st-001",
+    targetType: "SALES_PERSON",
+    targetRefId: "sp-001",
+    targetRefName: "Alexander Wright",
+    fiscalYear: "2026",
+    period: "ANNUAL",
+    targetAmount: 500000.0,
+    targetQty: 50.0,
+    createdAt: "2026-01-01T00:00:00Z",
+  },
+  {
+    id: "st-002",
+    targetType: "SALES_PERSON",
+    targetRefId: "sp-002",
+    targetRefName: "Sophia Martinez",
+    fiscalYear: "2026",
+    period: "ANNUAL",
+    targetAmount: 450000.0,
+    targetQty: 40.0,
+    createdAt: "2026-01-01T00:00:00Z",
+  },
+  {
+    id: "st-003",
+    targetType: "SALES_PERSON",
+    targetRefId: "sp-003",
+    targetRefName: "Liam Johnson",
+    fiscalYear: "2026",
+    period: "ANNUAL",
+    targetAmount: 350000.0,
+    targetQty: 30.0,
+    createdAt: "2026-01-01T00:00:00Z",
+  },
+  {
+    id: "st-004",
+    targetType: "TERRITORY",
+    targetRefId: "terr-001",
+    targetRefName: "North America - US East",
+    fiscalYear: "2026",
+    period: "ANNUAL",
+    targetAmount: 1200000.0,
+    targetQty: 100.0,
+    createdAt: "2026-01-01T00:00:00Z",
+  },
+  {
+    id: "st-005",
+    targetType: "TERRITORY",
+    targetRefId: "terr-002",
+    targetRefName: "North America - US West",
+    fiscalYear: "2026",
+    period: "ANNUAL",
+    targetAmount: 950000.0,
+    targetQty: 80.0,
+    createdAt: "2026-01-01T00:00:00Z",
+  },
+];
+
+export async function getSalesTargets(fiscalYear: string = "2026"): Promise<SalesTarget[]> {
+  try {
+    const res = await fetch(`${API_BASE}/sales-targets?fiscalYear=${fiscalYear}`, {
+      headers: getAuthHeaders(),
+    });
+    if (res.ok) return await res.json();
+  } catch (err) {
+    console.warn("Backend unavailable, using mock sales targets", err);
+  }
+  return MOCK_SALES_TARGETS.filter((t) => t.fiscalYear === fiscalYear);
+}
+
+export async function createSalesTarget(data: SalesTargetCreateRequest): Promise<SalesTarget> {
+  try {
+    const res = await fetch(`${API_BASE}/sales-targets`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+      body: JSON.stringify(data),
+    });
+    if (res.ok) return await res.json();
+  } catch (err) {
+    console.warn("Backend unavailable, saving target locally", err);
+  }
+
+  const existingIdx = MOCK_SALES_TARGETS.findIndex(
+    (t) =>
+      t.targetType === data.targetType &&
+      t.targetRefId === data.targetRefId &&
+      t.fiscalYear === (data.fiscalYear || "2026")
+  );
+
+  const newTarget: SalesTarget = {
+    id: `st-${Date.now()}`,
+    targetType: data.targetType,
+    targetRefId: data.targetRefId,
+    targetRefName: data.targetRefName || "Target Entity",
+    fiscalYear: data.fiscalYear || "2026",
+    period: data.period || "ANNUAL",
+    itemGroupId: data.itemGroupId,
+    itemGroupName: data.itemGroupName,
+    targetAmount: data.targetAmount,
+    targetQty: data.targetQty || 0,
+    createdAt: new Date().toISOString(),
+  };
+
+  if (existingIdx >= 0) {
+    MOCK_SALES_TARGETS[existingIdx] = newTarget;
+  } else {
+    MOCK_SALES_TARGETS.push(newTarget);
+  }
+
+  return newTarget;
+}
+
+export async function getSalesPersonTargetVariance(
+  fiscalYear: string = "2026"
+): Promise<TargetVarianceReport[]> {
+  try {
+    const res = await fetch(
+      `${API_BASE}/sales-targets/variance/sales-persons?fiscalYear=${fiscalYear}`,
+      { headers: getAuthHeaders() }
+    );
+    if (res.ok) return await res.json();
+  } catch (err) {
+    console.warn("Backend unavailable, computing mock rep target variance", err);
+  }
+
+  // Fallback variance calculation
+  const reps = MOCK_SALES_PERSONS;
+  return reps.map((rep) => {
+    const targetObj = MOCK_SALES_TARGETS.find(
+      (t) => t.targetType === "SALES_PERSON" && t.targetRefId === rep.id && t.fiscalYear === fiscalYear
+    );
+    const targetAmt = targetObj ? targetObj.targetAmount : rep.targetAmount || 500000;
+    const achievedAmt = rep.allocatedAmount || 320000;
+    const variance = achievedAmt - targetAmt;
+    const percentage = targetAmt > 0 ? Math.round((achievedAmt / targetAmt) * 10000) / 100 : 0;
+
+    let pacing: "EXCEEDED" | "ON_TRACK" | "AT_RISK" | "BEHIND" = "BEHIND";
+    if (percentage >= 100) pacing = "EXCEEDED";
+    else if (percentage >= 75) pacing = "ON_TRACK";
+    else if (percentage >= 50) pacing = "AT_RISK";
+
+    return {
+      targetRefId: rep.id,
+      targetRefName: rep.salesPersonName,
+      targetType: "SALES_PERSON",
+      fiscalYear,
+      period: "ANNUAL",
+      targetAmount: targetAmt,
+      achievedAmount: achievedAmt,
+      varianceAmount: variance,
+      percentageAchieved: percentage,
+      pacingStatus: pacing,
+      totalDealsBooked: rep.allocatedAmount > 0 ? 5 : 1,
+    };
+  });
+}
+
+export async function getTerritoryTargetVariance(
+  fiscalYear: string = "2026"
+): Promise<TargetVarianceReport[]> {
+  try {
+    const res = await fetch(
+      `${API_BASE}/sales-targets/variance/territories?fiscalYear=${fiscalYear}`,
+      { headers: getAuthHeaders() }
+    );
+    if (res.ok) return await res.json();
+  } catch (err) {
+    console.warn("Backend unavailable, computing mock territory target variance", err);
+  }
+
+  const territories = [
+    { id: "terr-001", name: "North America - US East", target: 1200000, achieved: 1050000, deals: 14 },
+    { id: "terr-002", name: "North America - US West", target: 950000, achieved: 980000, deals: 11 },
+    { id: "terr-003", name: "Europe & UK Commercial", target: 800000, achieved: 560000, deals: 7 },
+    { id: "terr-004", name: "Asia-Pacific & India", target: 750000, achieved: 820000, deals: 12 },
+  ];
+
+  return territories.map((t) => {
+    const variance = t.achieved - t.target;
+    const percentage = Math.round((t.achieved / t.target) * 10000) / 100;
+    let pacing: "EXCEEDED" | "ON_TRACK" | "AT_RISK" | "BEHIND" = "BEHIND";
+    if (percentage >= 100) pacing = "EXCEEDED";
+    else if (percentage >= 75) pacing = "ON_TRACK";
+    else if (percentage >= 50) pacing = "AT_RISK";
+
+    return {
+      targetRefId: t.id,
+      targetRefName: t.name,
+      targetType: "TERRITORY",
+      fiscalYear,
+      period: "ANNUAL",
+      targetAmount: t.target,
+      achievedAmount: t.achieved,
+      varianceAmount: variance,
+      percentageAchieved: percentage,
+      pacingStatus: pacing,
+      totalDealsBooked: t.deals,
+    };
+  });
+}
+
+export * from "./workflowApi";
+

@@ -6,7 +6,7 @@ services:
     container_name: nextgen-accounting-postgres
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
       POSTGRES_DB: nextgen_erp_accounting
     ports:
       - "5434:5432"
@@ -25,11 +25,11 @@ services:
       dockerfile: Dockerfile
     container_name: nextgen-accounting-backend
     ports:
-      - "8084:8084"
+      - "8086:8084"
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://accounting-db:5432/nextgen_erp_accounting
       SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-postgres}
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
     depends_on:
       accounting-db:
@@ -43,6 +43,6 @@ services:
     ports:
       - "3004:3004"
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:8084/api/v1
+      - NEXT_PUBLIC_API_URL=http://localhost:8086/api/v1
     depends_on:
       - accounting-backend

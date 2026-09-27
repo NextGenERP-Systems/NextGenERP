@@ -38,6 +38,10 @@ public class SalesOrderService {
     private final CreditLimitValidator creditLimitValidator;
     private final CommissionEngine commissionEngine;
     private final PricingRuleEngine pricingRuleEngine;
+    private final BlanketOrderRepository blanketOrderRepository;
+    private final BlanketOrderService blanketOrderService;
+    private final SalesPartnerRepository salesPartnerRepository;
+    private final SalesPartnerService salesPartnerService;
 
     @Transactional(readOnly = true)
     public List<SalesOrderDto> getAllSalesOrders() {
@@ -63,6 +67,39 @@ public class SalesOrderService {
             ordNumber = "SAL-ORD-" + LocalDate.now().getYear() + "-" + UUID.randomUUID().toString().substring(0, 6).toUpperCase();
         }
 
+        BlanketOrder linkedBlanketOrder = null;
+        if (request.getBlanketOrderId() != null) {
+            linkedBlanketOrder = blanketOrderRepository.findByIdWithItems(request.getBlanketOrderId())
+                    .orElseThrow(() -> new ResourceNotFoundException("BlanketOrder", request.getBlanketOrderId()));
+            if (linkedBlanketOrder.getStatus() == BlanketOrder.BlanketOrderStatus.CLOSED ||
+                linkedBlanketOrder.getStatus() == BlanketOrder.BlanketOrderStatus.EXPIRED) {
+                throw new BusinessValidationException("Cannot release order against a " + linkedBlanketOrder.getStatus() + " Blanket Order");
+            }
+        }
+
+        UUID partnerId = request.getSalesPartnerId();
+        String partnerName = request.getSalesPartnerName();
+        BigDecimal commRate = request.getCommissionRate();
+
+        if (partnerId != null) {
+            Optional<SalesPartner> spOpt = salesPartnerRepository.findById(partnerId);
+            if (spOpt.isPresent()) {
+                partnerName = spOpt.get().getPartnerName();
+                if (commRate == null || commRate.compareTo(BigDecimal.ZERO) == 0) {
+                    commRate = spOpt.get().getCommissionRate();
+                }
+            }
+        } else if (customer.getDefaultSalesPartner() != null && !customer.getDefaultSalesPartner().isBlank()) {
+            Optional<SalesPartner> spOpt = salesPartnerRepository.findByPartnerName(customer.getDefaultSalesPartner());
+            if (spOpt.isPresent()) {
+                partnerId = spOpt.get().getId();
+                partnerName = spOpt.get().getPartnerName();
+                if (commRate == null || commRate.compareTo(BigDecimal.ZERO) == 0) {
+                    commRate = spOpt.get().getCommissionRate();
+                }
+            }
+        }
+
         SalesOrder order = SalesOrder.builder()
                 .orderNumber(ordNumber)
                 .transactionDate(request.getTransactionDate() != null ? request.getTransactionDate() : LocalDate.now())
@@ -76,6 +113,10 @@ public class SalesOrderService {
                 .deliveryStatus(DeliveryStatus.NOT_DELIVERED)
                 .billingStatus(BillingStatus.NOT_BILLED)
                 .quotationId(request.getQuotationId())
+                .blanketOrderId(linkedBlanketOrder != null ? linkedBlanketOrder.getId() : null)
+                .blanketOrderNumber(linkedBlanketOrder != null ? linkedBlanketOrder.getBlanketOrderNumber() : null)
+                .salesPartnerId(partnerId)
+                .salesPartnerName(partnerName)
                 .currency(request.getCurrency())
                 .conversionRate(request.getConversionRate())
                 .sellingPriceListId(request.getSellingPriceListId())
@@ -86,7 +127,7 @@ public class SalesOrderService {
                 .skipDeliveryNote(Boolean.TRUE.equals(request.getSkipDeliveryNote()))
                 .paymentTermsTemplate(request.getPaymentTermsTemplate())
                 .termsAndConditions(request.getTermsAndConditions())
-                .commissionRate(request.getCommissionRate())
+                .commissionRate(commRate != null ? commRate : BigDecimal.ZERO)
                 .items(new ArrayList<>())
                 .paymentSchedules(new ArrayList<>())
                 .stockReservations(new ArrayList<>())
@@ -103,6 +144,17 @@ public class SalesOrderService {
                     .orElseThrow(() -> new ResourceNotFoundException("Item", itemReq.getItemId()));
 
             BigDecimal priceListRate = itemReq.getPriceListRate() != null ? itemReq.getPriceListRate() : item.getStandardRate();
+
+            // Contractual Rate Override: If ordered against Blanket Order, lock to agreed contract rate
+            if (linkedBlanketOrder != null && linkedBlanketOrder.getItems() != null) {
+                for (BlanketOrderItem boItem : linkedBlanketOrder.getItems()) {
+                    if (boItem.getItemCode() != null && boItem.getItemCode().equalsIgnoreCase(item.getItemCode())) {
+                        priceListRate = boItem.getRate();
+                        break;
+                    }
+                }
+            }
+
             BigDecimal discountPct = itemReq.getDiscountPercentage() != null ? itemReq.getDiscountPercentage() : BigDecimal.ZERO;
             BigDecimal discountAmt = itemReq.getDiscountAmount() != null ? itemReq.getDiscountAmount() : BigDecimal.ZERO;
 
@@ -199,7 +251,8 @@ public class SalesOrderService {
                     .deliveredQty(BigDecimal.ZERO)
                     .billedAmt(BigDecimal.ZERO)
                     .pickedQty(BigDecimal.ZERO)
-                    .deliveredBySupplier(Boolean.TRUE.equals(itemReq.getDeliveredBySupplier()))
+                    .deliveredBySupplier(Boolean.TRUE.equals(itemReq.getDeliveredBySupplier()) || Boolean.TRUE.equals(item.getDeliveredBySupplier()))
+                    .supplier(itemReq.getSupplier() != null && !itemReq.getSupplier().isBlank() ? itemReq.getSupplier() : item.getDefaultSupplier())
                     .grantCommission(Boolean.TRUE.equals(itemReq.getGrantCommission()))
                     .build();
 
@@ -356,6 +409,18 @@ public class SalesOrderService {
             });
         }
 
+        // 6. Update linked Blanket Order ordered quantities if applicable
+        if (order.getBlanketOrderId() != null) {
+            for (SalesOrderItem item : order.getItems()) {
+                blanketOrderService.updateOrderedQuantity(order.getBlanketOrderId(), item.getItemCode(), item.getQty());
+            }
+        }
+
+        // 7. Allocate Sales Partner Commission if applicable
+        if (order.getSalesPartnerId() != null && order.getTotalCommission() != null && order.getTotalCommission().compareTo(BigDecimal.ZERO) > 0) {
+            salesPartnerService.allocateCommission(order.getSalesPartnerId(), order.getNetTotal(), order.getTotalCommission());
+        }
+
         SalesOrder saved = salesOrderRepository.save(order);
         return mapToDto(saved);
     }
@@ -387,11 +452,65 @@ public class SalesOrderService {
                 customer.setOutstandingBalance(BigDecimal.ZERO);
             }
             customerRepository.save(customer);
+
+            // Revert Blanket Order ordered quantities if was submitted
+            if (order.getBlanketOrderId() != null) {
+                for (SalesOrderItem item : order.getItems()) {
+                    blanketOrderService.revertOrderedQuantity(order.getBlanketOrderId(), item.getItemCode(), item.getQty());
+                }
+            }
+
+            // Revert Sales Partner Commission if was submitted
+            if (order.getSalesPartnerId() != null && order.getTotalCommission() != null && order.getTotalCommission().compareTo(BigDecimal.ZERO) > 0) {
+                salesPartnerService.revertCommission(order.getSalesPartnerId(), order.getNetTotal(), order.getTotalCommission());
+            }
         }
 
         order.setStatus(SalesOrderStatus.CANCELLED);
         SalesOrder saved = salesOrderRepository.save(order);
         return mapToDto(saved);
+    }
+
+    @Transactional
+    public SalesOrderDto createReleaseOrderFromBlanket(UUID blanketOrderId) {
+        BlanketOrder bo = blanketOrderRepository.findByIdWithItems(blanketOrderId)
+                .orElseThrow(() -> new ResourceNotFoundException("BlanketOrder", blanketOrderId));
+
+        if (bo.getStatus() == BlanketOrder.BlanketOrderStatus.CLOSED || bo.getStatus() == BlanketOrder.BlanketOrderStatus.EXPIRED) {
+            throw new BusinessValidationException("Cannot release order against a " + bo.getStatus() + " Blanket Order");
+        }
+
+        List<SalesOrderCreateRequest.OrderItemRequest> items = new ArrayList<>();
+        if (bo.getItems() != null) {
+            for (BlanketOrderItem bi : bo.getItems()) {
+                BigDecimal remaining = bi.getRemainingQty();
+                if (remaining != null && remaining.compareTo(BigDecimal.ZERO) > 0) {
+                    items.add(SalesOrderCreateRequest.OrderItemRequest.builder()
+                            .itemId(bi.getItem() != null ? bi.getItem().getId() : null)
+                            .itemCode(bi.getItemCode())
+                            .description(bi.getItemName())
+                            .qty(remaining)
+                            .priceListRate(bi.getRate())
+                            .rate(bi.getRate())
+                            .build());
+                }
+            }
+        }
+
+        if (items.isEmpty()) {
+            throw new BusinessValidationException("All items on Blanket Order " + bo.getBlanketOrderNumber() + " have already been fully ordered.");
+        }
+
+        SalesOrderCreateRequest createReq = SalesOrderCreateRequest.builder()
+                .customerId(bo.getCustomer().getId())
+                .blanketOrderId(bo.getId())
+                .deliveryDate(bo.getToDate() != null && bo.getToDate().isAfter(LocalDate.now()) ? bo.getToDate() : LocalDate.now().plusDays(14))
+                .poNo("REL-" + bo.getBlanketOrderNumber())
+                .items(items)
+                .build();
+
+        SalesOrderDto orderDto = createSalesOrder(createReq);
+        return submitSalesOrder(orderDto.getId());
     }
 
     @Transactional
@@ -431,6 +550,8 @@ public class SalesOrderService {
                 .deliveryStatus(s.getDeliveryStatus())
                 .billingStatus(s.getBillingStatus())
                 .quotationId(s.getQuotationId())
+                .blanketOrderId(s.getBlanketOrderId())
+                .blanketOrderNumber(s.getBlanketOrderNumber())
                 .currency(s.getCurrency())
                 .conversionRate(s.getConversionRate())
                 .sellingPriceListId(s.getSellingPriceListId())
@@ -456,6 +577,8 @@ public class SalesOrderService {
                 .skipDeliveryNote(s.getSkipDeliveryNote())
                 .paymentTermsTemplate(s.getPaymentTermsTemplate())
                 .termsAndConditions(s.getTermsAndConditions())
+                .salesPartnerId(s.getSalesPartnerId())
+                .salesPartnerName(s.getSalesPartnerName())
                 .amountEligibleForCommission(s.getAmountEligibleForCommission())
                 .commissionRate(s.getCommissionRate())
                 .totalCommission(s.getTotalCommission())
@@ -487,6 +610,7 @@ public class SalesOrderService {
                         .billedAmt(i.getBilledAmt())
                         .pickedQty(i.getPickedQty())
                         .deliveredBySupplier(i.getDeliveredBySupplier())
+                        .supplier(i.getSupplier())
                         .grantCommission(i.getGrantCommission())
                         .build()).collect(Collectors.toList()) : List.of())
                 .taxes(taxes.stream().map(t -> SalesTaxAndChargeDto.builder()

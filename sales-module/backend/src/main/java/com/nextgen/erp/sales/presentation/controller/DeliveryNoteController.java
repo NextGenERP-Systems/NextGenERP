@@ -28,6 +28,12 @@ public class DeliveryNoteController {
         return ResponseEntity.ok(deliveryNoteService.getAllDeliveryNotes());
     }
 
+    @GetMapping("/returns")
+    @Operation(summary = "Get all Return Delivery Notes (Sales Returns)")
+    public ResponseEntity<List<DeliveryNoteDto>> getAllReturns() {
+        return ResponseEntity.ok(deliveryNoteService.getAllReturns());
+    }
+
     @GetMapping("/{id}")
     @Operation(summary = "Get delivery note by ID")
     public ResponseEntity<DeliveryNoteDto> getDeliveryNoteById(@PathVariable UUID id) {
@@ -44,5 +50,13 @@ public class DeliveryNoteController {
     @Operation(summary = "Generate delivery note from an existing Sales Order")
     public ResponseEntity<DeliveryNoteDto> makeFromSalesOrder(@PathVariable UUID salesOrderId) {
         return ResponseEntity.status(HttpStatus.CREATED).body(deliveryNoteService.makeFromSalesOrder(salesOrderId));
+    }
+
+    @PostMapping("/{id}/create-return")
+    @Operation(summary = "Generate Return Delivery Note (Sales Return) against an existing Delivery Note")
+    public ResponseEntity<DeliveryNoteDto> createDeliveryReturn(
+            @PathVariable UUID id,
+            @RequestBody(required = false) DeliveryNoteCreateRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(deliveryNoteService.createDeliveryReturn(id, request));
     }
 }

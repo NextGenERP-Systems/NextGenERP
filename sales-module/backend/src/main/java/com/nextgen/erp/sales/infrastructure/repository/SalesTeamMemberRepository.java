@@ -9,6 +9,10 @@ import java.util.UUID;
 
 @Repository
 public interface SalesTeamMemberRepository extends JpaRepository<SalesTeamMember, UUID> {
-    List<SalesTeamMember> findByVoucherTypeAndVoucherId(String voucherType, UUID voucherId);
+
+    List<SalesTeamMember> findByVoucherTypeAndVoucherIdOrderByAllocatedPercentageDesc(String voucherType, UUID voucherId);
+
+    List<SalesTeamMember> findBySalesPersonId(UUID salesPersonId);
+
     void deleteByVoucherTypeAndVoucherId(String voucherType, UUID voucherId);
 }

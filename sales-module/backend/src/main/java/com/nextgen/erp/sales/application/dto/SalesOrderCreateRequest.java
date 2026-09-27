@@ -29,6 +29,7 @@ public class SalesOrderCreateRequest {
     private UUID customerId;
     
     private UUID quotationId;
+    private UUID blanketOrderId;
     
     @Builder.Default
     private OrderType orderType = OrderType.SALES;
@@ -58,8 +59,10 @@ public class SalesOrderCreateRequest {
     
     private String paymentTermsTemplate;
     private String termsAndConditions;
-    private String notes;
     private String couponCode;
+    
+    private UUID salesPartnerId;
+    private String salesPartnerName;
     
     @Builder.Default
     private BigDecimal commissionRate = BigDecimal.ZERO;
@@ -85,6 +88,7 @@ public class SalesOrderCreateRequest {
         private BigDecimal discountPercentage;
         private BigDecimal discountAmount;
         private Boolean deliveredBySupplier;
+        private String supplier;
         private Boolean grantCommission;
     }
 

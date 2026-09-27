@@ -14,6 +14,9 @@ import java.util.UUID;
 @AllArgsConstructor
 public class DeliveryNoteCreateRequest {
     private UUID salesOrderId;
+    private Boolean isReturn;
+    private UUID returnAgainstId;
+    private String returnAgainstNumber;
     @NotNull(message = "Customer ID is required")
     private UUID customerId;
     private LocalDate postingDate;

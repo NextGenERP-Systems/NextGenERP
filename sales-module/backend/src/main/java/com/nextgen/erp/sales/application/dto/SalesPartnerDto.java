@@ -26,6 +26,8 @@ public class SalesPartnerDto {
     private String territory;
     private BigDecimal totalAllocatedAmount;
     private BigDecimal totalCommissionEarned;
+    private BigDecimal totalCommissionPaid;
+    private BigDecimal balanceOutstanding;
     private Boolean disabled;
     private OffsetDateTime createdAt;
 }

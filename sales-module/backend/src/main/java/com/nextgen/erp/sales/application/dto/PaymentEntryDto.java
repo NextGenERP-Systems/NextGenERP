@@ -21,6 +21,8 @@ public class PaymentEntryDto {
     private String customerName;
     private UUID salesInvoiceId;
     private UUID salesOrderId;
+    private Boolean isAdvance;
+    private BigDecimal allocatedAmount;
     private LocalDate postingDate;
     private BigDecimal paidAmount;
     private String inWords;

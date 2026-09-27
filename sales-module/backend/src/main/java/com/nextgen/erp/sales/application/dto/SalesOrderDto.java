@@ -30,6 +30,8 @@ public class SalesOrderDto {
     private DeliveryStatus deliveryStatus;
     private BillingStatus billingStatus;
     private UUID quotationId;
+    private UUID blanketOrderId;
+    private String blanketOrderNumber;
     private String currency;
     private BigDecimal conversionRate;
     private UUID sellingPriceListId;
@@ -59,6 +61,8 @@ public class SalesOrderDto {
     private String paymentTermsTemplate;
     private String termsAndConditions;
     
+    private UUID salesPartnerId;
+    private String salesPartnerName;
     private BigDecimal amountEligibleForCommission;
     private BigDecimal commissionRate;
     private BigDecimal totalCommission;
@@ -102,6 +106,7 @@ public class SalesOrderDto {
         private BigDecimal billedAmt;
         private BigDecimal pickedQty;
         private Boolean deliveredBySupplier;
+        private String supplier;
         private Boolean grantCommission;
     }
 }

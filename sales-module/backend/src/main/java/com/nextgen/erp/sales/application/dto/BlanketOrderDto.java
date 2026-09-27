@@ -29,6 +29,10 @@ public class BlanketOrderDto {
     private String company;
     private BlanketOrderStatus status;
     private String termsAndConditions;
+    private BigDecimal totalQty;
+    private BigDecimal totalOrderedQty;
+    private BigDecimal totalRemainingQty;
+    private BigDecimal fulfillmentPercentage;
     private List<BlanketOrderItemDto> items;
     private OffsetDateTime createdAt;
 

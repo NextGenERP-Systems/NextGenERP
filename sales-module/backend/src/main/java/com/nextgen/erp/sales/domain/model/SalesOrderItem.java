@@ -134,6 +134,9 @@ public class SalesOrderItem {
     @Builder.Default
     private Boolean deliveredBySupplier = false;
 
+    @Column(name = "supplier", length = 150)
+    private String supplier;
+
     @Column(name = "grant_commission")
     @Builder.Default
     private Boolean grantCommission = true;

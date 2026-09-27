@@ -15,5 +15,7 @@ public interface DeliveryNoteRepository extends JpaRepository<DeliveryNote, UUID
     List<DeliveryNote> findBySalesOrderId(UUID salesOrderId);
     List<DeliveryNote> findByCustomerId(UUID customerId);
     List<DeliveryNote> findByStatus(DeliveryNoteStatus status);
+    List<DeliveryNote> findByReturnAgainstId(UUID returnAgainstId);
+    List<DeliveryNote> findByIsReturnTrue();
     List<DeliveryNote> findAllByOrderByCreatedAtDesc();
 }

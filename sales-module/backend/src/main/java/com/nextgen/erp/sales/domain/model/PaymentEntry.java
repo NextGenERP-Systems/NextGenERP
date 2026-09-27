@@ -43,6 +43,14 @@ public class PaymentEntry {
     @Column(name = "sales_order_id")
     private UUID salesOrderId;
 
+    @Column(name = "is_advance", nullable = false)
+    @Builder.Default
+    private Boolean isAdvance = false;
+
+    @Column(name = "allocated_amount", precision = 15, scale = 2)
+    @Builder.Default
+    private BigDecimal allocatedAmount = BigDecimal.ZERO;
+
     @Column(name = "posting_date", nullable = false)
     @Builder.Default
     private LocalDate postingDate = LocalDate.now();

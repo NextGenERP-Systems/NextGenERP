@@ -20,7 +20,9 @@ import {
   Trash2,
   Calculator,
   User,
+  Users,
   Home,
+  RotateCcw,
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -28,11 +30,13 @@ import {
   getCustomers,
   getSalesOrders,
   getItems,
+  getSalesPartners,
   createSalesInvoice,
+  createCreditNote,
   recordPayment,
   cancelSalesInvoice,
 } from "@/lib/api";
-import { SalesInvoice, Customer, SalesOrder, CatalogItem } from "@/types/sales";
+import { SalesInvoice, Customer, SalesOrder, CatalogItem, SalesPartner } from "@/types/sales";
 import { PrintDocumentModal } from "@/components/ui/PrintDocumentModal";
 
 function SalesInvoicesContent() {
@@ -41,6 +45,9 @@ function SalesInvoicesContent() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [salesOrders, setSalesOrders] = useState<SalesOrder[]>([]);
   const [catalogItems, setCatalogItems] = useState<CatalogItem[]>([]);
+  const [salesPartners, setSalesPartners] = useState<SalesPartner[]>([]);
+  const [selectedSalesPartner, setSelectedSalesPartner] = useState("");
+  const [commissionRateInput, setCommissionRateInput] = useState("");
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
@@ -66,19 +73,29 @@ function SalesInvoicesContent() {
   const [paymentMode, setPaymentMode] = useState("BANK_TRANSFER");
   const [referenceNo, setReferenceNo] = useState("");
 
+  // Credit Note / Return Modal
+  const [isCreditNoteOpen, setIsCreditNoteOpen] = useState(false);
+  const [creditNoteInvoice, setCreditNoteInvoice] = useState<SalesInvoice | null>(null);
+  const [creditNoteNotes, setCreditNoteNotes] = useState("");
+  const [creditNoteItems, setCreditNoteItems] = useState<
+    { itemCode: string; itemName: string; qty: number; rate: number }[]
+  >([]);
+
   const loadData = async () => {
     setLoading(true);
     try {
-      const [invData, custData, orderData, itemData] = await Promise.all([
+      const [invData, custData, orderData, itemData, spData] = await Promise.all([
         getSalesInvoices(),
         getCustomers(),
         getSalesOrders(),
         getItems(),
+        getSalesPartners(),
       ]);
       setInvoices(invData || []);
       setCustomers(custData || []);
       setSalesOrders(orderData || []);
       setCatalogItems(itemData || []);
+      setSalesPartners(spData || []);
 
       // Check URL parameters for connections
       const qCustId = searchParams.get("customerId");
@@ -120,7 +137,7 @@ function SalesInvoicesContent() {
     loadData();
   }, [searchParams]);
 
-  // Handle Sales Order Selection in Create Modal -> Auto-fill Customer and Items
+  // Handle Sales Order Selection in Create Modal -> Auto-fill Customer, Items, and Sales Partner
   const handleOrderSelect = (orderId: string) => {
     setSelectedOrder(orderId);
     if (!orderId) return;
@@ -128,6 +145,10 @@ function SalesInvoicesContent() {
     const order = salesOrders.find((so) => so.id === orderId);
     if (order) {
       setSelectedCustomer(order.customerId);
+      if (order.salesPartnerId) {
+        setSelectedSalesPartner(order.salesPartnerId);
+        setCommissionRateInput(order.commissionRate ? order.commissionRate.toString() : "5.0");
+      }
       if (order.items && order.items.length > 0) {
         setInvoiceItems(
           order.items.map((i) => ({
@@ -139,6 +160,31 @@ function SalesInvoicesContent() {
           }))
         );
       }
+    }
+  };
+
+  const handleCustomerSelect = (custId: string) => {
+    setSelectedCustomer(custId);
+    if (!custId) return;
+    const cust = customers.find((c) => c.id === custId);
+    if (cust && cust.defaultSalesPartner) {
+      const sp = salesPartners.find((p) => p.partnerName === cust.defaultSalesPartner);
+      if (sp) {
+        setSelectedSalesPartner(sp.id);
+        setCommissionRateInput(sp.commissionRate ? sp.commissionRate.toString() : "5.0");
+      }
+    }
+  };
+
+  const handlePartnerSelect = (partnerId: string) => {
+    setSelectedSalesPartner(partnerId);
+    if (!partnerId) {
+      setCommissionRateInput("0");
+      return;
+    }
+    const sp = salesPartners.find((p) => p.id === partnerId);
+    if (sp) {
+      setCommissionRateInput(sp.commissionRate ? sp.commissionRate.toString() : "5.0");
     }
   };
 
@@ -245,6 +291,8 @@ function SalesInvoicesContent() {
       await createSalesInvoice({
         customerId: selectedCustomer,
         salesOrderId: selectedOrder || undefined,
+        salesPartnerId: selectedSalesPartner || undefined,
+        commissionRate: Number(commissionRateInput) || 0,
         paymentTerms,
         notes,
         items: payloadItems,
@@ -290,6 +338,65 @@ function SalesInvoicesContent() {
     setPaymentAmount(inv.outstandingAmount.toString());
     setReferenceNo(`UTR-${Math.floor(100000 + Math.random() * 900000)}`);
     setIsPaymentOpen(true);
+  };
+
+  const openCreditNoteModal = (inv: SalesInvoice) => {
+    setCreditNoteInvoice(inv);
+    setCreditNoteNotes(`Sales return and credit note contra against ${inv.invoiceNumber}`);
+    if (inv.items && inv.items.length > 0) {
+      setCreditNoteItems(
+        inv.items.map((i) => ({
+          itemCode: i.itemCode,
+          itemName: i.itemName,
+          qty: i.qty,
+          rate: i.rate,
+        }))
+      );
+    } else {
+      setCreditNoteItems([
+        {
+          itemCode: "ERP-CLOUD-ENT",
+          itemName: "Return Item",
+          qty: 1,
+          rate: inv.grandTotal,
+        },
+      ]);
+    }
+    setIsCreditNoteOpen(true);
+  };
+
+  const handleCreditNoteQtyChange = (idx: number, qty: number) => {
+    const updated = [...creditNoteItems];
+    updated[idx] = { ...updated[idx], qty: Math.max(1, qty) };
+    setCreditNoteItems(updated);
+  };
+
+  const handleCreateCreditNoteSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!creditNoteInvoice) return;
+
+    try {
+      await createCreditNote(creditNoteInvoice.id, {
+        customerId: creditNoteInvoice.customerId,
+        salesOrderId: creditNoteInvoice.salesOrderId,
+        paymentTerms: creditNoteInvoice.paymentTerms,
+        notes: creditNoteNotes,
+        items: creditNoteItems.map((i) => ({
+          itemCode: i.itemCode,
+          itemName: i.itemName,
+          qty: i.qty,
+          rate: i.rate,
+          incomeAccount: "4120 - Sales Returns & Allowances",
+        })),
+      });
+
+      setIsCreditNoteOpen(false);
+      setActionSuccess(`Credit Note issued against ${creditNoteInvoice.invoiceNumber} with reverse GL postings!`);
+      setTimeout(() => setActionSuccess(null), 4000);
+      loadData();
+    } catch (err: any) {
+      alert("Failed to create credit note: " + (err.message || err));
+    }
   };
 
   const openPrintModal = (inv: SalesInvoice) => {
@@ -434,7 +541,28 @@ function SalesInvoicesContent() {
               ) : (
                 filteredInvoices.map((inv) => (
                   <tr key={inv.id} className="hover:bg-slate-50/75 transition-colors">
-                    <td className="py-3 px-4 font-semibold text-blue-600 font-mono">{inv.invoiceNumber}</td>
+                    <td className="py-3 px-4 font-semibold text-blue-600 font-mono">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span>{inv.invoiceNumber}</span>
+                        {inv.isReturn && (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-800 border border-purple-200">
+                            <RotateCcw className="h-2.5 w-2.5 mr-0.5" /> Credit Note
+                          </span>
+                        )}
+                      </div>
+                      {inv.returnAgainstNumber && (
+                        <div className="text-[10px] text-slate-400 font-normal">
+                          Against: <span className="font-mono text-slate-600 font-medium">{inv.returnAgainstNumber}</span>
+                        </div>
+                      )}
+                      {inv.salesPartnerName && (
+                        <div className="mt-0.5">
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            Partner: {inv.salesPartnerName} ({inv.commissionRate}%)
+                          </span>
+                        </div>
+                      )}
+                    </td>
                     <td className="py-3 px-4 font-medium text-slate-800">{inv.customerName}</td>
                     <td className="py-3 px-4 text-slate-600 font-mono text-[11px]">{inv.postingDate}</td>
                     <td className="py-3 px-4 text-slate-600 font-mono text-[11px]">{inv.dueDate}</td>
@@ -442,7 +570,12 @@ function SalesInvoicesContent() {
                       ₹{Number(inv.grandTotal).toLocaleString()}
                     </td>
                     <td className="py-3 px-4 text-right font-mono text-emerald-600 font-semibold">
-                      ₹{Number(inv.paidAmount).toLocaleString()}
+                      <div>₹{Number(inv.paidAmount).toLocaleString()}</div>
+                      {inv.allocatedAdvanceAmount !== undefined && inv.allocatedAdvanceAmount > 0 && (
+                        <div className="text-[10px] text-indigo-600 font-medium">
+                          Adv: ₹{Number(inv.allocatedAdvanceAmount).toLocaleString()}
+                        </div>
+                      )}
                     </td>
                     <td className="py-3 px-4 text-right font-mono font-bold text-amber-600">
                       ₹{Number(inv.outstandingAmount).toLocaleString()}
@@ -473,6 +606,16 @@ function SalesInvoicesContent() {
                         >
                           <Printer className="h-3.5 w-3.5" />
                         </button>
+                        {!inv.isReturn && inv.status !== "CANCELLED" && (
+                          <button
+                            onClick={() => openCreditNoteModal(inv)}
+                            title="Issue Credit Note / Return"
+                            className="p-1.5 text-purple-600 hover:bg-purple-50 rounded border border-purple-200 transition-all flex items-center gap-1"
+                          >
+                            <RotateCcw className="h-3.5 w-3.5" />
+                            <span className="text-[10px] font-semibold hidden sm:inline">Return</span>
+                          </button>
+                        )}
                         {inv.status !== "PAID" && inv.status !== "CANCELLED" && (
                           <button
                             onClick={() => openPaymentModal(inv)}
@@ -589,6 +732,97 @@ function SalesInvoicesContent() {
         </div>
       )}
 
+      {/* Credit Note / Sales Return Modal */}
+      {isCreditNoteOpen && creditNoteInvoice && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-xl max-w-xl w-full p-6 border border-slate-200 space-y-4 animate-in fade-in zoom-in-95 duration-150 my-8">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h2 className="font-bold text-slate-800 text-sm flex items-center gap-2">
+                <RotateCcw className="h-4 w-4 text-purple-600" />
+                <span>Issue Credit Note / Sales Return</span>
+              </h2>
+              <button onClick={() => setIsCreditNoteOpen(false)} className="text-slate-400 hover:text-slate-600">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="bg-purple-50/70 p-3 rounded-xl border border-purple-200 space-y-1 text-xs">
+              <div className="flex justify-between text-slate-600">
+                <span>Original Invoice:</span>
+                <span className="font-semibold text-slate-900 font-mono">{creditNoteInvoice.invoiceNumber}</span>
+              </div>
+              <div className="flex justify-between text-slate-600">
+                <span>Customer:</span>
+                <span className="font-semibold text-slate-900">{creditNoteInvoice.customerName}</span>
+              </div>
+              <div className="text-[11px] text-purple-700 pt-1 border-t border-purple-200/60">
+                <strong>Accounting Impact:</strong> Contra GL Debits <em>4120 - Sales Returns & Allowances</em> & <em>2210 - Output Tax</em>, and Credits <em>1310 - Debtors</em> to reduce customer debt.
+              </div>
+            </div>
+
+            <form onSubmit={handleCreateCreditNoteSubmit} className="space-y-4 text-xs">
+              <div className="space-y-2 border border-slate-200 rounded-xl p-3 bg-slate-50/50">
+                <span className="font-semibold text-slate-800 text-[11px]">Returned Item Lines</span>
+                <div className="space-y-2">
+                  {creditNoteItems.map((item, idx) => (
+                    <div key={idx} className="grid grid-cols-12 gap-2 items-center bg-white p-2.5 rounded-lg border border-slate-200">
+                      <div className="col-span-6 space-y-0.5">
+                        <label className="text-[10px] text-slate-400">Item</label>
+                        <div className="font-semibold text-slate-800 text-xs truncate">{item.itemName}</div>
+                        <div className="font-mono text-[10px] text-slate-400">{item.itemCode}</div>
+                      </div>
+                      <div className="col-span-3 space-y-0.5">
+                        <label className="text-[10px] text-slate-400">Return Qty</label>
+                        <input
+                          type="number"
+                          min="1"
+                          value={item.qty}
+                          onChange={(e) => handleCreditNoteQtyChange(idx, Number(e.target.value))}
+                          className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-xs text-center font-mono font-semibold"
+                        />
+                      </div>
+                      <div className="col-span-3 space-y-0.5 text-right font-mono font-bold text-slate-800">
+                        <label className="text-[10px] text-slate-400 block">Contra Value</label>
+                        <div className="pt-1 text-purple-700">₹{(item.qty * item.rate * 1.18).toLocaleString()}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="font-semibold text-slate-700">Reason / Return Notes *</label>
+                <input
+                  type="text"
+                  required
+                  value={creditNoteNotes}
+                  onChange={(e) => setCreditNoteNotes(e.target.value)}
+                  placeholder="e.g., Goods damaged in transit / specification mismatch..."
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setIsCreditNoteOpen(false)}
+                  className="px-4 py-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 font-semibold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-semibold shadow-sm flex items-center gap-1.5"
+                >
+                  <RotateCcw className="h-3.5 w-3.5" />
+                  <span>Generate Credit Note</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Create Sales Invoice Modal with Full Connects */}
       {isCreateOpen && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
@@ -614,7 +848,7 @@ function SalesInvoicesContent() {
                   <select
                     required
                     value={selectedCustomer}
-                    onChange={(e) => setSelectedCustomer(e.target.value)}
+                    onChange={(e) => handleCustomerSelect(e.target.value)}
                     className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium"
                   >
                     <option value="">Select Customer Master...</option>
@@ -644,6 +878,45 @@ function SalesInvoicesContent() {
                       </option>
                     ))}
                   </select>
+                </div>
+              </div>
+
+              {/* Sales Partner & Commission Rate */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50/60 p-2.5 rounded-xl border border-slate-200">
+                <div className="space-y-1">
+                  <label className="font-semibold text-slate-700 flex items-center gap-1">
+                    <Users className="h-3.5 w-3.5 text-emerald-600" />
+                    <span>Sales Partner (Optional)</span>
+                  </label>
+                  <select
+                    value={selectedSalesPartner}
+                    onChange={(e) => handlePartnerSelect(e.target.value)}
+                    className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs"
+                  >
+                    <option value="">None / Direct Sale</option>
+                    {salesPartners
+                      .filter((p) => !p.disabled)
+                      .map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.partnerName} ({p.commissionRate}%)
+                        </option>
+                      ))}
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="font-semibold text-slate-700 flex items-center gap-1">
+                    <CreditCard className="h-3.5 w-3.5 text-emerald-600" />
+                    <span>Commission Rate (%)</span>
+                  </label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    placeholder="e.g. 5.0"
+                    value={commissionRateInput}
+                    onChange={(e) => setCommissionRateInput(e.target.value)}
+                    className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs font-mono"
+                  />
                 </div>
               </div>
 

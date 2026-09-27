@@ -19,6 +19,7 @@ public class PaymentEntryCreateRequest {
     private UUID customerId;
     private UUID salesInvoiceId;
     private UUID salesOrderId;
+    private Boolean isAdvance;
     private LocalDate postingDate;
     @NotNull(message = "Paid amount is required")
     private BigDecimal paidAmount;

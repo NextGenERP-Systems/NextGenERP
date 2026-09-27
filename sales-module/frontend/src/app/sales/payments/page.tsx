@@ -17,6 +17,7 @@ import {
   ArrowDownRight,
   Ban,
   Home,
+  ShoppingBag,
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -65,6 +66,7 @@ function PaymentsContent() {
 
       const qCustId = searchParams.get("customerId");
       const qInvId = searchParams.get("salesInvoiceId");
+      const qOrderId = searchParams.get("salesOrderId");
       const qOpen = searchParams.get("open");
 
       if (qCustId) {
@@ -78,7 +80,16 @@ function PaymentsContent() {
           setPaidAmount(matchedInv.outstandingAmount.toString());
         }
       }
-      if (qOpen === "true" || qCustId || qInvId) {
+      if (qOrderId) {
+        setSelectedOrder(qOrderId);
+        const matchedOrder = (ordData || []).find((o) => o.id === qOrderId);
+        if (matchedOrder) {
+          setSelectedCustomer(matchedOrder.customerId);
+          const remaining = Math.max(0, (matchedOrder.grandTotal || 0) - (matchedOrder.advancePaid || 0));
+          setPaidAmount(remaining > 0 ? remaining.toString() : matchedOrder.grandTotal.toString());
+        }
+      }
+      if (qOpen === "true" || qCustId || qInvId || qOrderId) {
         setReferenceNo(`UTR-${Math.floor(100000 + Math.random() * 900000)}`);
         setIsCreateOpen(true);
       }
@@ -102,6 +113,19 @@ function PaymentsContent() {
     if (inv) {
       setSelectedCustomer(inv.customerId);
       setPaidAmount(inv.outstandingAmount.toString());
+    }
+  };
+
+  // When user selects a Sales Order -> Auto-fill customer and remaining order amount
+  const handleOrderSelect = (orderId: string) => {
+    setSelectedOrder(orderId);
+    if (!orderId) return;
+
+    const order = orders.find((o) => o.id === orderId);
+    if (order) {
+      setSelectedCustomer(order.customerId);
+      const remaining = Math.max(0, (order.grandTotal || 0) - (order.advancePaid || 0));
+      setPaidAmount(remaining > 0 ? remaining.toString() : order.grandTotal.toString());
     }
   };
 
@@ -245,7 +269,26 @@ function PaymentsContent() {
               ) : (
                 filteredPayments.map((p) => (
                   <tr key={p.id} className="hover:bg-slate-50/75 transition-colors">
-                    <td className="py-3 px-4 font-semibold text-emerald-700 font-mono">{p.paymentNumber}</td>
+                    <td className="py-3 px-4 font-semibold text-emerald-700 font-mono">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span>{p.paymentNumber}</span>
+                        {(p.isAdvance || (p.salesOrderId && !p.salesInvoiceId)) && (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                            Order Advance
+                          </span>
+                        )}
+                      </div>
+                      {p.salesOrderId && (
+                        <div className="text-[10px] text-slate-400 font-normal">
+                          Order: <span className="font-mono text-slate-600 font-medium">{orders.find((o) => o.id === p.salesOrderId)?.orderNumber || p.salesOrderId.slice(0, 8)}</span>
+                        </div>
+                      )}
+                      {p.salesInvoiceId && (
+                        <div className="text-[10px] text-slate-400 font-normal">
+                          Invoice: <span className="font-mono text-slate-600 font-medium">{invoices.find((i) => i.id === p.salesInvoiceId)?.invoiceNumber || p.salesInvoiceId.slice(0, 8)}</span>
+                        </div>
+                      )}
+                    </td>
                     <td className="py-3 px-4 font-medium text-slate-800">{p.customerName}</td>
                     <td className="py-3 px-4 text-slate-600 font-mono text-[11px]">{p.postingDate}</td>
                     <td className="py-3 px-4 text-slate-600">
@@ -336,6 +379,25 @@ function PaymentsContent() {
                   {invoices.map((inv) => (
                     <option key={inv.id} value={inv.id}>
                       {inv.invoiceNumber} - {inv.customerName} (Due: ₹{Number(inv.outstandingAmount).toLocaleString()})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="font-semibold text-slate-700 flex items-center gap-1">
+                  <ShoppingBag className="h-3.5 w-3.5 text-purple-600" />
+                  <span>Link to Sales Order (For Advance Payment)</span>
+                </label>
+                <select
+                  value={selectedOrder}
+                  onChange={(e) => handleOrderSelect(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs"
+                >
+                  <option value="">None / Not linked to Order</option>
+                  {orders.map((o) => (
+                    <option key={o.id} value={o.id}>
+                      {o.orderNumber} - {o.customerName} (Total: ₹{Number(o.grandTotal).toLocaleString()} | Adv: ₹{Number(o.advancePaid || 0).toLocaleString()})
                     </option>
                   ))}
                 </select>

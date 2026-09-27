@@ -68,6 +68,12 @@ public class SalesOrder {
     @Column(name = "quotation_id")
     private UUID quotationId;
 
+    @Column(name = "blanket_order_id")
+    private UUID blanketOrderId;
+
+    @Column(name = "blanket_order_number", length = 50)
+    private String blanketOrderNumber;
+
     @Column(nullable = false, length = 3)
     @Builder.Default
     private String currency = "INR";
@@ -153,6 +159,12 @@ public class SalesOrder {
 
     @Column(name = "terms_and_conditions", columnDefinition = "TEXT")
     private String termsAndConditions;
+
+    @Column(name = "sales_partner_id")
+    private UUID salesPartnerId;
+
+    @Column(name = "sales_partner_name", length = 150)
+    private String salesPartnerName;
 
     @Column(name = "amount_eligible_for_commission", precision = 15, scale = 2)
     @Builder.Default

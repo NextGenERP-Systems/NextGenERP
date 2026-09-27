@@ -28,9 +28,14 @@ public class GeneralLedgerService {
     public static final String ACC_TAX_PAYABLE = "2210 - Sales Output Tax Liability";
     public static final String ACC_BANK = "1110 - HDFC Bank Operational Current A/C";
     public static final String ACC_CASH = "1120 - Petty Cash Account";
+    public static final String ACC_SALES_RETURNS = "4120 - Sales Returns & Allowances";
 
     @Transactional
     public List<GlEntry> postSalesInvoiceGl(SalesInvoice invoice) {
+        if (Boolean.TRUE.equals(invoice.getIsReturn())) {
+            return postCreditNoteGl(invoice);
+        }
+
         log.info("Posting double-entry GL for Sales Invoice: {}", invoice.getInvoiceNumber());
         List<GlEntry> entries = new ArrayList<>();
 
@@ -79,36 +84,88 @@ public class GeneralLedgerService {
     }
 
     @Transactional
+    public List<GlEntry> postCreditNoteGl(SalesInvoice creditNote) {
+        log.info("Posting double-entry GL for Credit Note (Sales Return): {}", creditNote.getInvoiceNumber());
+        List<GlEntry> entries = new ArrayList<>();
+
+        String ref = creditNote.getReturnAgainstNumber() != null ? creditNote.getReturnAgainstNumber() : "Invoice";
+
+        // 1. DEBIT: Sales Returns / Revenue (Contra Revenue) for Net Total
+        entries.add(GlEntry.builder()
+                .postingDate(creditNote.getPostingDate() != null ? creditNote.getPostingDate() : LocalDate.now())
+                .voucherType("Credit Note")
+                .voucherNo(creditNote.getInvoiceNumber())
+                .voucherId(creditNote.getId())
+                .account(ACC_SALES_RETURNS)
+                .debit(creditNote.getNetTotal())
+                .credit(BigDecimal.ZERO)
+                .customer(creditNote.getCustomer())
+                .remarks("Sales Return / Credit Note on " + creditNote.getInvoiceNumber() + " against " + ref)
+                .build());
+
+        // 2. DEBIT: Tax Liability (Reversing Output Tax) for Tax Amount
+        if (creditNote.getTotalTax() != null && creditNote.getTotalTax().compareTo(BigDecimal.ZERO) > 0) {
+            entries.add(GlEntry.builder()
+                    .postingDate(creditNote.getPostingDate() != null ? creditNote.getPostingDate() : LocalDate.now())
+                    .voucherType("Credit Note")
+                    .voucherNo(creditNote.getInvoiceNumber())
+                    .voucherId(creditNote.getId())
+                    .account(ACC_TAX_PAYABLE)
+                    .debit(creditNote.getTotalTax())
+                    .credit(BigDecimal.ZERO)
+                    .customer(creditNote.getCustomer())
+                    .remarks("GST / Output Tax reversal on Credit Note " + creditNote.getInvoiceNumber())
+                    .build());
+        }
+
+        // 3. CREDIT: Debtors (Accounts Receivable) for Grand Total (Reducing customer debt)
+        entries.add(GlEntry.builder()
+                .postingDate(creditNote.getPostingDate() != null ? creditNote.getPostingDate() : LocalDate.now())
+                .voucherType("Credit Note")
+                .voucherNo(creditNote.getInvoiceNumber())
+                .voucherId(creditNote.getId())
+                .account(ACC_DEBTORS)
+                .debit(BigDecimal.ZERO)
+                .credit(creditNote.getGrandTotal())
+                .customer(creditNote.getCustomer())
+                .remarks("AR Credit adjustment for " + creditNote.getCustomerName() + " against " + ref)
+                .build());
+
+        return glEntryRepository.saveAll(entries);
+    }
+
+    @Transactional
     public List<GlEntry> postPaymentEntryGl(PaymentEntry payment) {
         log.info("Posting double-entry GL for Payment Receipt: {}", payment.getPaymentNumber());
         List<GlEntry> entries = new ArrayList<>();
 
         String bankOrCashAccount = payment.getPaymentMode() == PaymentMode.CASH ? ACC_CASH : ACC_BANK;
+        boolean isAdvance = payment.getSalesOrderId() != null && payment.getSalesInvoiceId() == null;
 
         // 1. DEBIT: Bank / Cash Account (Inflow)
         entries.add(GlEntry.builder()
                 .postingDate(payment.getPostingDate() != null ? payment.getPostingDate() : LocalDate.now())
-                .voucherType("Payment Entry")
+                .voucherType(isAdvance ? "Advance Payment Entry" : "Payment Entry")
                 .voucherNo(payment.getPaymentNumber())
                 .voucherId(payment.getId())
                 .account(bankOrCashAccount)
                 .debit(payment.getPaidAmount())
                 .credit(BigDecimal.ZERO)
                 .customer(payment.getCustomer())
-                .remarks("Customer Receipt via " + payment.getPaymentMode() + (payment.getReferenceNo() != null ? " Ref: " + payment.getReferenceNo() : ""))
+                .remarks((isAdvance ? "Advance Customer Receipt" : "Customer Receipt") + " via " + payment.getPaymentMode() + (payment.getReferenceNo() != null ? " Ref: " + payment.getReferenceNo() : ""))
                 .build());
 
         // 2. CREDIT: Debtors (Accounts Receivable) (Outflow reduction)
         entries.add(GlEntry.builder()
                 .postingDate(payment.getPostingDate() != null ? payment.getPostingDate() : LocalDate.now())
-                .voucherType("Payment Entry")
+                .voucherType(isAdvance ? "Advance Payment Entry" : "Payment Entry")
                 .voucherNo(payment.getPaymentNumber())
                 .voucherId(payment.getId())
                 .account(ACC_DEBTORS)
                 .debit(BigDecimal.ZERO)
                 .credit(payment.getPaidAmount())
                 .customer(payment.getCustomer())
-                .remarks("AR Settlement from " + (payment.getCustomer() != null ? payment.getCustomer().getCustomerName() : "Customer"))
+                .remarks(isAdvance ? ("Advance payment against Sales Order " + payment.getSalesOrderId()) : ("AR Settlement from " + (payment.getCustomer() != null ? payment.getCustomer().getCustomerName() : "Customer")))
                 .build());
 
         return glEntryRepository.saveAll(entries);

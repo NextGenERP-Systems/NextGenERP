@@ -38,6 +38,12 @@ import {
   Sparkles,
   ArrowRight,
   X,
+  Landmark,
+  Factory,
+  Truck,
+  Wrench,
+  Briefcase,
+  Target,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useRef, useEffect } from "react";
@@ -75,16 +81,6 @@ const ALL_WORKSPACES: WorkspaceDef[] = [
     defaultHref: "/workflows",
   },
   {
-    id: "stock",
-    name: "Stock & Inventory",
-    category: "operations",
-    subtitle: "Items, Batches & Warehouse",
-    icon: Boxes,
-    colorBg: "bg-teal-100/90",
-    colorText: "text-teal-600",
-    defaultHref: "http://localhost:3003/stock",
-  },
-  {
     id: "hrm",
     name: "HRM & People Ops",
     category: "operations",
@@ -92,16 +88,53 @@ const ALL_WORKSPACES: WorkspaceDef[] = [
     icon: Users,
     colorBg: "bg-indigo-100/90",
     colorText: "text-indigo-600",
-    defaultHref: "http://localhost:3001/hrm",
+    defaultHref: "/hrm",
+  },
+  {
+    id: "accounts",
+    name: "Finance & Accounts",
+    category: "finance",
+    subtitle: "Chart of Accounts & GL",
+    icon: Landmark,
+    colorBg: "bg-emerald-100/90",
+    colorText: "text-emerald-600",
+    defaultHref: "/accounts",
+  },
+  {
+    id: "projects",
+    name: "Projects & Tasks",
+    category: "operations",
+    subtitle: "Kanban, Sprints & Timesheets",
+    icon: FolderKanban,
+    colorBg: "bg-violet-100/90",
+    colorText: "text-violet-600",
+    defaultHref: "/projects",
+  },
+  {
+    id: "mrp",
+    name: "Manufacturing MRP",
+    category: "operations",
+    subtitle: "Work Orders, BOMs & Operations",
+    icon: Factory,
+    colorBg: "bg-rose-100/90",
+    colorText: "text-rose-600",
+    defaultHref: "/mrp",
+  },
+  {
+    id: "stock",
+    name: "Stock & Inventory",
+    category: "operations",
+    subtitle: "Items, Batches & Warehouse",
+    icon: Boxes,
+    colorBg: "bg-teal-100/90",
+    colorText: "text-teal-600",
+    defaultHref: "/stock",
   },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
-
-  // Hide global sidebar on HRM routes — HRM has its own dedicated sidebar
-  if (pathname.startsWith("/hrm")) return null;
 
   // Workspace Switcher State
   const [isSwitcherOpen, setIsSwitcherOpen] = useState(false);
@@ -163,6 +196,18 @@ export function Sidebar() {
     if (pathname.startsWith("/hrm")) {
       return "hrm";
     }
+    if (pathname.startsWith("/accounts")) {
+      return "accounts";
+    }
+    if (pathname.startsWith("/projects")) {
+      return "projects";
+    }
+    if (pathname.startsWith("/mrp")) {
+      return "mrp";
+    }
+    if (pathname.startsWith("/stock")) {
+      return "stock";
+    }
     if (pathname.startsWith("/sales/crm")) {
       return "crm";
     }
@@ -196,19 +241,22 @@ export function Sidebar() {
 
   const handleWorkspaceClick = (ws: WorkspaceDef) => {
     setIsSwitcherOpen(false);
-    if (ws.id === "hrm" || ws.defaultHref.startsWith("http")) {
-      window.location.href = ws.defaultHref;
-    } else {
-      router.push(ws.defaultHref);
-    }
+    router.push(ws.defaultHref);
   };
 
   // ERPNext Desk Selling Sidebar Structure
   const SELLING_STANDARD_ITEMS = [
     { title: "Home", href: "/sales", icon: Home },
     { title: "Dashboard", href: "/sales?tab=overview", icon: LayoutDashboard },
+    { title: "CRM Pipeline", href: "/sales/crm", icon: Briefcase },
     { title: "Quotation", href: "/sales/quotations", icon: FileText },
     { title: "Sales Order", href: "/sales/orders", icon: ShoppingBag },
+    { title: "Delivery Note", href: "/sales/delivery-notes", icon: Truck },
+    { title: "Packing Slip", href: "/sales/packing-slips", icon: Boxes },
+    { title: "Drop Shipping", href: "/sales/drop-ship", icon: Package },
+    { title: "Maintenance & AMC", href: "/sales/maintenance", icon: Wrench },
+    { title: "Payment Terms", href: "/sales/payment-terms", icon: Layers },
+    { title: "Sales Targets", href: "/sales/targets", icon: Target },
     { title: "Sales Invoice", href: "/sales/invoices", icon: Receipt },
     { title: "POS", href: "/sales/pos", icon: Monitor },
   ];
@@ -246,8 +294,9 @@ export function Sidebar() {
     { title: "Campaign", href: "/sales/crm?tab=campaign" },
     { title: "Sales Person", href: "/sales/sales-persons" },
     { title: "Sales Partner", href: "/sales/sales-partners" },
+    { title: "Sales Target", href: "/sales/targets" },
     { title: "Monthly Distribution", href: "/sales/settings" },
-    { title: "Terms Template", href: "/sales/settings" },
+    { title: "Payment Terms Template", href: "/sales/payment-terms" },
     { title: "Tax Template", href: "/sales/settings" },
     { title: "Product Bundle", href: "/sales/items" },
     { title: "UTM Source", href: "/sales/crm?tab=utm" },
@@ -265,8 +314,8 @@ export function Sidebar() {
     { title: "Customers Without Any Sales", href: "/sales/reports?report=no-sales" },
     { title: "Sales Partners Commission", href: "/sales/reports?report=commission" },
     { title: "Available Stock for Packing Items", href: "/sales/reports?report=stock" },
-    { title: "Territory Target Variance", href: "/sales/reports?report=territory-variance" },
-    { title: "Sales Person Target Variance", href: "/sales/reports?report=salesperson-variance" },
+    { title: "Territory Target Variance", href: "/sales/targets?tab=territories" },
+    { title: "Sales Person Target Variance", href: "/sales/targets?tab=reps" },
     { title: "Sales Partner Target Variance", href: "/sales/reports?report=partner-variance" },
     { title: "Pending SO Items For Purchase", href: "/sales/reports?report=pending-so" },
     { title: "Sales Funnel", href: "/sales/reports?report=funnel" },
@@ -335,11 +384,7 @@ export function Sidebar() {
                 {currentWorkspace.name}
               </div>
               <div className="text-[10px] text-gray-500 font-medium leading-tight truncate">
-                {activeWorkspaceId === "workflows"
-                  ? "Automation Core"
-                  : activeWorkspaceId === "hrm"
-                  ? "People & Payroll"
-                  : "ERPNext"}
+                {currentWorkspace.subtitle}
               </div>
             </div>
             <ChevronDown

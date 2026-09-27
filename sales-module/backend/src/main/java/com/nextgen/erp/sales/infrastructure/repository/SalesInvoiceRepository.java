@@ -15,5 +15,7 @@ public interface SalesInvoiceRepository extends JpaRepository<SalesInvoice, UUID
     List<SalesInvoice> findBySalesOrderId(UUID salesOrderId);
     List<SalesInvoice> findByCustomerId(UUID customerId);
     List<SalesInvoice> findByStatus(SalesInvoiceStatus status);
+    List<SalesInvoice> findByReturnAgainstId(UUID returnAgainstId);
+    List<SalesInvoice> findByIsReturnTrue();
     List<SalesInvoice> findAllByOrderByCreatedAtDesc();
 }

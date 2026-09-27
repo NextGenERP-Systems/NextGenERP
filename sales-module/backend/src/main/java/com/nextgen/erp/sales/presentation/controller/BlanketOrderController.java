@@ -2,7 +2,9 @@ package com.nextgen.erp.sales.presentation.controller;
 
 import com.nextgen.erp.sales.application.dto.BlanketOrderCreateRequest;
 import com.nextgen.erp.sales.application.dto.BlanketOrderDto;
+import com.nextgen.erp.sales.application.dto.SalesOrderDto;
 import com.nextgen.erp.sales.application.service.BlanketOrderService;
+import com.nextgen.erp.sales.application.service.SalesOrderService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -21,6 +23,7 @@ import java.util.UUID;
 public class BlanketOrderController {
 
     private final BlanketOrderService blanketOrderService;
+    private final SalesOrderService salesOrderService;
 
     @GetMapping
     @Operation(summary = "Get all blanket orders")
@@ -39,6 +42,13 @@ public class BlanketOrderController {
     public ResponseEntity<BlanketOrderDto> createBlanketOrder(@Valid @RequestBody BlanketOrderCreateRequest request) {
         BlanketOrderDto created = blanketOrderService.createBlanketOrder(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
+    }
+
+    @PostMapping("/{id}/create-release-order")
+    @Operation(summary = "Generate a release Sales Order against this blanket order agreement with contractually locked rates")
+    public ResponseEntity<SalesOrderDto> createReleaseOrder(@PathVariable UUID id) {
+        SalesOrderDto order = salesOrderService.createReleaseOrderFromBlanket(id);
+        return ResponseEntity.status(HttpStatus.CREATED).body(order);
     }
 
     @PostMapping("/{id}/close")
