@@ -29,12 +29,21 @@ spring:
           batch_size: 25
   flyway:
     enabled: true
+    table: crm_flyway_schema_history
     baseline-on-migrate: true
+    baseline-version: 1
     locations: classpath:db/migration
 
 sales:
   service:
     url: ${SALES_SERVICE_URL:http://localhost:8080}
+
+crm:
+  communication:
+    worker:
+      enabled: ${CRM_COMMUNICATION_WORKER_ENABLED:false}
+      poll-ms: ${CRM_COMMUNICATION_WORKER_POLL_MS:5000}
+    callback-secret: ${CRM_COMMUNICATION_CALLBACK_SECRET:}
 
 accounting:
   service:

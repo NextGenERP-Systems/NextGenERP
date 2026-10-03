@@ -53,6 +53,10 @@ NextGenERP/
 
 ## 3. Quick Start & Local Execution
 
+Use Java 21 and `mvn clean verify` for a standalone backend build. An old
+`target/` directory may retain classes removed from the source tree; a plain
+`mvn package` can include those stale classes and fail at runtime.
+
 ### Running with Docker Compose (Cloud-Connected Local Mode)
 ```bash
 cd mrp-module
@@ -67,6 +71,16 @@ docker compose up -d --build
 - **Database identity check**: `http://localhost:8085/api/v1/mrp/runtime/database`
 - **Database**: the Dockerized backend connects through the IAP tunnel to the persistent GCP `nextgen_mrp` database on local port `5433`.
 - Set `SPRING_DATASOURCE_USERNAME` and `SPRING_DATASOURCE_PASSWORD` before starting the Compose stack.
+- HRM's local PostgreSQL also uses port `5433`. If it is running, choose a free
+  tunnel port: `./connect-cloud-db.ps1 -LocalPort 15433`, then set
+  `SPRING_DATASOURCE_URL=jdbc:postgresql://host.docker.internal:15433/nextgen_mrp`
+  for Docker (use `localhost` for a standalone backend). Confirm the runtime
+  database identity is `nextgen_mrp` before performing any write.
+- The database helper forwards through SSH over IAP port 22 to VM loopback
+  port 5432. Direct `start-iap-tunnel` to 5432 fails when the firewall allows
+  SSH but does not allow IAP database traffic.
+- The private application tunnel and the local MRP Compose stack both use
+  `3005`/`8085`; run one of these modes at a time.
 - The frontend uses the MRP backend as its sole source of truth; failed requests are surfaced to the operator.
 - Compose host ports bind to loopback only; do not expose them through a public firewall rule.
 - Flyway remains disabled by default during normal application startup. Structural changes must use the reviewed, guarded migration job after backup and validation.
@@ -136,4 +150,6 @@ cd mrp-module/frontend
 npm install
 npm run dev
 ```
+Standalone Next.js defaults to `http://localhost:8085/api/v1`; Docker Compose
+supplies `BACKEND_URL=http://mrp-backend:8085/api/v1` for container networking.
 Open [http://localhost:3005](http://localhost:3005) in your browser. Normal development reads and writes the persistent cloud database.

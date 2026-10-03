@@ -5,6 +5,7 @@ import lombok.*;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
+@com.fasterxml.jackson.annotation.JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Entity
 @Table(name = "crm_opportunity_types")
 @Getter

@@ -31,12 +31,12 @@ public class CrmOpportunityController {
     }
 
     @PostMapping
-    public ResponseEntity<CrmOpportunity> createOpportunity(@RequestBody CrmOpportunityRequest request) {
+    public ResponseEntity<CrmOpportunity> createOpportunity(@jakarta.validation.Valid @RequestBody CrmOpportunityRequest request) {
         return new ResponseEntity<>(opportunityService.createOpportunity(request), HttpStatus.CREATED);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<CrmOpportunity> updateOpportunity(@PathVariable UUID id, @RequestBody CrmOpportunityRequest request) {
+    public ResponseEntity<CrmOpportunity> updateOpportunity(@PathVariable UUID id, @jakarta.validation.Valid @RequestBody CrmOpportunityRequest request) {
         return ResponseEntity.ok(opportunityService.updateOpportunity(id, request));
     }
 

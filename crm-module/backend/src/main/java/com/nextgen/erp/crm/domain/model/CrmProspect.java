@@ -11,6 +11,7 @@ import lombok.Builder;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+@com.fasterxml.jackson.annotation.JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Entity
 @Table(name = "crm_prospects")
 @Getter

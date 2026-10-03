@@ -1,0 +1,3 @@
+package com.nextgen.erp.crm.dto;
+import com.nextgen.erp.crm.domain.enums.CrmAppointmentStatus; import jakarta.validation.Valid; import jakarta.validation.constraints.*; import lombok.Data; import java.time.OffsetDateTime; import java.util.UUID;
+@Data public class CrmAppointmentRequest { @Valid @NotNull private CrmInteractionTargetRequest target; @NotBlank @Size(max=255) private String subject; private String description; @NotNull private OffsetDateTime startsAt; @NotNull private OffsetDateTime endsAt; @NotNull private CrmAppointmentStatus status; @Size(max=255) private String location; private UUID assignedTo; }

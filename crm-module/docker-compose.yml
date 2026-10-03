@@ -1,17 +1,33 @@
-version: '3.8'
+name: crm-module
+
 services:
-  crm-backend:
+  crm-module:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: nextgen_erp_crm_backend
+    container_name: crm-module
     ports:
-      - "8088:8085"
+      - "127.0.0.1:8088:8085"
     environment:
       PORT: 8085
-      # Use host.docker.internal to connect to the existing db container running on the host's port 5432
-      SPRING_DATASOURCE_URL: jdbc:postgresql://host.docker.internal:5432/nextgen_erp
-      SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: postgres
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+      SALES_SERVICE_URL: ${SALES_SERVICE_URL:-http://host.docker.internal:8080}
+      POSTGRES_USER: ${CRM_DB_USERNAME:-crm}
+      POSTGRES_DB: ${CRM_DB_NAME:-nextgen_erp}
+      POSTGRES_PASSWORD: ${CRM_DB_PASSWORD:?Set CRM_DB_PASSWORD before starting CRM}
+    volumes:
+      - crm-postgres-data:/var/lib/postgresql/data
+    stop_grace_period: 30s
+
+  crm-frontend:
+    profiles: [frontend]
+    build:
+      context: ./frontend
+      args:
+        CRM_API_URL: http://crm-module:8085
+    ports:
+      - "127.0.0.1:${CRM_FRONTEND_PORT:-3008}:3008"
+    depends_on:
+      - crm-module
+
+volumes:
+  crm-postgres-data:

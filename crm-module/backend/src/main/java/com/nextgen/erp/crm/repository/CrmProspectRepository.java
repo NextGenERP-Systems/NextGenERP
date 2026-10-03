@@ -8,4 +8,6 @@ import java.util.UUID;
 
 @Repository
 public interface CrmProspectRepository extends JpaRepository<CrmProspect, UUID> {
+    java.util.List<CrmProspect> findByCustomerId(UUID customerId);
+    java.util.List<CrmProspect> findTop100ByCustomerId(UUID customerId);
 }

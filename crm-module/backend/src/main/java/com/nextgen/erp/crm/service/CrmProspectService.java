@@ -24,7 +24,7 @@ public class CrmProspectService {
     }
 
     public CrmProspect getProspectById(UUID id) {
-        return prospectRepository.findById(id).orElseThrow(() -> new RuntimeException("Prospect not found"));
+        return prospectRepository.findById(id).orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "Prospect not found"));
     }
 
     @Transactional
@@ -62,6 +62,6 @@ public class CrmProspectService {
 
     @Transactional
     public void deleteProspect(UUID id) {
-        prospectRepository.deleteById(id);
+        prospectRepository.delete(getProspectById(id));
     }
 }

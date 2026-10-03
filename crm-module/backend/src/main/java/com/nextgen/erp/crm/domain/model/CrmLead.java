@@ -11,6 +11,7 @@ import lombok.Builder;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+@com.fasterxml.jackson.annotation.JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Entity
 @Table(name = "crm_leads")
 @Getter
@@ -54,6 +55,7 @@ public class CrmLead {
     @Column(name = "assigned_to")
     private UUID assignedTo;
 
+    @Column(columnDefinition = "TEXT")
     private String notes;
 
     @Column(name = "created_at", nullable = false, updatable = false)

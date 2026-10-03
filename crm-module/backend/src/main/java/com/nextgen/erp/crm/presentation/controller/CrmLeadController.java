@@ -32,12 +32,12 @@ public class CrmLeadController {
     }
 
     @PostMapping
-    public ResponseEntity<CrmLead> createLead(@RequestBody CrmLeadRequest request) {
+    public ResponseEntity<CrmLead> createLead(@jakarta.validation.Valid @RequestBody CrmLeadRequest request) {
         return new ResponseEntity<>(leadService.createLead(request), HttpStatus.CREATED);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<CrmLead> updateLead(@PathVariable UUID id, @RequestBody CrmLeadRequest request) {
+    public ResponseEntity<CrmLead> updateLead(@PathVariable UUID id, @jakarta.validation.Valid @RequestBody CrmLeadRequest request) {
         return ResponseEntity.ok(leadService.updateLead(id, request));
     }
 
@@ -48,7 +48,7 @@ public class CrmLeadController {
     }
 
     @PostMapping("/{id}/qualify")
-    public ResponseEntity<CrmProspect> qualifyLead(@PathVariable UUID id) {
-        return ResponseEntity.ok(leadService.qualifyLeadToProspect(id));
+    public ResponseEntity<CrmProspect> qualifyLead(@PathVariable UUID id, @RequestParam(required=false) UUID touchpointId) {
+        return ResponseEntity.ok(leadService.qualifyLeadToProspect(id,touchpointId));
     }
 }

@@ -31,12 +31,12 @@ public class CrmProspectController {
     }
 
     @PostMapping
-    public ResponseEntity<CrmProspect> createProspect(@RequestBody CrmProspectRequest request) {
+    public ResponseEntity<CrmProspect> createProspect(@jakarta.validation.Valid @RequestBody CrmProspectRequest request) {
         return new ResponseEntity<>(prospectService.createProspect(request), HttpStatus.CREATED);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<CrmProspect> updateProspect(@PathVariable UUID id, @RequestBody CrmProspectRequest request) {
+    public ResponseEntity<CrmProspect> updateProspect(@PathVariable UUID id, @jakarta.validation.Valid @RequestBody CrmProspectRequest request) {
         return ResponseEntity.ok(prospectService.updateProspect(id, request));
     }
 
