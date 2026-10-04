@@ -1,98 +1,110 @@
 "use client";
 
-import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  LayoutDashboard,
-  FolderTree,
-  BookOpen,
-  FileText,
-  Receipt,
-  ArrowLeftRight,
-  Landmark,
-  PieChart,
-  BarChart3,
-  ChevronDown,
-  Building2,
-  Laptop,
-  FileSpreadsheet,
-  Layers,
-} from "lucide-react";
-import { AppSwitcher } from "@/components/layout/AppSwitcher";
+import { Home, Calendar, Plus } from "lucide-react";
+import { Sidebar } from "@/components/layout/Sidebar";
 
-const navItems = [
-  { name: "Overview", href: "/accounts", icon: LayoutDashboard },
-  { name: "Chart of Accounts", href: "/accounts/chart-of-accounts", icon: FolderTree },
-  { name: "General Ledger", href: "/accounts/general-ledger", icon: Layers },
-  { name: "Journal Entries", href: "/accounts/journal-entries", icon: BookOpen },
-  { name: "Sales Invoices (AR)", href: "/accounts/sales-invoices", icon: FileText },
-  { name: "Purchase Invoices (AP)", href: "/accounts/purchase-invoices", icon: Receipt },
-  { name: "Payment Entries", href: "/accounts/payments", icon: ArrowLeftRight },
-  { name: "Banking & Accounts", href: "/accounts/banking", icon: Landmark },
-  { name: "Fixed Assets", href: "/accounts/assets", icon: Laptop },
-  { name: "Tax & GST Filing", href: "/accounts/taxes", icon: FileSpreadsheet },
-  { name: "Cost Centers", href: "/accounts/cost-centers", icon: Building2 },
-  { name: "Financial Statements", href: "/accounts/reports", icon: BarChart3 },
-];
-
-export default function AccountingLayout({ children }: { children: React.ReactNode }) {
+export default function AccountsLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const pathname = usePathname();
 
+  // Dynamic breadcrumb mapping
+  const getBreadcrumb = () => {
+    if (pathname === "/accounts") {
+      return { title: "Overview", href: "/accounts" };
+    }
+    if (pathname.startsWith("/accounts/chart-of-accounts")) {
+      return { title: "Chart of Accounts", href: "/accounts/chart-of-accounts" };
+    }
+    if (pathname.startsWith("/accounts/general-ledger")) {
+      return { title: "General Ledger", href: "/accounts/general-ledger" };
+    }
+    if (pathname.startsWith("/accounts/journal-entries")) {
+      return { title: "Journal Entries", href: "/accounts/journal-entries" };
+    }
+    if (pathname.startsWith("/accounts/sales-invoices")) {
+      return { title: "Sales Invoices (AR)", href: "/accounts/sales-invoices" };
+    }
+    if (pathname.startsWith("/accounts/purchase-invoices")) {
+      return { title: "Purchase Invoices (AP)", href: "/accounts/purchase-invoices" };
+    }
+    if (pathname.startsWith("/accounts/payments")) {
+      return { title: "Payment Entries", href: "/accounts/payments" };
+    }
+    if (pathname.startsWith("/accounts/banking")) {
+      return { title: "Banking & Cash", href: "/accounts/banking" };
+    }
+    if (pathname.startsWith("/accounts/assets")) {
+      return { title: "Fixed Assets", href: "/accounts/assets" };
+    }
+    if (pathname.startsWith("/accounts/taxes")) {
+      return { title: "Tax & GST Filing", href: "/accounts/taxes" };
+    }
+    if (pathname.startsWith("/accounts/cost-centers")) {
+      return { title: "Cost Centers", href: "/accounts/cost-centers" };
+    }
+    if (pathname.startsWith("/accounts/reports")) {
+      return { title: "Financial Statements", href: "/accounts/reports" };
+    }
+    return { title: "Accounting", href: "/accounts" };
+  };
+
+  const breadcrumb = getBreadcrumb();
+
+  const currentDateStr = new Date().toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+
   return (
-    <div className="flex min-h-screen bg-slate-100/70">
-      {/* ERPNext Reference Translucent Sidebar */}
-      <aside className="w-64 border-r border-slate-200/80 bg-white/60 backdrop-blur-2xl p-4 flex flex-col justify-between fixed inset-y-0 z-30 shadow-xs">
-        <div>
-          {/* Header matching ERPNext Reference */}
-          <div className="flex items-center justify-between px-3 py-3 rounded-2xl mb-4 bg-white/40 border border-white/60 backdrop-blur-md">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-white/70 border border-white/90 shadow-2xs flex items-center justify-center text-slate-800 backdrop-blur-md">
-                <PieChart className="w-5 h-5 text-slate-800" />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-sm font-extrabold text-slate-900 tracking-tight leading-none">
-                  Accounting
-                </span>
-                <span className="text-[11px] font-bold text-slate-500 mt-0.5">ERPNext</span>
-              </div>
-            </div>
-            <ChevronDown className="w-4 h-4 text-slate-400" />
+    <div className="flex w-full min-h-screen bg-white">
+      <Sidebar />
+      <div className="flex-1 flex flex-col min-w-0 bg-white">
+        {/* Unified ERPNext Desk Top Navigation Bar for All Accounting Views */}
+        <header className="h-12 flex items-center justify-between gap-3 px-6 border-b border-gray-200 bg-white sticky top-0 z-20 flex-shrink-0">
+          <div className="flex items-center gap-2 overflow-x-auto text-[13px]">
+            <Link href="/accounts" className="text-gray-500 hover:text-gray-900 flex items-center">
+              <Home className="w-3.5 h-3.5 text-gray-500" />
+            </Link>
+            <span className="text-gray-400 font-light">/</span>
+            <Link href="/accounts" className="text-gray-600 hover:text-gray-900 font-normal">
+              Finance & Accounts
+            </Link>
+            <span className="text-gray-400 font-light">/</span>
+            <span className="font-bold text-gray-900">
+              {breadcrumb.title}
+            </span>
           </div>
 
-          {/* Navigation Links */}
-          <nav className="space-y-1">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = pathname === item.href;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                    isActive
-                      ? "liquid-nav-active shadow-xs"
-                      : "liquid-nav-inactive"
-                  }`}
-                >
-                  <Icon className={`w-4 h-4 ${isActive ? "text-slate-900" : "text-slate-500"}`} />
-                  <span>{item.name}</span>
-                </Link>
-              );
-            })}
-          </nav>
-        </div>
+          <div className="flex items-center gap-3">
+            <div className="hidden sm:flex items-center gap-1.5 text-xs text-gray-500 bg-gray-50 border border-gray-200 px-2.5 py-1 rounded">
+              <Calendar className="w-3.5 h-3.5 text-gray-400" />
+              <span>{currentDateStr}</span>
+            </div>
 
-        {/* Unified App Switcher at Sidebar Footer */}
-        <div className="pt-3 border-t border-slate-200/80">
-          <AppSwitcher currentModule="accounting" />
-        </div>
-      </aside>
+            {!pathname.startsWith("/accounts/journal-entries") && (
+              <Link
+                href="/accounts/journal-entries"
+                className="px-3.5 py-1.5 rounded bg-gray-900 hover:bg-gray-800 text-white font-medium text-xs flex items-center gap-1.5 shadow-2xs transition-colors"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>New Journal Entry</span>
+              </Link>
+            )}
+          </div>
+        </header>
 
-      {/* Main Content Area */}
-      <main className="flex-1 ml-64 min-h-screen p-8 bg-slate-50/50">
-        <div className="max-w-7xl mx-auto">{children}</div>
-      </main>
+        {/* View Content with proper padding */}
+        <main className="flex-1 overflow-auto bg-white px-6 py-6">
+          {children}
+        </main>
+      </div>
     </div>
   );
 }

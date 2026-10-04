@@ -104,43 +104,50 @@ export default function ChartOfAccountsPage() {
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-zinc-200">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
+            <h1 className="text-xl font-bold text-zinc-900 tracking-tight">
               Chart of Accounts (CoA)
             </h1>
-            <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-white/70 border border-slate-200 text-slate-700 shadow-2xs">
+            <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-zinc-100 border border-zinc-200 text-zinc-800">
               5 Root Types
             </span>
           </div>
-          <p className="text-sm font-medium text-slate-500 mt-1">
+          <p className="text-xs text-zinc-500 mt-1">
             Hierarchical structure of all general ledger accounts, groups, and running balances
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <button onClick={loadAccounts} className="liquid-btn-glass text-xs" title="Refresh">
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={loadAccounts}
+            className="px-3 py-1.5 rounded-lg border border-zinc-300 text-zinc-700 bg-white hover:bg-zinc-50 text-xs font-medium flex items-center gap-1.5 transition-colors"
+            title="Refresh"
+          >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
             <span>Sync</span>
           </button>
-          <button onClick={() => setIsModalOpen(true)} className="liquid-btn-primary text-xs">
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="px-3.5 py-1.5 rounded-lg bg-zinc-900 hover:bg-black text-white text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-2xs"
+          >
             <Plus className="w-3.5 h-3.5" />
-            <span>Add Account</span>
+            <span>+ Add Account</span>
           </button>
         </div>
       </div>
 
       {/* Filter Tabs & Search Bar */}
-      <div className="liquid-glass-card p-3 flex flex-col sm:flex-row items-center justify-between gap-3">
+      <div className="bg-white border border-zinc-200 rounded-lg p-3 flex flex-col sm:flex-row items-center justify-between gap-3">
         {/* Root Type Filter Pills */}
         <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
           <button
             onClick={() => setSelectedRootType("ALL")}
-            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
+            className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
               selectedRootType === "ALL"
-                ? "liquid-btn-primary shadow-xs"
-                : "liquid-btn-glass text-slate-600"
+                ? "bg-zinc-900 text-white"
+                : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
             }`}
           >
             All Accounts ({accounts.length})
@@ -149,10 +156,10 @@ export default function ChartOfAccountsPage() {
             <button
               key={r}
               onClick={() => setSelectedRootType(r)}
-              className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all capitalize ${
+              className={`px-3 py-1 rounded text-xs font-medium transition-colors capitalize ${
                 selectedRootType === r
-                  ? "liquid-btn-primary shadow-xs"
-                  : "liquid-btn-glass text-slate-600"
+                  ? "bg-zinc-900 text-white"
+                  : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
               }`}
             >
               {r.toLowerCase()} ({accounts.filter((a) => a.rootType === r).length})
@@ -162,22 +169,22 @@ export default function ChartOfAccountsPage() {
 
         {/* Search */}
         <div className="relative w-full sm:w-64">
-          <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400" />
           <input
             type="text"
             placeholder="Search account name or code..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-3 py-1.5 text-xs font-medium bg-white/70 border border-slate-200/80 rounded-full focus:outline-none focus:ring-1 focus:ring-slate-400 placeholder:text-slate-400"
+            className="w-full pl-8 pr-3 py-1 text-xs bg-white border border-zinc-200 rounded-md focus:outline-none focus:ring-1 focus:ring-zinc-800 placeholder:text-zinc-400"
           />
         </div>
       </div>
 
       {/* Chart of Accounts Tree Table */}
-      <div className="liquid-glass-card overflow-hidden">
-        <div className="px-5 py-3 border-b border-slate-200/60 bg-white/30 flex items-center justify-between text-xs font-bold text-slate-500 uppercase tracking-wider">
+      <div className="bg-white border border-zinc-200 rounded-lg overflow-hidden">
+        <div className="px-4 py-2.5 border-b border-zinc-200 bg-zinc-50 flex items-center justify-between text-[11px] font-bold text-zinc-500 uppercase tracking-wider">
           <div className="flex items-center gap-2">
-            <Layers className="w-4 h-4 text-slate-600" />
+            <Layers className="w-3.5 h-3.5 text-zinc-600" />
             <span>Account Code & Name</span>
           </div>
           <div className="flex items-center gap-8">
@@ -187,7 +194,7 @@ export default function ChartOfAccountsPage() {
           </div>
         </div>
 
-        <div className="divide-y divide-slate-200/50">
+        <div className="divide-y divide-zinc-100 text-xs">
           {filteredAccounts.map((account) => {
             const isGroup = account.isGroup;
             const isExpanded = expandedGroups[account.accountCode] ?? true;
@@ -195,8 +202,8 @@ export default function ChartOfAccountsPage() {
             return (
               <div
                 key={account.id}
-                className={`px-5 py-3 flex items-center justify-between text-xs hover:bg-white/40 transition-colors ${
-                  isGroup ? "font-bold text-slate-900 bg-white/20" : "text-slate-700 font-medium"
+                className={`px-4 py-2.5 flex items-center justify-between hover:bg-zinc-50 transition-colors ${
+                  isGroup ? "font-bold text-zinc-900 bg-zinc-50/50" : "text-zinc-700 font-medium"
                 }`}
               >
                 {/* Account Name with Indentation & Icon */}
@@ -204,40 +211,40 @@ export default function ChartOfAccountsPage() {
                   {isGroup ? (
                     <button
                       onClick={() => toggleGroup(account.accountCode)}
-                      className="p-1 rounded hover:bg-white/60 text-slate-500"
+                      className="p-0.5 rounded hover:bg-zinc-200 text-zinc-500"
                     >
                       {isExpanded ? (
-                        <ChevronDown className="w-3.5 h-3.5 text-slate-600" />
+                        <ChevronDown className="w-3.5 h-3.5 text-zinc-700" />
                       ) : (
-                        <ChevronRight className="w-3.5 h-3.5 text-slate-600" />
+                        <ChevronRight className="w-3.5 h-3.5 text-zinc-700" />
                       )}
                     </button>
                   ) : (
-                    <span className="w-5" />
+                    <span className="w-4" />
                   )}
 
-                  <div className="w-6 h-6 rounded-lg bg-white/80 border border-white flex items-center justify-center text-slate-600 shadow-2xs">
-                    {isGroup ? <Folder className="w-3.5 h-3.5" /> : <FileSpreadsheet className="w-3.5 h-3.5" />}
+                  <div className="w-5 h-5 rounded bg-zinc-100 border border-zinc-200 flex items-center justify-center text-zinc-600">
+                    {isGroup ? <Folder className="w-3 h-3" /> : <FileSpreadsheet className="w-3 h-3" />}
                   </div>
 
-                  <span className="font-mono text-[11px] px-1.5 py-0.5 rounded bg-white/70 border border-slate-200 text-slate-600">
+                  <span className="font-mono text-[11px] px-1.5 py-0.5 rounded bg-zinc-100 border border-zinc-200 text-zinc-700">
                     {account.accountCode}
                   </span>
 
-                  <span className={`${isGroup ? "text-slate-950 font-extrabold" : "text-slate-800"}`}>
+                  <span className={`${isGroup ? "text-zinc-950 font-bold" : "text-zinc-800"}`}>
                     {account.accountName}
                   </span>
                 </div>
 
                 {/* Root Type, Account Type, Balance, Action */}
                 <div className="flex items-center gap-6">
-                  <span className="text-[11px] font-bold text-slate-600 uppercase px-2 py-0.5 rounded-full bg-white/60 border border-slate-200/60">
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-100 border border-zinc-200 text-zinc-800 uppercase">
                     {account.rootType}
                   </span>
-                  <span className="text-[11px] font-medium text-slate-500 w-28 truncate">
+                  <span className="text-[11px] text-zinc-500 w-28 truncate">
                     {account.accountType || (isGroup ? "Group Parent" : "General")}
                   </span>
-                  <span className="font-mono text-xs font-bold text-slate-900 w-28 text-right">
+                  <span className="font-mono text-xs font-bold text-zinc-900 w-28 text-right">
                     {formatCurrency(account.balance)}
                   </span>
                   <button
@@ -246,7 +253,7 @@ export default function ChartOfAccountsPage() {
                       await deleteAccount(account.id);
                       loadAccounts();
                     }}
-                    className="p-1.5 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors"
+                    className="p-1 rounded hover:bg-zinc-200 text-zinc-400 hover:text-red-600 transition-colors"
                     title="Delete Account"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -260,16 +267,16 @@ export default function ChartOfAccountsPage() {
 
       {/* Add Account Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/30 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="liquid-glass-card bg-white/95 max-w-lg w-full p-6 space-y-5 shadow-2xl border border-white">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="bg-white max-w-lg w-full p-5 rounded-lg space-y-4 shadow-xl border border-zinc-200">
+            <div className="flex items-center justify-between pb-3 border-b border-zinc-200">
               <div className="flex items-center gap-2">
-                <FolderTree className="w-5 h-5 text-slate-800" />
-                <h2 className="text-base font-extrabold text-slate-900">Add New General Ledger Account</h2>
+                <FolderTree className="w-4 h-4 text-zinc-900" />
+                <h2 className="text-sm font-bold text-zinc-900">Add New General Ledger Account</h2>
               </div>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="p-1 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600"
+                className="p-1 rounded text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -277,34 +284,34 @@ export default function ChartOfAccountsPage() {
 
             <form onSubmit={handleCreateAccount} className="space-y-4 text-xs font-medium">
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Account Name *</label>
+                <label className="block text-zinc-700 font-semibold mb-1">Account Name *</label>
                 <input
                   type="text"
                   required
                   placeholder="e.g. AWS Cloud Infrastructure or ICICI Fixed Deposit"
                   value={newAccName}
                   onChange={(e) => setNewAccName(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                  className="w-full px-2.5 py-1.5 rounded border border-zinc-300 focus:outline-none focus:ring-1 focus:ring-zinc-800"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Account Code</label>
+                  <label className="block text-zinc-700 font-semibold mb-1">Account Code</label>
                   <input
                     type="text"
                     placeholder="e.g. 5310"
                     value={newAccCode}
                     onChange={(e) => setNewAccCode(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                    className="w-full px-2.5 py-1.5 rounded border border-zinc-300 focus:outline-none focus:ring-1 focus:ring-zinc-800"
                   />
                 </div>
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Root Type *</label>
+                  <label className="block text-zinc-700 font-semibold mb-1">Root Type *</label>
                   <select
                     value={newAccRootType}
                     onChange={(e) => setNewAccRootType(e.target.value as RootType)}
-                    className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                    className="w-full px-2.5 py-1.5 rounded border border-zinc-300 focus:outline-none focus:ring-1 focus:ring-zinc-800"
                   >
                     <option value="ASSET">Asset</option>
                     <option value="LIABILITY">Liability</option>
@@ -315,13 +322,13 @@ export default function ChartOfAccountsPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Account Type</label>
+                  <label className="block text-zinc-700 font-semibold mb-1">Account Type</label>
                   <select
                     value={newAccType}
                     onChange={(e) => setNewAccType(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                    className="w-full px-2.5 py-1.5 rounded border border-zinc-300 focus:outline-none focus:ring-1 focus:ring-zinc-800"
                   >
                     <option value="Bank">Bank</option>
                     <option value="Cash">Cash</option>
@@ -334,42 +341,42 @@ export default function ChartOfAccountsPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Opening Balance (₹)</label>
+                  <label className="block text-zinc-700 font-semibold mb-1">Opening Balance (₹)</label>
                   <input
                     type="number"
                     step="0.01"
                     value={newAccBalance}
                     onChange={(e) => setNewAccBalance(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                    className="w-full px-2.5 py-1.5 rounded border border-zinc-300 font-mono focus:outline-none focus:ring-1 focus:ring-zinc-800"
                   />
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 pt-2">
+              <div className="flex items-center gap-2 pt-1">
                 <input
                   type="checkbox"
                   id="isGroupCheck"
                   checked={newAccIsGroup}
                   onChange={(e) => setNewAccIsGroup(e.target.checked)}
-                  className="rounded border-slate-300"
+                  className="rounded border-zinc-300"
                 />
-                <label htmlFor="isGroupCheck" className="text-xs font-bold text-slate-700 cursor-pointer">
-                  Is Group / Parent Account (Can contain sub-accounts)
+                <label htmlFor="isGroupCheck" className="text-xs font-semibold text-zinc-700 cursor-pointer">
+                  Is Group / Parent Account (Can contain child accounts)
                 </label>
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200">
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-zinc-200">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="liquid-btn-glass text-xs"
+                  className="px-3 py-1.5 rounded border border-zinc-300 text-zinc-700 hover:bg-zinc-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="liquid-btn-primary text-xs"
+                  className="px-4 py-1.5 rounded bg-zinc-900 hover:bg-black text-white font-medium"
                 >
                   {isSubmitting ? "Creating..." : "Save Account"}
                 </button>

@@ -82,7 +82,7 @@ export default function GeneralLedgerPage() {
     });
   }, [entries, searchTerm, selectedAccountId, selectedVoucherType]);
 
-  // Aggregate Metrics
+  // Aggregate Metrics - 100% Dynamic derived from live ledger entries
   const { totalDebit, totalCredit, isBalanced } = useMemo(() => {
     let d = 0;
     let c = 0;
@@ -100,40 +100,31 @@ export default function GeneralLedgerPage() {
   // Handle Perpetual Stock Posting
   async function handlePostPerpetualStock(e: React.FormEvent) {
     e.preventDefault();
-    const parsedAmount = parseFloat(amount);
-    if (!parsedAmount || parsedAmount <= 0) {
-      alert("Please specify a valid positive amount.");
-      return;
-    }
+    if (!amount || parseFloat(amount) <= 0) return;
 
     setIsPosting(true);
     try {
-      const autoVch =
-        voucherNumber.trim() ||
-        `${voucherType === "PURCHASE_RECEIPT" ? "PREC" : voucherType === "DELIVERY_NOTE" ? "DN" : "STE"}-${Date.now().toString().slice(-6)}`;
-
       const req: PerpetualStockGlRequest = {
+        nature,
         voucherType,
-        voucherNumber: autoVch,
-        transactionNature: nature,
-        amount: parsedAmount,
-        itemSummary: itemSummary || "Finished Goods / Raw Materials",
-        remarks: remarks || `Automated Perpetual Inventory GL Entry (${nature})`,
+        voucherNumber: voucherNumber || `PERP-${Date.now().toString().slice(-6)}`,
+        amount: parseFloat(amount),
+        itemSummary: itemSummary || "Inventory stock movement",
         postingDate: new Date().toISOString().split("T")[0],
+        remarks: remarks || `Automated perpetual inventory ledger sync (${nature})`,
       };
 
-      await postPerpetualStockGl(req);
+      const res = await postPerpetualStockGl(req);
+      setSuccessBanner(`Successfully posted ${res?.length || 2} double-entry perpetual inventory ledger lines!`);
       setIsPerpetualModalOpen(false);
-      setVoucherNumber("");
       setAmount("");
       setItemSummary("");
       setRemarks("");
-      setSuccessBanner(`Posted double-entry GL transactions for ${autoVch} (₹${parsedAmount.toLocaleString()})`);
-      setTimeout(() => setSuccessBanner(null), 6000);
+      setVoucherNumber("");
       await loadData();
+      setTimeout(() => setSuccessBanner(null), 5000);
     } catch (err) {
       console.error(err);
-      alert("Failed to post perpetual stock GL entry.");
     } finally {
       setIsPosting(false);
     }
@@ -142,115 +133,119 @@ export default function GeneralLedgerPage() {
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-zinc-200">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
+            <h1 className="text-xl font-bold text-zinc-900 tracking-tight">
               General Ledger (GL)
             </h1>
-            <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-900 text-white shadow-2xs">
+            <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-zinc-100 border border-zinc-200 text-zinc-800">
               Double-Entry Core
             </span>
           </div>
-          <p className="text-sm font-medium text-slate-500 mt-1">
-            Immutable double-entry ledger audit book, real-time perpetual stock synchronization &amp; clearance
+          <p className="text-xs text-zinc-500 mt-1">
+            Immutable double-entry ledger audit book, real-time perpetual inventory synchronization &amp; clearance
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <button onClick={loadData} className="liquid-btn-glass text-xs" title="Refresh">
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={loadData}
+            className="px-3 py-1.5 rounded-lg border border-zinc-300 text-zinc-700 bg-white hover:bg-zinc-50 text-xs font-medium flex items-center gap-1.5 transition-colors"
+            title="Refresh"
+          >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
             <span>Sync</span>
           </button>
           <button
             onClick={() => setIsPerpetualModalOpen(true)}
-            className="liquid-btn-primary text-xs flex items-center gap-1.5"
+            className="px-3.5 py-1.5 rounded-lg bg-zinc-900 hover:bg-black text-white text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-2xs"
           >
             <Boxes className="w-3.5 h-3.5" />
-            <span>Post Perpetual Inventory GL</span>
+            <span>+ Post Perpetual Inventory GL</span>
           </button>
         </div>
       </div>
 
       {/* Success Notification */}
       {successBanner && (
-        <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2 animate-in fade-in">
-          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+        <div className="p-3 rounded-lg bg-zinc-100 border border-zinc-300 text-zinc-900 text-xs font-medium flex items-center gap-2 animate-in fade-in">
+          <CheckCircle2 className="w-4 h-4 text-zinc-900 shrink-0" />
           <span>{successBanner}</span>
         </div>
       )}
 
-      {/* Metric Cards */}
+      {/* Metric Cards (Monochrome B&W) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="liquid-glass-card p-4 space-y-1">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+        <div className="bg-white border border-zinc-200 rounded-lg p-4 space-y-1">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">
             Total Debit Volume
           </span>
-          <div className="text-xl font-black font-mono text-emerald-600">
+          <div className="text-xl font-bold font-mono text-zinc-900">
             {formatCurrency(totalDebit)}
           </div>
-          <p className="text-[10px] text-slate-400">Across {filteredEntries.length} line items</p>
+          <p className="text-[10px] text-zinc-400">Across {filteredEntries.length} line items</p>
         </div>
 
-        <div className="liquid-glass-card p-4 space-y-1">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+        <div className="bg-white border border-zinc-200 rounded-lg p-4 space-y-1">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">
             Total Credit Volume
           </span>
-          <div className="text-xl font-black font-mono text-blue-600">
+          <div className="text-xl font-bold font-mono text-zinc-900">
             {formatCurrency(totalCredit)}
           </div>
-          <p className="text-[10px] text-slate-400">Across {filteredEntries.length} line items</p>
+          <p className="text-[10px] text-zinc-400">Across {filteredEntries.length} line items</p>
         </div>
 
-        <div className="liquid-glass-card p-4 space-y-1">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-            Double-Entry Invariant
+        <div className="bg-white border border-zinc-200 rounded-lg p-4 space-y-1">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">
+            Double-Entry Status
           </span>
           <div className="flex items-center gap-2 mt-1">
             {isBalanced ? (
-              <span className="px-2 py-0.5 rounded-full text-xs font-extrabold bg-emerald-100 text-emerald-800 flex items-center gap-1">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+              <span className="px-2 py-0.5 rounded font-mono text-xs font-semibold bg-zinc-100 border border-zinc-200 text-zinc-900 flex items-center gap-1">
+                <ShieldCheck className="w-3.5 h-3.5 text-zinc-900" />
                 BALANCED (₹0.00)
               </span>
             ) : (
-              <span className="px-2 py-0.5 rounded-full text-xs font-extrabold bg-amber-100 text-amber-800 flex items-center gap-1">
-                <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
-                OUT OF BALANCE: {formatCurrency(Math.abs(totalDebit - totalCredit))}
+              <span className="px-2 py-0.5 rounded font-mono text-xs font-semibold bg-zinc-200 border border-zinc-400 text-zinc-900 flex items-center gap-1">
+                <AlertCircle className="w-3.5 h-3.5 text-zinc-900" />
+                DIFF: {formatCurrency(Math.abs(totalDebit - totalCredit))}
               </span>
             )}
           </div>
-          <p className="text-[10px] text-slate-400">Debits == Credits Enforcement</p>
+          <p className="text-[10px] text-zinc-400">Debits == Credits Enforcement</p>
         </div>
 
-        <div className="liquid-glass-card p-4 space-y-1">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+        <div className="bg-white border border-zinc-200 rounded-lg p-4 space-y-1">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">
             Total Ledger Entries
           </span>
-          <div className="text-xl font-black font-mono text-slate-900">
+          <div className="text-xl font-bold font-mono text-zinc-900">
             {filteredEntries.length}
           </div>
-          <p className="text-[10px] text-slate-400">From all transactional vouchers</p>
+          <p className="text-[10px] text-zinc-400">From all transactional vouchers</p>
         </div>
       </div>
 
       {/* Filters Bar */}
-      <div className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-2xs flex flex-wrap items-center gap-4">
+      <div className="p-3 rounded-lg bg-white border border-zinc-200 flex flex-wrap items-center gap-3">
         <div className="relative flex-1 min-w-[200px]">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             placeholder="Search by voucher #, account, party, remarks..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-3 py-1.5 text-xs font-semibold rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-400"
+            className="w-full pl-8 pr-3 py-1 text-xs rounded border border-zinc-200 focus:outline-none focus:ring-1 focus:ring-zinc-800 placeholder:text-zinc-400"
           />
         </div>
 
-        <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap text-xs">
           <select
             value={selectedVoucherType}
             onChange={(e) => setSelectedVoucherType(e.target.value)}
-            className="px-3 py-1.5 text-xs font-semibold rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-400"
+            className="px-2.5 py-1 rounded border border-zinc-200 text-zinc-800 focus:outline-none focus:ring-1 focus:ring-zinc-800"
           >
             <option value="">All Voucher Types</option>
             <option value="SALES_INVOICE">Sales Invoice</option>
@@ -266,7 +261,7 @@ export default function GeneralLedgerPage() {
           <select
             value={selectedAccountId}
             onChange={(e) => setSelectedAccountId(e.target.value)}
-            className="px-3 py-1.5 text-xs font-semibold rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-400 max-w-[220px]"
+            className="px-2.5 py-1 rounded border border-zinc-200 text-zinc-800 focus:outline-none focus:ring-1 focus:ring-zinc-800 max-w-[220px]"
           >
             <option value="">All Accounts</option>
             {accounts.map((a) => (
@@ -283,7 +278,7 @@ export default function GeneralLedgerPage() {
                 setSelectedAccountId("");
                 setSelectedVoucherType("");
               }}
-              className="text-xs font-bold text-slate-500 hover:text-slate-800"
+              className="text-xs font-semibold text-zinc-500 hover:text-zinc-900"
             >
               Reset Filters
             </button>
@@ -292,24 +287,24 @@ export default function GeneralLedgerPage() {
       </div>
 
       {/* General Ledger Table */}
-      <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-2xs bg-white">
+      <div className="border border-zinc-200 rounded-lg overflow-hidden bg-white">
         <table className="w-full text-left text-xs">
-          <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase text-[10px]">
+          <thead className="bg-zinc-50 border-b border-zinc-200 text-zinc-500 font-bold uppercase text-[10px]">
             <tr>
-              <th className="py-3 px-4">Posting Date</th>
-              <th className="py-3 px-4">Voucher Type &amp; Number</th>
-              <th className="py-3 px-4">Account (CoA)</th>
-              <th className="py-3 px-4">Against Account</th>
-              <th className="py-3 px-4">Party / Cost Center</th>
-              <th className="py-3 px-4 text-right">Debit (₹)</th>
-              <th className="py-3 px-4 text-right">Credit (₹)</th>
-              <th className="py-3 px-4">Remarks</th>
+              <th className="py-2.5 px-3">Posting Date</th>
+              <th className="py-2.5 px-3">Voucher Type &amp; Number</th>
+              <th className="py-2.5 px-3">Account (CoA)</th>
+              <th className="py-2.5 px-3">Against Account</th>
+              <th className="py-2.5 px-3">Party / Cost Center</th>
+              <th className="py-2.5 px-3 text-right">Debit (₹)</th>
+              <th className="py-2.5 px-3 text-right">Credit (₹)</th>
+              <th className="py-2.5 px-3">Remarks</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100 font-medium">
+          <tbody className="divide-y divide-zinc-100 font-medium">
             {loading ? (
               <tr>
-                <td colSpan={8} className="py-12 text-center text-slate-400">
+                <td colSpan={8} className="py-8 text-center text-zinc-400">
                   <div className="flex items-center justify-center gap-2">
                     <RefreshCw className="w-4 h-4 animate-spin" />
                     <span>Loading immutable ledger entries...</span>
@@ -318,54 +313,54 @@ export default function GeneralLedgerPage() {
               </tr>
             ) : filteredEntries.length === 0 ? (
               <tr>
-                <td colSpan={8} className="py-12 text-center text-slate-400">
+                <td colSpan={8} className="py-8 text-center text-zinc-400">
                   No General Ledger entries match your active criteria.
                 </td>
               </tr>
             ) : (
               filteredEntries.map((row) => (
-                <tr key={row.id} className="hover:bg-slate-50/80 transition-colors">
-                  <td className="py-3 px-4 font-mono text-slate-700 whitespace-nowrap">
+                <tr key={row.id} className="hover:bg-zinc-50/80 transition-colors">
+                  <td className="py-2.5 px-3 font-mono text-zinc-700 whitespace-nowrap">
                     {row.postingDate}
                   </td>
-                  <td className="py-3 px-4 whitespace-nowrap">
-                    <div className="font-bold font-mono text-slate-900">{row.voucherNumber}</div>
-                    <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-slate-100 text-slate-600">
+                  <td className="py-2.5 px-3 whitespace-nowrap">
+                    <div className="font-bold font-mono text-zinc-900">{row.voucherNumber}</div>
+                    <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-zinc-100 text-zinc-700 border border-zinc-200">
                       {row.voucherType}
                     </span>
                   </td>
-                  <td className="py-3 px-4">
-                    <div className="font-bold text-slate-900">
+                  <td className="py-2.5 px-3">
+                    <div className="font-semibold text-zinc-900">
                       {row.account?.accountName || "Account"}
                     </div>
-                    <div className="font-mono text-[10px] text-slate-400">
+                    <div className="font-mono text-[10px] text-zinc-400">
                       Code: {row.account?.accountCode || "—"} ({row.account?.rootType})
                     </div>
                   </td>
-                  <td className="py-3 px-4 text-slate-600">
+                  <td className="py-2.5 px-3 text-zinc-600">
                     {row.againstAccount || "—"}
                   </td>
-                  <td className="py-3 px-4 text-slate-700">
+                  <td className="py-2.5 px-3 text-zinc-700">
                     {row.partyName ? (
                       <div>
-                        <span className="font-bold text-slate-800">{row.partyName}</span>
+                        <span className="font-semibold text-zinc-900">{row.partyName}</span>
                         {row.partyType && (
-                          <span className="text-[9px] text-slate-400 block uppercase">
+                          <span className="text-[9px] text-zinc-400 block uppercase">
                             {row.partyType}
                           </span>
                         )}
                       </div>
                     ) : (
-                      <span className="text-slate-400">—</span>
+                      <span className="text-zinc-400">—</span>
                     )}
                   </td>
-                  <td className="py-3 px-4 text-right font-mono font-bold text-emerald-600 whitespace-nowrap">
+                  <td className="py-2.5 px-3 text-right font-mono font-bold text-zinc-900 whitespace-nowrap">
                     {row.debit > 0 ? formatCurrency(row.debit) : "—"}
                   </td>
-                  <td className="py-3 px-4 text-right font-mono font-bold text-blue-600 whitespace-nowrap">
+                  <td className="py-2.5 px-3 text-right font-mono font-bold text-zinc-900 whitespace-nowrap">
                     {row.credit > 0 ? formatCurrency(row.credit) : "—"}
                   </td>
-                  <td className="py-3 px-4 text-slate-500 max-w-[200px] truncate" title={row.remarks || ""}>
+                  <td className="py-2.5 px-3 text-zinc-500 max-w-[200px] truncate" title={row.remarks || ""}>
                     {row.remarks || "—"}
                   </td>
                 </tr>
@@ -373,15 +368,15 @@ export default function GeneralLedgerPage() {
             )}
           </tbody>
           {filteredEntries.length > 0 && (
-            <tfoot className="bg-slate-50 font-bold border-t border-slate-200 text-slate-800">
+            <tfoot className="bg-zinc-50 font-bold border-t border-zinc-200 text-zinc-900">
               <tr>
-                <td colSpan={5} className="py-3 px-4 text-right uppercase text-[10px] tracking-wider text-slate-500">
+                <td colSpan={5} className="py-2.5 px-3 text-right uppercase text-[10px] tracking-wider text-zinc-500">
                   Total Ledger Sum
                 </td>
-                <td className="py-3 px-4 text-right font-mono text-emerald-700 text-sm">
+                <td className="py-2.5 px-3 text-right font-mono text-zinc-900 text-sm">
                   {formatCurrency(totalDebit)}
                 </td>
-                <td className="py-3 px-4 text-right font-mono text-blue-700 text-sm">
+                <td className="py-2.5 px-3 text-right font-mono text-zinc-900 text-sm">
                   {formatCurrency(totalCredit)}
                 </td>
                 <td></td>
@@ -393,26 +388,26 @@ export default function GeneralLedgerPage() {
 
       {/* PERPETUAL STOCK GL POSTING MODAL */}
       {isPerpetualModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="liquid-glass-card bg-white/95 max-w-xl w-full p-6 space-y-5 shadow-2xl border border-white">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="bg-white max-w-xl w-full p-5 rounded-lg space-y-4 shadow-xl border border-zinc-200">
+            <div className="flex items-center justify-between pb-3 border-b border-zinc-200">
               <div className="flex items-center gap-2">
-                <Boxes className="w-5 h-5 text-blue-600" />
-                <h2 className="text-base font-extrabold text-slate-900">
+                <Boxes className="w-4 h-4 text-zinc-900" />
+                <h2 className="text-sm font-bold text-zinc-900">
                   Post Perpetual Inventory GL Entry
                 </h2>
               </div>
               <button
                 onClick={() => setIsPerpetualModalOpen(false)}
-                className="p-1 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600"
+                className="p-1 rounded text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handlePostPerpetualStock} className="space-y-4 text-xs font-medium">
+            <form onSubmit={handlePostPerpetualStock} className="space-y-3 text-xs font-medium">
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Transaction Nature *</label>
+                <label className="block text-zinc-700 font-semibold mb-1">Transaction Nature *</label>
                 <select
                   value={nature}
                   onChange={(e) => {
@@ -423,7 +418,7 @@ export default function GeneralLedgerPage() {
                     else if (n === "LANDED_COST") setVoucherType("LANDED_COST_VOUCHER");
                     else setVoucherType("STOCK_ENTRY");
                   }}
-                  className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold"
+                  className="w-full px-2.5 py-1.5 rounded border border-zinc-300 focus:outline-none focus:ring-1 focus:ring-zinc-800"
                 >
                   <option value="RECEIPT">Purchase Receipt (Debit: Stock In Hand | Credit: Stock Received Not Billed)</option>
                   <option value="DELIVERY">Delivery Note / Shipment (Debit: COGS | Credit: Stock In Hand)</option>
@@ -433,13 +428,13 @@ export default function GeneralLedgerPage() {
                 </select>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Voucher Type</label>
+                  <label className="block text-zinc-700 font-semibold mb-1">Voucher Type</label>
                   <select
                     value={voucherType}
                     onChange={(e) => setVoucherType(e.target.value as any)}
-                    className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold"
+                    className="w-full px-2.5 py-1.5 rounded border border-zinc-300 focus:outline-none focus:ring-1 focus:ring-zinc-800"
                   >
                     <option value="PURCHASE_RECEIPT">Purchase Receipt</option>
                     <option value="DELIVERY_NOTE">Delivery Note</option>
@@ -449,19 +444,19 @@ export default function GeneralLedgerPage() {
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Voucher Number</label>
+                  <label className="block text-zinc-700 font-semibold mb-1">Voucher Number</label>
                   <input
                     type="text"
                     placeholder="e.g. PREC-2026-0042 (Optional)"
                     value={voucherNumber}
                     onChange={(e) => setVoucherNumber(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
+                    className="w-full px-2.5 py-1.5 rounded border border-zinc-300 font-mono focus:outline-none focus:ring-1 focus:ring-zinc-800"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Inventory Valuation Amount (₹) *</label>
+                <label className="block text-zinc-700 font-semibold mb-1">Inventory Valuation Amount (₹) *</label>
                 <input
                   type="number"
                   step="0.01"
@@ -469,66 +464,66 @@ export default function GeneralLedgerPage() {
                   placeholder="e.g. 150000.00"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 font-mono font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 text-right text-sm"
+                  className="w-full px-2.5 py-1.5 rounded border border-zinc-300 font-mono font-bold focus:outline-none focus:ring-1 focus:ring-zinc-800 text-right"
                 />
               </div>
 
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Item Summary / Reference</label>
+                <label className="block text-zinc-700 font-semibold mb-1">Item Summary / Reference</label>
                 <input
                   type="text"
                   placeholder="e.g. 50x Industrial Server Units, 20x Memory Modules"
                   value={itemSummary}
                   onChange={(e) => setItemSummary(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-2.5 py-1.5 rounded border border-zinc-300 focus:outline-none focus:ring-1 focus:ring-zinc-800"
                 />
               </div>
 
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Ledger Remarks</label>
+                <label className="block text-zinc-700 font-semibold mb-1">Ledger Remarks</label>
                 <input
                   type="text"
                   placeholder="e.g. Inward consignment inspection verified"
                   value={remarks}
                   onChange={(e) => setRemarks(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-2.5 py-1.5 rounded border border-zinc-300 focus:outline-none focus:ring-1 focus:ring-zinc-800"
                 />
               </div>
 
-              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1 text-[11px] text-slate-600">
-                <div className="font-bold text-slate-800 flex items-center gap-1.5">
-                  <Scale className="w-3.5 h-3.5 text-blue-600" />
+              <div className="p-2.5 rounded bg-zinc-50 border border-zinc-200 space-y-1 text-[11px] text-zinc-600">
+                <div className="font-semibold text-zinc-800 flex items-center gap-1.5">
+                  <Scale className="w-3.5 h-3.5 text-zinc-700" />
                   ERPNext Double-Entry Preview:
                 </div>
                 {nature === "RECEIPT" && (
-                  <p>• Dr. Stock In Hand (₹{amount || "0.00"}) &nbsp;|&nbsp; Cr. Stock Received But Not Billed (₹{amount || "0.00"})</p>
+                  <p>• Dr. Stock In Hand (₹{amount || "0.00"}) | Cr. Stock Received But Not Billed (₹{amount || "0.00"})</p>
                 )}
                 {nature === "DELIVERY" && (
-                  <p>• Dr. Cost of Goods Sold (₹{amount || "0.00"}) &nbsp;|&nbsp; Cr. Stock In Hand (₹{amount || "0.00"})</p>
+                  <p>• Dr. Cost of Goods Sold (₹{amount || "0.00"}) | Cr. Stock In Hand (₹{amount || "0.00"})</p>
                 )}
                 {nature === "LANDED_COST" && (
-                  <p>• Dr. Stock In Hand (₹{amount || "0.00"}) &nbsp;|&nbsp; Cr. Expenses Included In Valuation (₹{amount || "0.00"})</p>
+                  <p>• Dr. Stock In Hand (₹{amount || "0.00"}) | Cr. Expenses Included In Valuation (₹{amount || "0.00"})</p>
                 )}
                 {nature === "VARIANCE_SURPLUS" && (
-                  <p>• Dr. Stock In Hand (₹{amount || "0.00"}) &nbsp;|&nbsp; Cr. Stock Adjustment Surplus (₹{amount || "0.00"})</p>
+                  <p>• Dr. Stock In Hand (₹{amount || "0.00"}) | Cr. Stock Adjustment Surplus (₹{amount || "0.00"})</p>
                 )}
                 {nature === "VARIANCE_SHORTAGE" && (
-                  <p>• Dr. Stock Adjustment Loss (₹{amount || "0.00"}) &nbsp;|&nbsp; Cr. Stock In Hand (₹{amount || "0.00"})</p>
+                  <p>• Dr. Stock Adjustment Loss (₹{amount || "0.00"}) | Cr. Stock In Hand (₹{amount || "0.00"})</p>
                 )}
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200">
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-zinc-200">
                 <button
                   type="button"
                   onClick={() => setIsPerpetualModalOpen(false)}
-                  className="liquid-btn-glass text-xs"
+                  className="px-3 py-1.5 rounded border border-zinc-300 text-zinc-700 hover:bg-zinc-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isPosting}
-                  className="liquid-btn-primary text-xs"
+                  className="px-4 py-1.5 rounded bg-zinc-900 hover:bg-black text-white font-medium"
                 >
                   {isPosting ? "Posting to Ledger..." : "Post Double Entries"}
                 </button>

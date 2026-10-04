@@ -8,10 +8,10 @@ import {
   Trash2,
   RefreshCw,
   X,
-  CheckCircle,
   Building,
-  DollarSign,
-  ArrowDownLeft,
+  Search,
+  Filter,
+  Eye,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { getSalesInvoices, createSalesInvoice, deleteSalesInvoice } from "@/lib/api";
@@ -21,6 +21,8 @@ export default function SalesInvoicesPage() {
   const [invoices, setInvoices] = useState<SalesInvoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedInvoice, setSelectedInvoice] = useState<SalesInvoice | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("ALL");
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -104,97 +106,156 @@ export default function SalesInvoicesPage() {
     }
   }
 
+  const filteredInvoices = invoices.filter((inv) => {
+    const matchesSearch =
+      inv.invoiceNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      inv.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (inv.customerEmail && inv.customerEmail.toLowerCase().includes(searchQuery.toLowerCase()));
+    const matchesStatus = statusFilter === "ALL" || inv.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
+
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-zinc-200">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
+            <h1 className="text-xl font-bold text-zinc-900 tracking-tight">
               Sales Invoices (Accounts Receivable)
             </h1>
-            <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-white/70 border border-slate-200 text-slate-700 shadow-2xs">
+            <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-zinc-100 border border-zinc-200 text-zinc-800">
               GST / AR Engine
             </span>
           </div>
-          <p className="text-sm font-medium text-slate-500 mt-1">
+          <p className="text-xs text-zinc-500 mt-1">
             Customer billing, automated revenue GL postings, and outstanding payment tracking
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <button onClick={loadInvoices} className="liquid-btn-glass text-xs" title="Refresh">
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={loadInvoices}
+            className="px-3 py-1.5 rounded-lg border border-zinc-300 text-zinc-700 bg-white hover:bg-zinc-50 text-xs font-medium flex items-center gap-1.5 transition-colors"
+            title="Refresh"
+          >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
             <span>Sync</span>
           </button>
-          <button onClick={() => setIsModalOpen(true)} className="liquid-btn-primary text-xs">
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="px-3.5 py-1.5 rounded-lg bg-zinc-900 hover:bg-black text-white text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-2xs"
+          >
             <Plus className="w-3.5 h-3.5" />
-            <span>Create Sales Invoice</span>
+            <span>+ Create Sales Invoice</span>
           </button>
         </div>
       </div>
 
+      {/* Filter and Search Bar */}
+      <div className="bg-white border border-zinc-200 rounded-lg p-3 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
+          {["ALL", "PAID", "UNPAID", "OVERDUE", "DRAFT"].map((status) => (
+            <button
+              key={status}
+              onClick={() => setStatusFilter(status)}
+              className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
+                statusFilter === status
+                  ? "bg-zinc-900 text-white"
+                  : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
+              }`}
+            >
+              {status === "ALL" ? `All (${invoices.length})` : status}
+            </button>
+          ))}
+        </div>
+
+        <div className="relative w-full sm:w-64">
+          <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400" />
+          <input
+            type="text"
+            placeholder="Search invoice # or customer..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-8 pr-3 py-1 text-xs bg-white border border-zinc-200 rounded-md focus:outline-none focus:ring-1 focus:ring-zinc-800 placeholder:text-zinc-400"
+          />
+        </div>
+      </div>
+
       {/* Invoice List */}
-      <div className="liquid-glass-card overflow-hidden">
-        <div className="px-5 py-3 border-b border-slate-200/60 bg-white/30 flex items-center justify-between text-xs font-bold text-slate-500 uppercase tracking-wider">
+      <div className="bg-white border border-zinc-200 rounded-lg overflow-hidden">
+        <div className="px-4 py-2.5 border-b border-zinc-200 bg-zinc-50 flex items-center justify-between text-[11px] font-bold text-zinc-500 uppercase tracking-wider">
           <div className="flex items-center gap-2">
-            <FileText className="w-4 h-4 text-slate-600" />
-            <span>Invoice # & Customer</span>
+            <FileText className="w-3.5 h-3.5 text-zinc-600" />
+            <span>Invoice # &amp; Customer</span>
           </div>
-          <div className="flex items-center gap-10">
+          <div className="flex items-center gap-8">
             <span>Posting Date</span>
             <span>Due Date</span>
             <span>Grand Total</span>
-            <span className="w-24 text-right">Status</span>
+            <span className="w-20 text-center">Status</span>
+            <span className="w-16 text-right">Action</span>
           </div>
         </div>
 
-        {invoices.length === 0 ? (
-          <div className="p-8 text-center text-xs text-slate-400">
-            No sales invoices created yet. Click &quot;Create Sales Invoice&quot; to issue your first invoice!
+        {filteredInvoices.length === 0 ? (
+          <div className="p-8 text-center text-xs text-zinc-400">
+            No sales invoices match your search. Click &quot;+ Create Sales Invoice&quot; to issue a new bill!
           </div>
         ) : (
-          <div className="divide-y divide-slate-200/50">
-            {invoices.map((inv) => (
+          <div className="divide-y divide-zinc-100">
+            {filteredInvoices.map((inv) => (
               <div
                 key={inv.id}
                 onClick={() => setSelectedInvoice(inv)}
-                className="px-5 py-4 flex items-center justify-between text-xs hover:bg-white/40 transition-colors cursor-pointer"
+                className="px-4 py-3 flex items-center justify-between text-xs hover:bg-zinc-50 transition-colors cursor-pointer"
               >
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="font-mono font-extrabold text-slate-900 text-sm">
+                    <span className="font-mono font-bold text-zinc-900 text-sm">
                       {inv.invoiceNumber}
                     </span>
-                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-white/70 border border-slate-200 text-slate-600">
+                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-zinc-100 border border-zinc-200 text-zinc-700">
                       Tax Invoice
                     </span>
                   </div>
-                  <div className="text-slate-500 font-medium mt-0.5">
+                  <div className="text-zinc-500 font-medium mt-0.5">
                     {inv.customerName} {inv.customerEmail ? `• ${inv.customerEmail}` : ""}
                   </div>
                 </div>
 
                 <div className="flex items-center gap-6 font-mono text-xs">
-                  <span className="text-slate-600 font-sans">{inv.postingDate}</span>
-                  <span className="text-slate-600 font-sans">{inv.dueDate}</span>
-                  <span className="font-extrabold text-slate-900 text-sm">
+                  <span className="text-zinc-600 font-sans">{inv.postingDate}</span>
+                  <span className="text-zinc-600 font-sans">{inv.dueDate}</span>
+                  <span className="font-bold text-zinc-900 text-sm">
                     {formatCurrency(inv.grandTotal)}
                   </span>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-white/80 text-slate-800 border border-slate-200 w-24 text-center font-sans">
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-100 text-zinc-800 border border-zinc-200 w-20 text-center font-sans">
                     {inv.status}
                   </span>
-                  <button
-                    onClick={async (e) => {
-                      e.stopPropagation();
-                      await deleteSalesInvoice(inv.id);
-                      loadInvoices();
-                    }}
-                    className="p-1.5 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors"
-                    title="Delete Sales Invoice"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                  <div className="flex items-center gap-1 w-16 justify-end">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedInvoice(inv);
+                      }}
+                      className="p-1 rounded hover:bg-zinc-200 text-zinc-500"
+                      title="View Invoice"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        await deleteSalesInvoice(inv.id);
+                        loadInvoices();
+                      }}
+                      className="p-1 rounded hover:bg-zinc-200 text-zinc-400 hover:text-red-600 transition-colors"
+                      title="Delete Sales Invoice"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -204,83 +265,83 @@ export default function SalesInvoicesPage() {
 
       {/* Create Sales Invoice Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/30 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="liquid-glass-card bg-white/95 max-w-2xl w-full p-6 space-y-5 shadow-2xl border border-white max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="bg-white max-w-2xl w-full p-5 rounded-lg space-y-4 shadow-xl border border-zinc-200 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-zinc-200">
               <div className="flex items-center gap-2">
-                <FileText className="w-5 h-5 text-slate-800" />
-                <h2 className="text-base font-extrabold text-slate-900">Create New Sales Tax Invoice</h2>
+                <FileText className="w-4 h-4 text-zinc-900" />
+                <h2 className="text-sm font-bold text-zinc-900">Create New Sales Tax Invoice</h2>
               </div>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="p-1 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600"
+                className="p-1 rounded text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4 text-xs font-medium">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Customer / Client Name *</label>
+                  <label className="block text-zinc-700 font-semibold mb-1">Customer / Client Name *</label>
                   <input
                     type="text"
                     required
                     placeholder="e.g. Acme Global Technologies Ltd"
                     value={customerName}
                     onChange={(e) => setCustomerName(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                    className="w-full px-2.5 py-1.5 rounded border border-zinc-300 focus:outline-none focus:ring-1 focus:ring-zinc-800"
                   />
                 </div>
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Customer Email</label>
+                  <label className="block text-zinc-700 font-semibold mb-1">Customer Email</label>
                   <input
                     type="email"
                     placeholder="e.g. accounts@acmeglobal.com"
                     value={customerEmail}
                     onChange={(e) => setCustomerEmail(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                    className="w-full px-2.5 py-1.5 rounded border border-zinc-300 focus:outline-none focus:ring-1 focus:ring-zinc-800"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Posting Date *</label>
+                  <label className="block text-zinc-700 font-semibold mb-1">Posting Date *</label>
                   <input
                     type="date"
                     required
                     value={postingDate}
                     onChange={(e) => setPostingDate(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                    className="w-full px-2.5 py-1.5 rounded border border-zinc-300 focus:outline-none focus:ring-1 focus:ring-zinc-800"
                   />
                 </div>
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Payment Due Date *</label>
+                  <label className="block text-zinc-700 font-semibold mb-1">Payment Due Date *</label>
                   <input
                     type="date"
                     required
                     value={dueDate}
                     onChange={(e) => setDueDate(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                    className="w-full px-2.5 py-1.5 rounded border border-zinc-300 focus:outline-none focus:ring-1 focus:ring-zinc-800"
                   />
                 </div>
               </div>
 
               {/* Line Items */}
-              <div className="space-y-2 pt-2">
+              <div className="space-y-2 pt-1">
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-slate-800">Invoice Items & Services</span>
+                  <span className="font-bold text-zinc-900">Invoice Items &amp; Services</span>
                   <button
                     type="button"
                     onClick={addItem}
-                    className="liquid-btn-glass text-[11px] py-1 px-2.5"
+                    className="px-2.5 py-1 rounded border border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-50 text-[11px] font-medium flex items-center gap-1"
                   >
                     <Plus className="w-3 h-3" /> Add Item
                   </button>
                 </div>
 
-                <div className="liquid-glass p-3 space-y-2">
+                <div className="bg-zinc-50 border border-zinc-200 rounded p-2.5 space-y-2">
                   {items.map((it, idx) => (
                     <div key={idx} className="grid grid-cols-12 gap-2 items-center">
                       <div className="col-span-6">
@@ -290,7 +351,7 @@ export default function SalesInvoicesPage() {
                           placeholder="Item Description"
                           value={it.itemName}
                           onChange={(e) => updateItem(idx, "itemName", e.target.value)}
-                          className="w-full px-2 py-1.5 rounded-lg bg-white border border-slate-200 text-xs focus:outline-none focus:ring-1 focus:ring-slate-400"
+                          className="w-full px-2 py-1.5 rounded border border-zinc-300 text-xs focus:outline-none focus:ring-1 focus:ring-zinc-800"
                         />
                       </div>
                       <div className="col-span-2">
@@ -299,7 +360,7 @@ export default function SalesInvoicesPage() {
                           placeholder="Qty"
                           value={it.quantity}
                           onChange={(e) => updateItem(idx, "quantity", e.target.value)}
-                          className="w-full px-2 py-1.5 rounded-lg bg-white border border-slate-200 text-xs font-mono text-center focus:outline-none focus:ring-1 focus:ring-slate-400"
+                          className="w-full px-2 py-1.5 rounded border border-zinc-300 text-xs font-mono text-center focus:outline-none focus:ring-1 focus:ring-zinc-800"
                         />
                       </div>
                       <div className="col-span-3">
@@ -308,7 +369,7 @@ export default function SalesInvoicesPage() {
                           placeholder="Rate (₹)"
                           value={it.rate}
                           onChange={(e) => updateItem(idx, "rate", e.target.value)}
-                          className="w-full px-2 py-1.5 rounded-lg bg-white border border-slate-200 text-xs font-mono text-right focus:outline-none focus:ring-1 focus:ring-slate-400"
+                          className="w-full px-2 py-1.5 rounded border border-zinc-300 text-xs font-mono text-right focus:outline-none focus:ring-1 focus:ring-zinc-800"
                         />
                       </div>
                       <div className="col-span-1 text-center">
@@ -316,7 +377,7 @@ export default function SalesInvoicesPage() {
                           <button
                             type="button"
                             onClick={() => removeItem(idx)}
-                            className="p-1 rounded text-slate-400 hover:text-red-500"
+                            className="p-1 rounded text-zinc-400 hover:text-red-600"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -327,34 +388,34 @@ export default function SalesInvoicesPage() {
                 </div>
 
                 {/* Subtotal & Taxes Summary */}
-                <div className="liquid-glass-card p-3 space-y-1.5 text-xs text-right font-mono">
-                  <div className="flex justify-between font-medium text-slate-600">
+                <div className="bg-zinc-100 border border-zinc-200 rounded p-2.5 space-y-1 text-xs text-right font-mono">
+                  <div className="flex justify-between font-medium text-zinc-600">
                     <span>Taxable Subtotal:</span>
                     <span>{formatCurrency(subtotal)}</span>
                   </div>
-                  <div className="flex justify-between font-medium text-slate-600">
+                  <div className="flex justify-between font-medium text-zinc-600">
                     <span>GST (18% Output Tax):</span>
                     <span>{formatCurrency(totalTax)}</span>
                   </div>
-                  <div className="flex justify-between text-sm font-extrabold text-slate-900 pt-1 border-t border-slate-200">
+                  <div className="flex justify-between text-sm font-bold text-zinc-900 pt-1 border-t border-zinc-200">
                     <span>Grand Total:</span>
                     <span>{formatCurrency(grandTotal)}</span>
                   </div>
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200">
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-zinc-200">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="liquid-btn-glass text-xs"
+                  className="px-3 py-1.5 rounded border border-zinc-300 text-zinc-700 hover:bg-zinc-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="liquid-btn-primary text-xs"
+                  className="px-4 py-1.5 rounded bg-zinc-900 hover:bg-black text-white font-medium"
                 >
                   {isSubmitting ? "Generating..." : "Generate & Post Invoice"}
                 </button>
@@ -366,29 +427,29 @@ export default function SalesInvoicesPage() {
 
       {/* Invoice Inspector Drawer */}
       {selectedInvoice && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/30 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="liquid-glass-card bg-white max-w-2xl w-full p-8 space-y-6 shadow-2xl border border-white max-h-[90vh] overflow-y-auto print:p-0">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="bg-white max-w-2xl w-full p-6 rounded-lg space-y-5 shadow-xl border border-zinc-200 max-h-[90vh] overflow-y-auto print:p-0">
             {/* Header */}
-            <div className="flex items-center justify-between pb-4 border-b border-slate-200">
+            <div className="flex items-center justify-between pb-3 border-b border-zinc-200">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-white border border-slate-200 shadow-xs flex items-center justify-center text-slate-800">
-                  <Building className="w-5 h-5" />
+                <div className="w-8 h-8 rounded bg-zinc-100 border border-zinc-200 flex items-center justify-center text-zinc-800">
+                  <Building className="w-4 h-4" />
                 </div>
                 <div>
-                  <h2 className="text-base font-extrabold text-slate-900">TAX INVOICE</h2>
-                  <p className="text-xs text-slate-500 font-mono">{selectedInvoice.invoiceNumber}</p>
+                  <h2 className="text-sm font-bold text-zinc-900">TAX INVOICE</h2>
+                  <p className="text-xs text-zinc-500 font-mono">{selectedInvoice.invoiceNumber}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => window.print()}
-                  className="liquid-btn-glass text-xs"
+                  className="px-2.5 py-1 rounded border border-zinc-300 text-zinc-700 bg-white hover:bg-zinc-50 text-xs font-medium flex items-center gap-1.5"
                 >
                   <Printer className="w-3.5 h-3.5" /> Print
                 </button>
                 <button
                   onClick={() => setSelectedInvoice(null)}
-                  className="p-1.5 rounded-full hover:bg-slate-100 text-slate-400"
+                  className="p-1 rounded text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -398,48 +459,48 @@ export default function SalesInvoicesPage() {
             {/* Billed To & Dates */}
             <div className="grid grid-cols-2 gap-6 text-xs">
               <div>
-                <span className="font-bold text-slate-400 uppercase tracking-wider text-[10px]">Billed To:</span>
-                <div className="font-extrabold text-slate-900 text-sm mt-1">{selectedInvoice.customerName}</div>
-                <div className="text-slate-500">{selectedInvoice.customerEmail || "Corporate Enterprise Client"}</div>
+                <span className="font-bold text-zinc-500 uppercase tracking-wider text-[10px]">Billed To:</span>
+                <div className="font-bold text-zinc-900 text-sm mt-0.5">{selectedInvoice.customerName}</div>
+                <div className="text-zinc-500">{selectedInvoice.customerEmail || "Corporate Enterprise Client"}</div>
               </div>
               <div className="text-right space-y-1">
-                <div><span className="text-slate-500">Invoice Date:</span> <span className="font-bold font-mono">{selectedInvoice.postingDate}</span></div>
-                <div><span className="text-slate-500">Due Date:</span> <span className="font-bold font-mono">{selectedInvoice.dueDate}</span></div>
-                <div><span className="text-slate-500">Status:</span> <span className="font-bold text-slate-800">{selectedInvoice.status}</span></div>
+                <div><span className="text-zinc-500">Invoice Date:</span> <span className="font-bold font-mono">{selectedInvoice.postingDate}</span></div>
+                <div><span className="text-zinc-500">Due Date:</span> <span className="font-bold font-mono">{selectedInvoice.dueDate}</span></div>
+                <div><span className="text-zinc-500">Status:</span> <span className="font-bold text-zinc-800 font-mono">{selectedInvoice.status}</span></div>
               </div>
             </div>
 
             {/* Items Table */}
-            <div className="border border-slate-200 rounded-xl overflow-hidden text-xs">
-              <div className="bg-slate-50 px-4 py-2 flex justify-between font-bold text-slate-600 border-b border-slate-200">
+            <div className="border border-zinc-200 rounded overflow-hidden text-xs">
+              <div className="bg-zinc-50 px-3 py-2 flex justify-between font-bold text-zinc-600 border-b border-zinc-200 text-[11px]">
                 <span>Description</span>
                 <span className="w-20 text-center">Qty</span>
                 <span className="w-28 text-right">Rate</span>
                 <span className="w-28 text-right">Amount</span>
               </div>
-              <div className="divide-y divide-slate-100">
+              <div className="divide-y divide-zinc-100">
                 {selectedInvoice.items?.map((it, idx) => (
-                  <div key={idx} className="px-4 py-3 flex justify-between text-slate-800">
+                  <div key={idx} className="px-3 py-2 flex justify-between text-zinc-800">
                     <span>{it.itemName}</span>
                     <span className="w-20 text-center font-mono">{it.quantity}</span>
                     <span className="w-28 text-right font-mono">{formatCurrency(it.rate)}</span>
-                    <span className="w-28 text-right font-mono font-bold">{formatCurrency(it.amount)}</span>
+                    <span className="w-28 text-right font-mono font-bold text-zinc-900">{formatCurrency(it.amount)}</span>
                   </div>
                 ))}
               </div>
             </div>
 
             {/* Totals */}
-            <div className="text-xs text-right space-y-1.5 font-mono">
-              <div className="flex justify-between text-slate-600">
+            <div className="text-xs text-right space-y-1 font-mono">
+              <div className="flex justify-between text-zinc-600">
                 <span>Subtotal:</span>
                 <span>{formatCurrency(selectedInvoice.subtotal)}</span>
               </div>
-              <div className="flex justify-between text-slate-600">
+              <div className="flex justify-between text-zinc-600">
                 <span>GST Output (18%):</span>
                 <span>{formatCurrency(selectedInvoice.totalTax)}</span>
               </div>
-              <div className="flex justify-between text-base font-extrabold text-slate-900 pt-2 border-t border-slate-200">
+              <div className="flex justify-between text-sm font-bold text-zinc-900 pt-1.5 border-t border-zinc-200">
                 <span>Grand Total:</span>
                 <span>{formatCurrency(selectedInvoice.grandTotal)}</span>
               </div>

@@ -8,7 +8,8 @@ import {
   RefreshCw,
   X,
   Building2,
-  ArrowUpRight,
+  Search,
+  Filter,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { getPurchaseInvoices, createPurchaseInvoice, deletePurchaseInvoice } from "@/lib/api";
@@ -17,6 +18,8 @@ import { PurchaseInvoice } from "@/types/accounting";
 export default function PurchaseInvoicesPage() {
   const [invoices, setInvoices] = useState<PurchaseInvoice[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("ALL");
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -101,83 +104,130 @@ export default function PurchaseInvoicesPage() {
     }
   }
 
+  const filteredInvoices = invoices.filter((inv) => {
+    const matchesSearch =
+      (inv.billNumber || inv.invoiceNumber || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      inv.supplierName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (inv.supplierGstin && inv.supplierGstin.toLowerCase().includes(searchQuery.toLowerCase()));
+    const matchesStatus = statusFilter === "ALL" || inv.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
+
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-zinc-200">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
+            <h1 className="text-xl font-bold text-zinc-900 tracking-tight">
               Purchase Invoices (Accounts Payable)
             </h1>
-            <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-white/70 border border-slate-200 text-slate-700 shadow-2xs">
-              Vendor Bills & AP
+            <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-zinc-100 border border-zinc-200 text-zinc-800">
+              Vendor Bills &amp; AP
             </span>
           </div>
-          <p className="text-sm font-medium text-slate-500 mt-1">
-            Supplier bills, operating expenses, IT infrastructure subscriptions & accounts payable ledger
+          <p className="text-xs text-zinc-500 mt-1">
+            Supplier bills, operating expenses, IT infrastructure subscriptions &amp; accounts payable ledger
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <button onClick={loadInvoices} className="liquid-btn-glass text-xs" title="Refresh">
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={loadInvoices}
+            className="px-3 py-1.5 rounded-lg border border-zinc-300 text-zinc-700 bg-white hover:bg-zinc-50 text-xs font-medium flex items-center gap-1.5 transition-colors"
+            title="Refresh"
+          >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
             <span>Sync</span>
           </button>
-          <button onClick={() => setIsModalOpen(true)} className="liquid-btn-primary text-xs">
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="px-3.5 py-1.5 rounded-lg bg-zinc-900 hover:bg-black text-white text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-2xs"
+          >
             <Plus className="w-3.5 h-3.5" />
-            <span>Record Purchase Bill</span>
+            <span>+ Record Purchase Bill</span>
           </button>
         </div>
       </div>
 
+      {/* Filter & Search Bar */}
+      <div className="bg-white border border-zinc-200 rounded-lg p-3 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
+          {["ALL", "PAID", "UNPAID", "OVERDUE", "DRAFT"].map((status) => (
+            <button
+              key={status}
+              onClick={() => setStatusFilter(status)}
+              className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
+                statusFilter === status
+                  ? "bg-zinc-900 text-white"
+                  : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
+              }`}
+            >
+              {status === "ALL" ? `All (${invoices.length})` : status}
+            </button>
+          ))}
+        </div>
+
+        <div className="relative w-full sm:w-64">
+          <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400" />
+          <input
+            type="text"
+            placeholder="Search bill # or supplier..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-8 pr-3 py-1 text-xs bg-white border border-zinc-200 rounded-md focus:outline-none focus:ring-1 focus:ring-zinc-800 placeholder:text-zinc-400"
+          />
+        </div>
+      </div>
+
       {/* Invoice List */}
-      <div className="liquid-glass-card overflow-hidden">
-        <div className="px-5 py-3 border-b border-slate-200/60 bg-white/30 flex items-center justify-between text-xs font-bold text-slate-500 uppercase tracking-wider">
+      <div className="bg-white border border-zinc-200 rounded-lg overflow-hidden">
+        <div className="px-4 py-2.5 border-b border-zinc-200 bg-zinc-50 flex items-center justify-between text-[11px] font-bold text-zinc-500 uppercase tracking-wider">
           <div className="flex items-center gap-2">
-            <Receipt className="w-4 h-4 text-slate-600" />
-            <span>Bill # & Supplier</span>
+            <Receipt className="w-3.5 h-3.5 text-zinc-600" />
+            <span>Bill # &amp; Supplier</span>
           </div>
-          <div className="flex items-center gap-10">
+          <div className="flex items-center gap-8">
             <span>Bill Date</span>
             <span>Due Date</span>
             <span>Grand Total</span>
-            <span className="w-24 text-right">Status</span>
+            <span className="w-20 text-center">Status</span>
+            <span className="w-8"></span>
           </div>
         </div>
 
-        {invoices.length === 0 ? (
-          <div className="p-8 text-center text-xs text-slate-400">
-            No purchase bills recorded yet. Click &quot;Record Purchase Bill&quot; to log a vendor bill!
+        {filteredInvoices.length === 0 ? (
+          <div className="p-8 text-center text-xs text-zinc-400">
+            No purchase bills match your search criteria. Click &quot;+ Record Purchase Bill&quot; to log a vendor bill!
           </div>
         ) : (
-          <div className="divide-y divide-slate-200/50">
-            {invoices.map((inv) => (
+          <div className="divide-y divide-zinc-100">
+            {filteredInvoices.map((inv) => (
               <div
                 key={inv.id}
-                className="px-5 py-4 flex items-center justify-between text-xs hover:bg-white/40 transition-colors"
+                className="px-4 py-3 flex items-center justify-between text-xs hover:bg-zinc-50 transition-colors"
               >
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="font-mono font-extrabold text-slate-900 text-sm">
-                      {inv.billNumber}
+                    <span className="font-mono font-bold text-zinc-900 text-sm">
+                      {inv.billNumber || inv.invoiceNumber}
                     </span>
-                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-white/70 border border-slate-200 text-slate-600">
+                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-zinc-100 border border-zinc-200 text-zinc-700">
                       Vendor Bill
                     </span>
                   </div>
-                  <div className="text-slate-500 font-medium mt-0.5">
+                  <div className="text-zinc-500 font-medium mt-0.5">
                     {inv.supplierName} {inv.supplierGstin ? `• GSTIN: ${inv.supplierGstin}` : ""}
                   </div>
                 </div>
 
                 <div className="flex items-center gap-6 font-mono text-xs">
-                  <span className="text-slate-600 font-sans">{inv.postingDate}</span>
-                  <span className="text-slate-600 font-sans">{inv.dueDate}</span>
-                  <span className="font-extrabold text-slate-900 text-sm">
+                  <span className="text-zinc-600 font-sans">{inv.postingDate}</span>
+                  <span className="text-zinc-600 font-sans">{inv.dueDate}</span>
+                  <span className="font-bold text-zinc-900 text-sm">
                     {formatCurrency(inv.grandTotal)}
                   </span>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-white/80 text-slate-800 border border-slate-200 w-24 text-center font-sans">
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-100 text-zinc-800 border border-zinc-200 w-20 text-center font-sans">
                     {inv.status}
                   </span>
                   <button
@@ -186,7 +236,7 @@ export default function PurchaseInvoicesPage() {
                       await deletePurchaseInvoice(inv.id);
                       loadInvoices();
                     }}
-                    className="p-1.5 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors"
+                    className="p-1 rounded hover:bg-zinc-200 text-zinc-400 hover:text-red-600 transition-colors"
                     title="Delete Purchase Bill"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -200,83 +250,83 @@ export default function PurchaseInvoicesPage() {
 
       {/* Record Purchase Bill Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/30 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="liquid-glass-card bg-white/95 max-w-2xl w-full p-6 space-y-5 shadow-2xl border border-white max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="bg-white max-w-2xl w-full p-5 rounded-lg space-y-4 shadow-xl border border-zinc-200 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-zinc-200">
               <div className="flex items-center gap-2">
-                <Receipt className="w-5 h-5 text-slate-800" />
-                <h2 className="text-base font-extrabold text-slate-900">Record Vendor Purchase Bill</h2>
+                <Receipt className="w-4 h-4 text-zinc-900" />
+                <h2 className="text-sm font-bold text-zinc-900">Record Vendor Purchase Bill</h2>
               </div>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="p-1 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600"
+                className="p-1 rounded text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4 text-xs font-medium">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Supplier / Vendor Name *</label>
+                  <label className="block text-zinc-700 font-semibold mb-1">Supplier / Vendor Name *</label>
                   <input
                     type="text"
                     required
                     placeholder="e.g. Amazon Web Services or WeWork India"
                     value={supplierName}
                     onChange={(e) => setSupplierName(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                    className="w-full px-2.5 py-1.5 rounded border border-zinc-300 focus:outline-none focus:ring-1 focus:ring-zinc-800"
                   />
                 </div>
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Supplier GSTIN</label>
+                  <label className="block text-zinc-700 font-semibold mb-1">Supplier GSTIN</label>
                   <input
                     type="text"
                     placeholder="e.g. 29AAAAA0000A1Z5"
                     value={supplierGstin}
                     onChange={(e) => setSupplierGstin(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                    className="w-full px-2.5 py-1.5 rounded border border-zinc-300 focus:outline-none focus:ring-1 focus:ring-zinc-800"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Bill Posting Date *</label>
+                  <label className="block text-zinc-700 font-semibold mb-1">Bill Posting Date *</label>
                   <input
                     type="date"
                     required
                     value={postingDate}
                     onChange={(e) => setPostingDate(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                    className="w-full px-2.5 py-1.5 rounded border border-zinc-300 focus:outline-none focus:ring-1 focus:ring-zinc-800"
                   />
                 </div>
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Payment Due Date *</label>
+                  <label className="block text-zinc-700 font-semibold mb-1">Payment Due Date *</label>
                   <input
                     type="date"
                     required
                     value={dueDate}
                     onChange={(e) => setDueDate(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                    className="w-full px-2.5 py-1.5 rounded border border-zinc-300 focus:outline-none focus:ring-1 focus:ring-zinc-800"
                   />
                 </div>
               </div>
 
               {/* Line Items */}
-              <div className="space-y-2 pt-2">
+              <div className="space-y-2 pt-1">
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-slate-800">Expense & Purchase Items</span>
+                  <span className="font-bold text-zinc-900">Expense &amp; Purchase Items</span>
                   <button
                     type="button"
                     onClick={addItem}
-                    className="liquid-btn-glass text-[11px] py-1 px-2.5"
+                    className="px-2.5 py-1 rounded border border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-50 text-[11px] font-medium flex items-center gap-1"
                   >
                     <Plus className="w-3 h-3" /> Add Row
                   </button>
                 </div>
 
-                <div className="liquid-glass p-3 space-y-2">
+                <div className="bg-zinc-50 border border-zinc-200 rounded p-2.5 space-y-2">
                   {items.map((it, idx) => (
                     <div key={idx} className="grid grid-cols-12 gap-2 items-center">
                       <div className="col-span-6">
@@ -286,7 +336,7 @@ export default function PurchaseInvoicesPage() {
                           placeholder="Expense Description"
                           value={it.itemName}
                           onChange={(e) => updateItem(idx, "itemName", e.target.value)}
-                          className="w-full px-2 py-1.5 rounded-lg bg-white border border-slate-200 text-xs focus:outline-none focus:ring-1 focus:ring-slate-400"
+                          className="w-full px-2 py-1.5 rounded border border-zinc-300 text-xs focus:outline-none focus:ring-1 focus:ring-zinc-800"
                         />
                       </div>
                       <div className="col-span-2">
@@ -295,7 +345,7 @@ export default function PurchaseInvoicesPage() {
                           placeholder="Qty"
                           value={it.quantity}
                           onChange={(e) => updateItem(idx, "quantity", e.target.value)}
-                          className="w-full px-2 py-1.5 rounded-lg bg-white border border-slate-200 text-xs font-mono text-center focus:outline-none focus:ring-1 focus:ring-slate-400"
+                          className="w-full px-2 py-1.5 rounded border border-zinc-300 text-xs font-mono text-center focus:outline-none focus:ring-1 focus:ring-zinc-800"
                         />
                       </div>
                       <div className="col-span-3">
@@ -304,7 +354,7 @@ export default function PurchaseInvoicesPage() {
                           placeholder="Rate (₹)"
                           value={it.rate}
                           onChange={(e) => updateItem(idx, "rate", e.target.value)}
-                          className="w-full px-2 py-1.5 rounded-lg bg-white border border-slate-200 text-xs font-mono text-right focus:outline-none focus:ring-1 focus:ring-slate-400"
+                          className="w-full px-2 py-1.5 rounded border border-zinc-300 text-xs font-mono text-right focus:outline-none focus:ring-1 focus:ring-zinc-800"
                         />
                       </div>
                       <div className="col-span-1 text-center">
@@ -312,7 +362,7 @@ export default function PurchaseInvoicesPage() {
                           <button
                             type="button"
                             onClick={() => removeItem(idx)}
-                            className="p-1 rounded text-slate-400 hover:text-red-500"
+                            className="p-1 rounded text-zinc-400 hover:text-red-600"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -323,34 +373,34 @@ export default function PurchaseInvoicesPage() {
                 </div>
 
                 {/* Subtotal & Taxes Summary */}
-                <div className="liquid-glass-card p-3 space-y-1.5 text-xs text-right font-mono">
-                  <div className="flex justify-between font-medium text-slate-600">
+                <div className="bg-zinc-100 border border-zinc-200 rounded p-2.5 space-y-1 text-xs text-right font-mono">
+                  <div className="flex justify-between font-medium text-zinc-600">
                     <span>Taxable Subtotal:</span>
                     <span>{formatCurrency(subtotal)}</span>
                   </div>
-                  <div className="flex justify-between font-medium text-slate-600">
+                  <div className="flex justify-between font-medium text-zinc-600">
                     <span>Input Tax Credit (18% ITC):</span>
                     <span>{formatCurrency(totalTax)}</span>
                   </div>
-                  <div className="flex justify-between text-sm font-extrabold text-slate-900 pt-1 border-t border-slate-200">
+                  <div className="flex justify-between text-sm font-bold text-zinc-900 pt-1 border-t border-zinc-200">
                     <span>Payable Total:</span>
                     <span>{formatCurrency(grandTotal)}</span>
                   </div>
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200">
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-zinc-200">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="liquid-btn-glass text-xs"
+                  className="px-3 py-1.5 rounded border border-zinc-300 text-zinc-700 hover:bg-zinc-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="liquid-btn-primary text-xs"
+                  className="px-4 py-1.5 rounded bg-zinc-900 hover:bg-black text-white font-medium"
                 >
                   {isSubmitting ? "Recording..." : "Record & Post Bill"}
                 </button>

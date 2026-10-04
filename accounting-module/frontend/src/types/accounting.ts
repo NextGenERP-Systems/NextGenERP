@@ -148,6 +148,7 @@ export interface PurchaseInvoiceItem {
 export interface PurchaseInvoice {
   id: string;
   billNumber: string;
+  invoiceNumber?: string;
   supplierName: string;
   supplierEmail?: string;
   supplierGstin?: string;
@@ -261,7 +262,8 @@ export interface PerpetualStockGlRequest {
   voucherNumber: string;
   voucherId?: string;
   postingDate?: string;
-  transactionNature: "RECEIPT" | "DELIVERY" | "LANDED_COST" | "VARIANCE_SURPLUS" | "VARIANCE_SHORTAGE";
+  transactionNature?: "RECEIPT" | "DELIVERY" | "LANDED_COST" | "VARIANCE_SURPLUS" | "VARIANCE_SHORTAGE";
+  nature?: "RECEIPT" | "DELIVERY" | "LANDED_COST" | "VARIANCE_SURPLUS" | "VARIANCE_SHORTAGE";
   amount: number;
   itemSummary?: string;
   remarks?: string;
