@@ -4,26 +4,26 @@
 
 @layer base {
   :root {
-    --background: 210 40% 98%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 0 0% 100%;
+    --foreground: 222 47% 11%;
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 222 47% 11%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 47.4% 11.2%;
-    --radius: 0.75rem;
+    --popover-foreground: 222 47% 11%;
+    --primary: 221 83% 53%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 214 32% 91%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 20% 50%;
+    --accent: 214 100% 97%;
+    --accent-foreground: 221 83% 53%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 221 83% 53%;
+    --radius: 0.5rem;
   }
 }
 
@@ -32,206 +32,128 @@
     @apply border-border;
   }
   body {
-    @apply text-slate-900 antialiased selection:bg-slate-200 selection:text-slate-900 min-h-screen relative overflow-x-hidden;
-    background: #f1f5f9;
+    @apply bg-white text-slate-900 antialiased selection:bg-indigo-100 selection:text-indigo-900 min-h-screen overflow-x-hidden;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
 
-/* ==============================================================================
-   APPLE visionOS / TRANSLUCENT LIQUID GLASS ENGINE (No solid white, no heavy colors)
-   ============================================================================== */
-
-/* 1. Translucent Liquid Glass Container / Card */
-.liquid-glass-card {
-  position: relative;
-  background: rgba(255, 255, 255, 0.45) !important;
-  backdrop-filter: blur(16px) saturate(180%) !important;
-  -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.65) !important;
-  border-radius: 1.25rem !important;
-  box-shadow: 
-    0 8px 30px -4px rgba(15, 23, 42, 0.04),
-    0 2px 8px 0 rgba(15, 23, 42, 0.02),
-    inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.8) !important;
-  transition: all 0.2s ease-out;
-}
-
-.liquid-glass-card:hover {
-  background: rgba(255, 255, 255, 0.6) !important;
-  border-color: rgba(255, 255, 255, 0.85) !important;
-  box-shadow: 
-    0 12px 36px -4px rgba(15, 23, 42, 0.06),
-    inset 0 1.5px 2px 0 rgba(255, 255, 255, 0.95) !important;
-  transform: translateY(-1px);
-}
-
-/* 2. Translucent Inner Panel */
-.liquid-glass {
-  position: relative;
-  background: rgba(255, 255, 255, 0.35) !important;
-  backdrop-filter: blur(14px) saturate(180%) !important;
-  -webkit-backdrop-filter: blur(14px) saturate(180%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.6) !important;
-  border-radius: 1rem !important;
-  box-shadow: 
-    0 4px 16px 0 rgba(15, 23, 42, 0.02),
-    inset 0 1px 1px 0 rgba(255, 255, 255, 0.75) !important;
-}
-
-/* ==============================================================================
-   TRANSLUCENT LIQUID GLASS BUTTONS (Capsule / Pill - Zero Blue/Green Fills)
-   ============================================================================== */
-
-/* Primary Action Pill (Translucent Liquid Glass Floating Button) */
-.liquid-btn-primary {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(255, 255, 255, 0.55) !important;
-  backdrop-filter: blur(16px) saturate(180%) !important;
-  -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
-  color: #0f172a !important;
-  border: 1px solid rgba(255, 255, 255, 0.75) !important;
-  border-radius: 9999px !important;
-  box-shadow: 
-    0 4px 16px -2px rgba(15, 23, 42, 0.05),
-    0 1px 3px 0 rgba(15, 23, 42, 0.02),
-    inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.9) !important;
-  font-weight: 700 !important;
-  letter-spacing: -0.01em;
-  padding: 0.5rem 1.25rem;
-  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.liquid-btn-primary:hover {
-  background: rgba(255, 255, 255, 0.8) !important;
-  border-color: rgba(255, 255, 255, 0.95) !important;
-  color: #000000 !important;
-  box-shadow: 
-    0 8px 24px -2px rgba(15, 23, 42, 0.08),
-    inset 0 1.5px 2px 0 rgba(255, 255, 255, 1) !important;
-  transform: translateY(-1px) scale(1.01);
-}
-
-.liquid-btn-primary:active {
-  transform: translateY(0px) scale(0.98);
-}
-
-/* Secondary Translucent Pill */
-.liquid-btn-glass {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(255, 255, 255, 0.35) !important;
-  backdrop-filter: blur(14px) saturate(180%) !important;
-  -webkit-backdrop-filter: blur(14px) saturate(180%) !important;
-  color: #1e293b !important;
-  border: 1px solid rgba(255, 255, 255, 0.65) !important;
-  border-radius: 9999px !important;
-  box-shadow: 
-    0 3px 12px -2px rgba(15, 23, 42, 0.03),
-    inset 0 1px 1px 0 rgba(255, 255, 255, 0.8) !important;
-  font-weight: 700 !important;
-  padding: 0.45rem 1.15rem;
-  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.liquid-btn-glass:hover {
-  background: rgba(255, 255, 255, 0.65) !important;
-  border-color: rgba(255, 255, 255, 0.9) !important;
-  color: #0f172a !important;
-  box-shadow: 
-    0 6px 18px -2px rgba(15, 23, 42, 0.06),
-    inset 0 1.5px 1.5px 0 rgba(255, 255, 255, 1) !important;
-  transform: translateY(-1px);
-}
-
-.liquid-btn-glass:active {
-  transform: translateY(0px) scale(0.98);
-}
-
-/* Action Confirm Pill (Neutral Translucent Glass) */
-.liquid-btn-emerald {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(255, 255, 255, 0.55) !important;
-  backdrop-filter: blur(16px) saturate(180%) !important;
-  -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
-  color: #0f172a !important;
-  border: 1px solid rgba(255, 255, 255, 0.75) !important;
-  border-radius: 9999px !important;
-  box-shadow: 
-    0 4px 16px -2px rgba(15, 23, 42, 0.05),
-    inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.9) !important;
-  font-weight: 700 !important;
-  padding: 0.45rem 1.15rem;
-  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.liquid-btn-emerald:hover {
-  background: rgba(255, 255, 255, 0.8) !important;
-  border-color: rgba(255, 255, 255, 0.95) !important;
-  color: #000000 !important;
-  transform: translateY(-1px);
-}
-
-/* ==============================================================================
-   ACTIVE SIDEBAR NAVIGATION PILL (Like Reference ERPNext / visionOS Glass Floating Pill)
-   ============================================================================== */
-
-.liquid-nav-active {
-  position: relative;
-  background: rgba(255, 255, 255, 0.55) !important;
-  backdrop-filter: blur(16px) saturate(180%) !important;
-  -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
-  color: #0f172a !important;
-  border: 1px solid rgba(255, 255, 255, 0.7) !important;
-  border-radius: 0.75rem !important;
-  box-shadow: 
-    0 4px 16px -2px rgba(15, 23, 42, 0.04),
-    0 1px 3px 0 rgba(15, 23, 42, 0.02),
-    inset 0 1px 1px 0 rgba(255, 255, 255, 0.9) !important;
-  font-weight: 800 !important;
-}
-
-.liquid-nav-active * {
-  color: #0f172a !important;
-}
-
-/* Inactive nav hover */
-.liquid-nav-inactive {
-  border-radius: 0.75rem !important;
-  color: #334155;
-  font-weight: 600;
-  transition: all 0.15s ease-out;
-}
-
-.liquid-nav-inactive:hover {
-  background: rgba(255, 255, 255, 0.35) !important;
-  backdrop-filter: blur(10px) !important;
-  color: #0f172a !important;
-}
-
-/* Scrollbar */
+/* Clean Scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: #f1f5f9;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.35);
+  background: #cbd5e1;
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(148, 163, 184, 0.6);
+  background: #94a3b8;
+}
+
+/* ERPNext Clean Desk Card & Panel Styles */
+.liquid-glass-card {
+  position: relative;
+  background: #ffffff !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 0.5rem !important;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.04) !important;
+  transition: border-color 0.15s ease;
+}
+
+.liquid-glass-card:hover {
+  border-color: #d1d5db !important;
+}
+
+.liquid-glass {
+  position: relative;
+  background: #f9fafb !important;
+  border: 1px solid #f3f4f6 !important;
+  border-radius: 0.375rem !important;
+}
+
+/* Button & Action Pills (ERPNext Clean Zinc/Slate Style) */
+.liquid-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #111827 !important;
+  color: #ffffff !important;
+  border: 1px solid #111827 !important;
+  border-radius: 0.375rem !important;
+  font-weight: 500 !important;
+  font-size: 0.75rem !important;
+  padding: 0.375rem 0.875rem !important;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.liquid-btn-primary:hover {
+  background: #1f2937 !important;
+}
+
+.liquid-btn-glass {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff !important;
+  color: #374151 !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 0.375rem !important;
+  font-weight: 500 !important;
+  font-size: 0.75rem !important;
+  padding: 0.375rem 0.875rem !important;
+  transition: all 0.15s ease;
+}
+
+.liquid-btn-glass:hover {
+  background: #f9fafb !important;
+  color: #111827 !important;
+  border-color: #d1d5db !important;
+}
+
+.liquid-btn-emerald {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #059669 !important;
+  color: #ffffff !important;
+  border-radius: 0.375rem !important;
+  font-weight: 500 !important;
+  font-size: 0.75rem !important;
+  padding: 0.375rem 0.875rem !important;
+  transition: all 0.15s ease;
+}
+
+.liquid-btn-emerald:hover {
+  background: #047857 !important;
+}
+
+/* Nav Active / Inactive */
+.liquid-nav-active {
+  background: #e5e7eb !important;
+  color: #111827 !important;
+  font-weight: 600 !important;
+  border-radius: 0.375rem !important;
+}
+
+.liquid-nav-inactive {
+  color: #4b5563;
+  font-weight: 500;
+  border-radius: 0.375rem !important;
+}
+
+.liquid-nav-inactive:hover {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+/* Custom shadow utilities matching sales */
+.shadow-2xs {
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.04);
 }

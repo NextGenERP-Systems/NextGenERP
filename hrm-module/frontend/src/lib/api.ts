@@ -121,6 +121,34 @@ export async function getEmployees(): Promise<Employee[]> {
   return getStored<Employee>("EMPLOYEES", []);
 }
 
+export async function getDepartments(): Promise<Department[]> {
+  try {
+    const res = await fetch(`${API_BASE}/departments`, { cache: "no-store" });
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        setStored("DEPARTMENTS", data);
+        return data;
+      }
+    }
+  } catch (err) {}
+  return getStored<Department>("DEPARTMENTS", MOCK_DEPARTMENTS);
+}
+
+export async function getDesignations(): Promise<Designation[]> {
+  try {
+    const res = await fetch(`${API_BASE}/designations`, { cache: "no-store" });
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        setStored("DESIGNATIONS", data);
+        return data;
+      }
+    }
+  } catch (err) {}
+  return getStored<Designation>("DESIGNATIONS", MOCK_DESIGNATIONS);
+}
+
 export async function createEmployee(data: any): Promise<Employee> {
   const currentList = getStored<Employee>("EMPLOYEES", []);
   const deptId = data.departmentId || (data.department?.id) || MOCK_DEPARTMENTS[0].id;
