@@ -1,0 +1,9 @@
+services:
+  crm-module:
+    environment:
+      CRM_DATABASE_MODE: cloud
+      SPRING_DATASOURCE_URL: ${CRM_CLOUD_JDBC_URL:?Set CRM_CLOUD_JDBC_URL}
+      SPRING_DATASOURCE_USERNAME: ${CRM_CLOUD_DB_USERNAME:?Set CRM_CLOUD_DB_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${CRM_CLOUD_DB_PASSWORD:?Set CRM_CLOUD_DB_PASSWORD}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

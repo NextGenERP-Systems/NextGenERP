@@ -19,7 +19,7 @@
 .panel{border-radius:12px;transition:box-shadow .2s ease}
 .metric{background:linear-gradient(145deg,#fff,#f8fafc);border-radius:12px}
 .button,.icon-button{transition:background-color .18s ease,border-color .18s ease,box-shadow .18s ease,transform .18s ease}
-.button:not(:disabled):hover{box-shadow:0 4px 12px rgba(29,78,216,.16);transform:translateY(-1px)}
+.button:not(:disabled):hover{box-shadow:0 4px 12px rgba(17,24,39,.16);transform:translateY(-1px)}
 .button.secondary:hover,.icon-button:hover{background:#f8fafc;border-color:#cbd5e1}
 .button.danger:hover{background:#fef2f2}
 input:not([type=checkbox]),select,textarea{border-color:#e2e8f0;border-radius:8px;transition:border-color .18s ease,box-shadow .18s ease}
@@ -29,3 +29,55 @@ td{border-bottom-color:#f1f5f9}
 .board-column{background:#f1f5f9;border-color:#e2e8f0}
 .deal-card{transition:box-shadow .2s ease,transform .2s ease}
 .deal-card:hover{box-shadow:0 8px 20px rgba(15,23,42,.08);transform:translateY(-2px)}
+
+/* Align the CRM workspace with the Selling module's desk layout. */
+body{background:#fff;color:#0f172a;font-size:14px}
+.app{background:#fff}
+.sidebar{width:280px;padding:0;background:#f8f8f8;border-right:1px solid #e2e8f0;overflow:hidden}
+.brand{height:70px;min-height:70px;margin:0;padding:0 18px;gap:10px;border-bottom:1px solid #e2e8f0;font-size:14px;letter-spacing:0}
+.brand-mark{width:35px;height:35px;border-radius:5px;background:#dbeafe;color:#2563eb;box-shadow:none}
+.brand span.brand-copy:not(.brand-mark){display:flex;flex:1;min-width:0;flex-direction:column;line-height:1.3;letter-spacing:0}
+.brand .brand-copy strong{font-size:14px;color:#0f172a}
+.brand .brand-copy small{font-size:11px;color:#64748b;font-weight:400;letter-spacing:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sidebar nav{padding:10px 9px;overflow-y:auto;gap:1px;flex:1}
+.sidebar nav a{min-height:41px;padding:9px 13px;border-radius:9px;gap:12px;color:#24344c;font-size:14px;font-weight:400}
+.sidebar nav a svg{color:#64748b;flex-shrink:0}
+.sidebar nav a.active{background:#e5e7eb;color:#0f172a;font-weight:600}
+.sidebar nav a.active svg{color:#64748b}
+.sidebar nav a:hover{background:#e9ebef;color:#0f172a}
+.sidebar-foot{border-top:1px solid #e2e8f0;min-height:52px;padding:9px 13px;margin:0;display:flex;align-items:center;gap:10px;font-size:12px}
+.sidebar-foot strong,.sidebar-foot small{display:block;line-height:1.3}
+.sidebar-foot small{color:#64748b;font-size:11px}
+.user-avatar{width:32px;height:32px;display:grid;place-items:center;background:#d1d5db;border-radius:50%;font-weight:600;color:#334155}
+.content{background:#fff}
+.topbar{height:70px;background:#fff;box-shadow:none;padding:0 30px}
+.breadcrumb{display:flex;align-items:center;gap:12px;color:#64748b;font-size:14px;text-transform:capitalize;min-width:0}
+.breadcrumb span{margin:0;color:#a4afbf}
+.breadcrumb strong{font-weight:600;color:#0f172a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.top-action{padding:8px 18px;font-size:13px}
+main{max-width:none;padding:24px 30px 55px}
+.page-heading{margin:0 0 24px;padding:0 0 17px;border-bottom:1px solid #e2e8f0}
+.page-heading h1{font-size:28px;letter-spacing:-.7px;margin-bottom:3px}
+.page-heading p:not(.eyebrow){font-size:14px;color:#64748b}
+.eyebrow{display:none}
+.button{border-radius:7px;font-size:13px;background:#111827;border-color:#111827}
+.button.secondary{background:#fff;color:#0f172a;border-color:#dbe2ea}
+.icon-button{color:#475569}
+.search input:not([type=checkbox]){border:0;box-shadow:none;border-radius:0;background:transparent;padding:10px 0;min-height:36px}
+.search input:not([type=checkbox]):focus{border:0;box-shadow:none;outline:none}
+.panel,.metric,.filters,.relationship-summary{border-color:#e1e5eb;box-shadow:0 1px 2px rgba(15,23,42,.04);background:#fff}
+.panel{padding:20px;border-radius:13px}
+.metric{padding:20px;border-radius:13px}
+.metric strong{font-size:30px;padding:7px 0 2px}
+.metric small{font-size:12px;color:#94a3b8}
+.metric svg{background:transparent;color:#2563eb}
+.metrics{gap:20px}
+.filters{padding:16px 20px;border-radius:12px}
+.filters label{font-size:12px}
+th{background:#f8fafc;text-transform:none;letter-spacing:0;font-size:12px;color:#475569}
+td{font-size:13px}
+.tabs a,.tabs button{font-size:13px}
+.dashboard-grid{gap:20px}
+.dashboard-grid>.panel{margin-top:0}
+@media(max-width:1100px){.sidebar{width:230px;padding:0}.topbar{padding:0 24px}main{padding:24px}}
+@media(max-width:700px){.sidebar{width:100%;height:auto;position:relative;padding:0}.brand{height:58px;min-height:58px;padding:0 16px}.sidebar nav{flex-direction:row;padding:7px 10px;overflow-x:auto}.sidebar nav a{min-height:36px}.sidebar-foot{display:none}.topbar{height:54px;padding:0 16px}.breadcrumb{font-size:12px;gap:6px}.breadcrumb strong{max-width:140px}.top-action{font-size:11px;padding:7px 10px}main{padding:20px 16px}.page-heading h1{font-size:24px}.metrics{gap:10px}}

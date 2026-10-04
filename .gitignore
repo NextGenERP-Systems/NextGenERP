@@ -48,6 +48,7 @@ Projects.md
 projects-module-dump.sql
 /CRM_*PLAN.md
 /crm-module/phase8-verification.json
+/crm-module/backups/
 
 .docker-env/
 **/frappe-bench/sites/assets/

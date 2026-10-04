@@ -23,6 +23,53 @@ docker compose up --build -d
 Stop it with `docker compose down`. This keeps the database volume. To inspect
 startup logs, run `docker compose logs -f crm-module`.
 
+## GCP database and pgAdmin
+
+The cloud-connected mode uses the dedicated `nextgen_crm` database in the
+PostgreSQL container on `nextgen-erp-core-vm` (`nextgen-erp-7753216`,
+`us-central1-a`). It follows MRP's private IAP SSH forwarding pattern. This is
+PostgreSQL on a GCP VM, not Cloud SQL. It does not use Sales or HRM tables. The
+local `crm-module_crm-postgres-data` volume remains available for rollback.
+The pre-migration archive is retained at `crm-module/backups/crm-before-cloud.dump`
+and is excluded from Git.
+
+Keep an IAP tunnel running in a separate PowerShell window:
+
+```powershell
+cd crm-module
+powershell -NoProfile -ExecutionPolicy Bypass -File .\connect-cloud-db.ps1
+```
+
+The tunnel forwards `127.0.0.1:15438` to PostgreSQL on the VM. With the tunnel
+open, start the cloud-connected CRM backend and frontend:
+
+```powershell
+docker compose -f docker-compose.yml -f docker-compose.cloud.yml --profile frontend up -d --build
+```
+
+The uncommitted `.env` file supplies `CRM_DB_PASSWORD` for local rollback and
+`CRM_CLOUD_JDBC_URL`, `CRM_CLOUD_DB_USERNAME`, and `CRM_CLOUD_DB_PASSWORD` for
+cloud mode. See `.env.example` for names and the URL; never commit the real
+password. To switch back to the preserved local database, run
+`docker compose -f docker-compose.yml -f docker-compose.cloud.yml down` and
+then `docker compose --profile frontend up -d` without the cloud override.
+
+In pgAdmin 4, right-click **Servers** and select **Register > Server**. On
+**General**, use `NextGenERP - CRM (GCP)`. On **Connection**, set:
+
+| Field | Value |
+| --- | --- |
+| Host name/address | `127.0.0.1` |
+| Port | `15438` |
+| Maintenance database | `nextgen_crm` |
+| Username | `crm_app` |
+| Password | The `CRM_CLOUD_DB_PASSWORD` value in `crm-module/.env` |
+
+Save the server while the tunnel is running. Expand **Databases > nextgen_crm >
+Schemas > public > Tables** to see the `crm_*` tables. A red disconnect icon
+usually means the tunnel is closed or the GCP VM is unavailable. The existing
+Projects server entry in pgAdmin is separate; register a new CRM server.
+
 ## Existing installations
 
 CRM now uses `crm_flyway_schema_history` so other modules' migration histories

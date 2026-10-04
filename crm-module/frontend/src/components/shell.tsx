@@ -1,9 +1,14 @@
 'use client';
+
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Users, Building2, Columns3, Contact, Megaphone, Wrench, ChartNoAxesCombined, Mail, ArrowUpRight } from 'lucide-react';
+import {
+  BarChart3, Building2, Contact, Home,
+  Mail, Megaphone, ShoppingBag, Users, Wrench, Columns3,
+} from 'lucide-react';
+
 const navigation = [
-  { href: '/crm', name: 'Dashboard', icon: LayoutDashboard },
+  { href: '/crm', name: 'Home', icon: Home },
   { href: '/crm/leads', name: 'Leads', icon: Users },
   { href: '/crm/prospects', name: 'Prospects', icon: Building2 },
   { href: '/crm/opportunities', name: 'Opportunities', icon: Columns3 },
@@ -11,16 +16,42 @@ const navigation = [
   { href: '/crm/campaigns', name: 'Campaigns', icon: Megaphone },
   { href: '/crm/communications/messages', name: 'Communications', icon: Mail },
   { href: '/crm/service/contracts', name: 'Service', icon: Wrench },
-  { href: '/crm/reports', name: 'Reports', icon: ChartNoAxesCombined },
+  { href: '/crm/reports', name: 'Reports', icon: BarChart3 },
 ];
+
+function isActive(path: string, href: string, name: string) {
+  if (name === 'Home') return path === '/crm';
+  if (name === 'Communications') return path.startsWith('/crm/communications');
+  if (name === 'Service') return path.startsWith('/crm/service');
+  return path === href || path.startsWith(`${href}/`);
+}
+
 export function Shell({ children }: { children: React.ReactNode }) {
   const path = usePathname();
-  return <div className="app"><a className="skip" href="#main">Skip to content</a><aside className="sidebar">
-    <Link href="/crm" className="brand"><span className="brand-mark">N</span><div>NextGen<span>CRM WORKSPACE</span></div></Link>
-    <p className="nav-caption">YOUR WORKSPACE</p><nav aria-label="Main navigation">{navigation.map(item => {
-      const active = item.href === '/crm' ? path === item.href : path.startsWith(item.href.split('/').slice(0, 3).join('/'));
-      return <Link key={item.href} href={item.href} aria-current={active ? 'page' : undefined} className={active ? 'active' : ''}><item.icon size={19} />{item.name}{active && <span className="nav-dot" />}</Link>;
-    })}</nav><div className="sidebar-foot"><span className="status-dot" /> Independent CRM<p>Local review workspace</p></div>
-  </aside><div className="content"><header className="topbar"><div className="breadcrumb">Workspace <span>/</span> CRM <span>/</span> {path.split('/').filter(Boolean).slice(1).join(' / ') || 'Overview'}</div><Link href="/crm/opportunities/board" className="top-link">Open pipeline <ArrowUpRight size={16} /></Link></header>
-    <main id="main">{children}</main><footer className="app-footer">NextGen CRM · Acquisition, relationships and service</footer></div></div>;
+  const parts = path.split('/').filter(Boolean).slice(1);
+  const current = parts.length ? parts.map(part => part.replaceAll('-', ' ')).join(' / ') : 'Workspace';
+
+  return <div className="app">
+    <a className="skip" href="#main">Skip to content</a>
+    <aside className="sidebar">
+      <Link href="/crm" className="brand" aria-label="CRM workspace home">
+        <span className="brand-mark"><ShoppingBag size={19} strokeWidth={2} /></span>
+        <span className="brand-copy"><strong>CRM</strong><small>Leads, pipeline & relationships</small></span>
+      </Link>
+      <nav aria-label="CRM navigation">{navigation.map(item => {
+        const active = isActive(path, item.href, item.name);
+        return <Link key={item.name} href={item.href} aria-current={active ? 'page' : undefined} className={active ? 'active' : ''}>
+          <item.icon size={18} strokeWidth={1.8} /><span>{item.name}</span>
+        </Link>;
+      })}</nav>
+      <div className="sidebar-foot"><span className="user-avatar">C</span><span><strong>CRM Workspace</strong><small>NextGen ERP</small></span></div>
+    </aside>
+    <div className="content">
+      <header className="topbar">
+        <div className="breadcrumb"><Home size={17} /><span>/</span><Link href="/crm">CRM</Link><span>/</span><strong>{current}</strong></div>
+        {path === '/crm' && <Link href="/crm/leads/new" className="button top-action">+&nbsp; New lead</Link>}
+      </header>
+      <main id="main">{children}</main>
+    </div>
+  </div>;
 }

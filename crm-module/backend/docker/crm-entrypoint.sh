@@ -1,6 +1,17 @@
 #!/bin/sh
 set -eu
 
+if [ "${CRM_DATABASE_MODE:-local}" = cloud ]; then
+    : "${SPRING_DATASOURCE_URL:?Set CRM_CLOUD_JDBC_URL for cloud mode}"
+    : "${SPRING_DATASOURCE_USERNAME:?Set CRM_CLOUD_DB_USERNAME for cloud mode}"
+    : "${SPRING_DATASOURCE_PASSWORD:?Set CRM_CLOUD_DB_PASSWORD for cloud mode}"
+    case "$SPRING_DATASOURCE_URL" in
+        jdbc:postgresql://*/nextgen_crm) ;;
+        *) echo 'Cloud CRM must target the dedicated nextgen_crm database.' >&2; exit 1 ;;
+    esac
+    exec su-exec appuser java -jar /app/app.jar
+fi
+
 : "${POSTGRES_USER:=crm}"
 : "${POSTGRES_DB:=nextgen_erp}"
 : "${POSTGRES_PASSWORD:?Set CRM_DB_PASSWORD before starting CRM}"
